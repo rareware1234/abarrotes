@@ -183,20 +183,25 @@ const Venta = () => {
     
     console.log('[VENTA] Enviando a cliente:', clienteData);
     
-    // 1. Guardar en localStorage (Método Principal para pestañas separadas)
+    // Usar múltiples métodos para asegurar recepción
     try {
+      // 1. Guardar en localStorage
       localStorage.setItem('cliente_pantalla', JSON.stringify(clienteData));
       console.log('[VENTA] Datos guardados en localStorage');
+      
+      // 2. Guardar en sessionStorage como backup
+      sessionStorage.setItem('cliente_pantalla', JSON.stringify(clienteData));
+      console.log('[VENTA] Datos guardados en sessionStorage');
+      
+      // 3. BroadcastChannel para comunicación en tiempo real
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('pantalla_cliente');
+        channel.postMessage(clienteData);
+        console.log('[VENTA] Datos enviados por BroadcastChannel');
+        channel.close();
+      }
     } catch (error) {
-      console.error('[VENTA] Error guardando en localStorage:', error);
-    }
-    
-    // 2. BroadcastChannel (Método Principal para comunicación en tiempo real)
-    if (typeof BroadcastChannel !== 'undefined') {
-      const channel = new BroadcastChannel('pantalla_cliente');
-      channel.postMessage(clienteData);
-      console.log('[VENTA] Datos enviados por BroadcastChannel');
-      channel.close();
+      console.error('[VENTA] Error guardando datos:', error);
     }
   };
 
@@ -549,14 +554,22 @@ const Venta = () => {
                   <i className="bi bi-credit-card-2-front me-2"></i> Cobrar
                 </button>
                 <button 
-                  className="btn btn-lg py-3 rounded-4 fw-bold btn-outline-secondary"
+                  className="btn btn-lg py-3 rounded-4 fw-bold"
+                  style={{ 
+                    color: '#dc3545', 
+                    border: '2px solid #dc3545',
+                    backgroundColor: 'transparent'
+                  }}
                   onClick={() => {
                     setCart([]);
                     setMontoPagado('');
-                    enviarNuevaVenta();
+                    setSelectedPaymentMethod('01'); // Cambiar a Efectivo por defecto
+                    setTimeout(() => {
+                      enviarNuevaVenta();
+                    }, 150);
                   }}
                 >
-                  <i className="bi bi-x-circle me-2"></i> Limpiar
+                  <i className="bi bi-x-circle me-2"></i> Nueva Venta
                 </button>
             </div>
           </div>

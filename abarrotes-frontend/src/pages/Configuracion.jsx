@@ -313,7 +313,6 @@ const Configuracion = () => {
                         </p>
                       </div>
                     </div>
-                    </div>
                   </div>
 
                   <div className="text-end">
