@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 
 const Caja = () => {
+  // Estado de la caja
+  const [cajaAbierta, setCajaAbierta] = useState(false);
+  const [montoApertura, setMontoApertura] = useState('');
+  const [montoCierre, setMontoCierre] = useState('');
+  
+  // Datos de ventas
   const [ventasDelDia, setVentasDelDia] = useState([]);
   const [resumen, setResumen] = useState({
     totalVentas: 0,
@@ -10,12 +16,115 @@ const Caja = () => {
     totalTransferencia: 0,
     cantidadTransacciones: 0
   });
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Estado de carga
   const [loading, setLoading] = useState(true);
+  const [loadingAction, setLoadingAction] = useState(false);
+  
+  // Fechas
+  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Mensajes
+  const [message, setMessage] = useState({ type: '', text: '' });
 
+  // Cargar estado de la caja al iniciar
   useEffect(() => {
-    cargarVentasDelDia();
-  }, [fecha]);
+    verificarEstadoCaja();
+  }, []);
+
+  // Función para verificar si la caja está abierta
+  const verificarEstadoCaja = async () => {
+    setLoading(true);
+    try {
+      // Verificar en localStorage si la caja está abierta
+      const estadoCaja = localStorage.getItem('cajaAbierta');
+      const fechaCaja = localStorage.getItem('cajaFecha');
+      
+      if (estadoCaja === 'true' && fechaCaja === fecha) {
+        setCajaAbierta(true);
+        cargarVentasDelDia();
+      } else {
+        setCajaAbierta(false);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error verificando estado de caja:', error);
+      setCajaAbierta(false);
+      setLoading(false);
+    }
+  };
+
+  // Función para abrir caja
+  const handleAbrirCaja = async () => {
+    if (!montoApertura || parseFloat(montoApertura) <= 0) {
+      setMessage({ type: 'error', text: 'Por favor ingresa un monto válido de apertura' });
+      return;
+    }
+
+    setLoadingAction(true);
+    try {
+      // Simular llamada a API
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Guardar estado en localStorage
+      localStorage.setItem('cajaAbierta', 'true');
+      localStorage.setItem('cajaFecha', fecha);
+      localStorage.setItem('montoApertura', montoApertura);
+      
+      setCajaAbierta(true);
+      setMessage({ type: 'success', text: 'Caja abierta exitosamente' });
+      
+      // Cargar ventas del día
+      cargarVentasDelDia();
+      
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error al abrir la caja' });
+      console.error('Error abriendo caja:', error);
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  // Función para cerrar caja
+  const handleCerrarCaja = async () => {
+    if (!montoCierre || parseFloat(montoCierre) <= 0) {
+      setMessage({ type: 'error', text: 'Por favor ingresa el monto de cierre' });
+      return;
+    }
+
+    setLoadingAction(true);
+    try {
+      // Calcular diferencia
+      const montoAperturaGuardado = parseFloat(localStorage.getItem('montoApertura') || '0');
+      const totalEfectivoVentas = resumen.totalEfectivo;
+      const totalEsperado = montoAperturaGuardado + totalEfectivoVentas;
+      const diferencia = parseFloat(montoCierre) - totalEsperado;
+      
+      // Simular llamada a API
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Guardar cierre en localStorage
+      localStorage.setItem('cajaAbierta', 'false');
+      localStorage.setItem('montoCierre', montoCierre);
+      localStorage.setItem('diferenciaCierre', diferencia.toFixed(2));
+      
+      setCajaAbierta(false);
+      setMessage({ 
+        type: diferencia === 0 ? 'success' : 'warning', 
+        text: `Caja cerrada exitosamente${diferencia !== 0 ? `. Diferencia: $${diferencia.toFixed(2)}` : ''}` 
+      });
+      
+      // Limpiar mensaje después de 5 segundos
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error al cerrar la caja' });
+      console.error('Error cerrando caja:', error);
+    } finally {
+      setLoadingAction(false);
+    }
+  };
 
   const cargarVentasDelDia = async () => {
     setLoading(true);
@@ -100,7 +209,7 @@ const Caja = () => {
     });
   };
 
-  if (loading) {
+  if (loading && !cajaAbierta) {
     return (
       <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
         <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
@@ -108,7 +217,7 @@ const Caja = () => {
             <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
               <span className="visually-hidden">Cargando...</span>
             </div>
-            <p className="text-muted mt-3">Cargando caja...</p>
+            <p className="text-muted mt-3">Verificando estado de caja...</p>
           </div>
         </div>
       </div>
@@ -120,196 +229,201 @@ const Caja = () => {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center px-4 py-3 bg-white shadow-sm">
         <div className="d-flex align-items-center">
-          <img src="/src/assets/logo.png" alt="Logo" style={{ height: '40px', marginRight: '15px' }} />
+          <img src="/logo.png" alt="Logo" style={{ height: '40px', marginRight: '15px' }} />
           <h4 className="mb-0 fw-bold text-dark">Gestión de Caja</h4>
         </div>
         <div className="d-flex align-items-center gap-3">
+          <span className={`badge ${cajaAbierta ? 'bg-success' : 'bg-danger'} fs-6`}>
+            {cajaAbierta ? 'Caja Abierta' : 'Caja Cerrada'}
+          </span>
           <input 
             type="date" 
             className="form-control" 
             value={fecha}
             onChange={handleFechaChange}
             style={{ width: 'auto' }}
+            disabled={cajaAbierta}
           />
-          <button className="btn btn-outline-primary" onClick={cargarVentasDelDia}>
-            <i className="bi bi-arrow-clockwise me-2"></i> Actualizar
-          </button>
         </div>
       </div>
 
+      {/* Mensajes */}
+      {message.text && (
+        <div className={`alert alert-${message.type === 'error' ? 'danger' : message.type === 'success' ? 'success' : 'warning'} alert-dismissible fade show m-3`} role="alert">
+          {message.text}
+          <button type="button" className="btn-close" onClick={() => setMessage({ type: '', text: '' })}></button>
+        </div>
+      )}
+
       {/* Contenido Principal */}
       <div className="flex-grow-1 p-4">
-        {/* Resumen de Caja */}
-        <div className="row mb-4">
-          <div className="col-md-3 mb-3">
-            <div className="card shadow-sm h-100">
-              <div className="card-body text-center">
-                <h6 className="text-muted mb-2">Total Ventas</h6>
-                <h3 className="fw-bold" style={{ color: '#006241' }}>
-                  {formatCurrency(resumen.totalVentas)}
-                </h3>
+        {/* Si la caja está cerrada, mostrar panel de apertura */}
+        {!cajaAbierta ? (
+          <div className="row justify-content-center">
+            <div className="col-md-6 col-lg-4">
+              <div className="card shadow">
+                <div className="card-header bg-primary text-white">
+                  <h5 className="mb-0">
+                    <i className="bi bi-box-arrow-in-right me-2"></i>
+                    Abrir Caja
+                  </h5>
+                </div>
+                <div className="card-body">
+                  <div className="mb-3">
+                    <label className="form-label">Monto de Apertura ($)</label>
+                    <input 
+                      type="number" 
+                      className="form-control form-control-lg"
+                      placeholder="0.00"
+                      value={montoApertura}
+                      onChange={(e) => setMontoApertura(e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <button 
+                    className="btn btn-primary btn-lg w-100"
+                    onClick={handleAbrirCaja}
+                    disabled={loadingAction}
+                  >
+                    {loadingAction ? (
+                      <><span className="spinner-border spinner-border-sm me-2"></span> Abriendo...</>
+                    ) : (
+                      <><i className="bi bi-box-arrow-in-right me-2"></i> Abrir Caja</>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="col-md-3 mb-3">
-            <div className="card shadow-sm h-100">
-              <div className="card-body text-center">
-                <h6 className="text-muted mb-2">Efectivo</h6>
-                <h4 className="fw-bold text-success">
-                  {formatCurrency(resumen.totalEfectivo)}
-                </h4>
+        ) : (
+          <>
+            {/* Panel de caja abierta */}
+            <div className="row mb-4">
+              <div className="col-md-3 mb-3">
+                <div className="card shadow-sm h-100 border-success">
+                  <div className="card-body text-center">
+                    <h6 className="text-muted mb-2">Total Ventas</h6>
+                    <h3 className="fw-bold" style={{ color: '#006241' }}>
+                      {formatCurrency(resumen.totalVentas)}
+                    </h3>
+                    <small className="text-muted">{resumen.cantidadTransacciones} transacciones</small>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-3 mb-3">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body text-center">
+                    <h6 className="text-muted mb-2">Efectivo</h6>
+                    <h3 className="fw-bold text-primary">
+                      {formatCurrency(resumen.totalEfectivo)}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-3 mb-3">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body text-center">
+                    <h6 className="text-muted mb-2">Tarjeta</h6>
+                    <h3 className="fw-bold text-info">
+                      {formatCurrency(resumen.totalTarjeta)}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-3 mb-3">
+                <div className="card shadow-sm h-100">
+                  <div className="card-body text-center">
+                    <h6 className="text-muted mb-2">Transferencia</h6>
+                    <h3 className="fw-bold text-success">
+                      {formatCurrency(resumen.totalTransferencia)}
+                    </h3>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="col-md-3 mb-3">
-            <div className="card shadow-sm h-100">
-              <div className="card-body text-center">
-                <h6 className="text-muted mb-2">Tarjeta</h6>
-                <h4 className="fw-bold text-primary">
-                  {formatCurrency(resumen.totalTarjeta)}
-                </h4>
-              </div>
-            </div>
-          </div>
-          
-          <div className="col-md-3 mb-3">
-            <div className="card shadow-sm h-100">
-              <div className="card-body text-center">
-                <h6 className="text-muted mb-2">Transferencia</h6>
-                <h4 className="fw-bold text-info">
-                  {formatCurrency(resumen.totalTransferencia)}
-                </h4>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Estadísticas Adicionales */}
-        <div className="row mb-4">
-          <div className="col-md-6 mb-3">
-            <div className="card shadow-sm">
-              <div className="card-body">
-                <h6 className="fw-bold mb-3" style={{ color: '#006241' }}>
-                  <i className="bi bi-pie-chart me-2"></i> Distribución de Pagos
-                </h6>
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span>Efectivo</span>
-                  <div className="progress flex-grow-1 mx-3" style={{ height: '20px' }}>
-                    <div 
-                      className="progress-bar bg-success" 
-                      style={{ width: `${resumen.totalVentas > 0 ? (resumen.totalEfectivo / resumen.totalVentas) * 100 : 0}%` }}
-                    ></div>
+            {/* Panel de cierre */}
+            <div className="row justify-content-center mb-4">
+              <div className="col-md-6 col-lg-4">
+                <div className="card shadow">
+                  <div className="card-header bg-danger text-white">
+                    <h5 className="mb-0">
+                      <i className="bi bi-box-arrow-right me-2"></i>
+                      Cerrar Caja
+                    </h5>
                   </div>
-                  <span className="fw-bold">{resumen.totalVentas > 0 ? ((resumen.totalEfectivo / resumen.totalVentas) * 100).toFixed(1) : 0}%</span>
-                </div>
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span>Tarjeta</span>
-                  <div className="progress flex-grow-1 mx-3" style={{ height: '20px' }}>
-                    <div 
-                      className="progress-bar bg-primary" 
-                      style={{ width: `${resumen.totalVentas > 0 ? (resumen.totalTarjeta / resumen.totalVentas) * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                  <span className="fw-bold">{resumen.totalVentas > 0 ? ((resumen.totalTarjeta / resumen.totalVentas) * 100).toFixed(1) : 0}%</span>
-                </div>
-                <div className="d-flex justify-content-between align-items-center">
-                  <span>Transferencia</span>
-                  <div className="progress flex-grow-1 mx-3" style={{ height: '20px' }}>
-                    <div 
-                      className="progress-bar bg-info" 
-                      style={{ width: `${resumen.totalVentas > 0 ? (resumen.totalTransferencia / resumen.totalVentas) * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                  <span className="fw-bold">{resumen.totalVentas > 0 ? ((resumen.totalTransferencia / resumen.totalVentas) * 100).toFixed(1) : 0}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="col-md-6 mb-3">
-            <div className="card shadow-sm">
-              <div className="card-body">
-                <h6 className="fw-bold mb-3" style={{ color: '#006241' }}>
-                  <i className="bi bi-graph-up me-2"></i> Estadísticas del Día
-                </h6>
-                <div className="row text-center">
-                  <div className="col-6 mb-3">
-                    <div className="p-3 bg-light rounded">
-                      <h3 className="fw-bold mb-1">{resumen.cantidadTransacciones}</h3>
-                      <small className="text-muted">Transacciones</small>
+                  <div className="card-body">
+                    <div className="mb-3">
+                      <label className="form-label">Monto de Cierre ($)</label>
+                      <input 
+                        type="number" 
+                        className="form-control form-control-lg"
+                        placeholder="0.00"
+                        value={montoCierre}
+                        onChange={(e) => setMontoCierre(e.target.value)}
+                        min="0"
+                        step="0.01"
+                      />
+                      <small className="text-muted">
+                        Efectivo esperado: {formatCurrency(resumen.totalEfectivo + parseFloat(localStorage.getItem('montoApertura') || '0'))}
+                      </small>
                     </div>
-                  </div>
-                  <div className="col-6 mb-3">
-                    <div className="p-3 bg-light rounded">
-                      <h3 className="fw-bold mb-1">
-                        {resumen.cantidadTransacciones > 0 
-                          ? formatCurrency(resumen.totalVentas / resumen.cantidadTransacciones)
-                          : formatCurrency(0)
-                        }
-                      </h3>
-                      <small className="text-muted">Promedio por Venta</small>
-                    </div>
+                    <button 
+                      className="btn btn-danger btn-lg w-100"
+                      onClick={handleCerrarCaja}
+                      disabled={loadingAction}
+                    >
+                      {loadingAction ? (
+                        <><span className="spinner-border spinner-border-sm me-2"></span> Cerrando...</>
+                      ) : (
+                        <><i className="bi bi-box-arrow-right me-2"></i> Cerrar Caja</>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Tabla de Ventas */}
-        <div className="card shadow">
-          <div className="card-header bg-white">
-            <h5 className="mb-0 fw-bold">
-              <i className="bi bi-list-ul me-2"></i> Detalle de Ventas
-            </h5>
-          </div>
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Hora</th>
-                    <th>UUID</th>
-                    <th>Forma de Pago</th>
-                    <th className="text-end">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ventasDelDia.map((venta) => (
-                    <tr key={venta.id}>
-                      <td>{formatTime(venta.fecha)}</td>
-                      <td>
-                        <small style={{ fontFamily: 'monospace' }}>
-                          {venta.uuid}
-                        </small>
-                      </td>
-                      <td>
-                        <span className={`badge ${
-                          venta.metodoPago === '01' ? 'bg-success' : 
-                          venta.metodoPago === '03' ? 'bg-primary' : 'bg-info'
-                        }`}>
-                          {venta.metodoPagoNombre}
-                        </span>
-                      </td>
-                      <td className="text-end fw-bold">
-                        {formatCurrency(venta.total)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Tabla de ventas */}
+            <div className="card shadow-sm">
+              <div className="card-header bg-white">
+                <h5 className="mb-0">Ventas del Día</h5>
+              </div>
+              <div className="card-body p-0">
+                <div className="table-responsive">
+                  <table className="table table-hover mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Hora</th>
+                        <th>UUID</th>
+                        <th>Método de Pago</th>
+                        <th className="text-end">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ventasDelDia.map((venta) => (
+                        <tr key={venta.id}>
+                          <td>{formatTime(venta.fecha)}</td>
+                          <td><small className="text-muted">{venta.uuid}</small></td>
+                          <td>
+                            <span className={`badge ${
+                              venta.metodoPago === '01' ? 'bg-primary' :
+                              venta.metodoPago === '03' ? 'bg-info' : 'bg-success'
+                            }`}>
+                              {venta.metodoPagoNombre}
+                            </span>
+                          </td>
+                          <td className="text-end fw-bold">{formatCurrency(venta.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Botón de Cierre de Caja */}
-        <div className="text-center mt-4">
-          <button className="btn btn-danger btn-lg" onClick={() => alert('Función de cierre de caja en desarrollo')}>
-            <i className="bi bi-box-arrow-right me-2"></i> Cierre de Caja
-          </button>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
