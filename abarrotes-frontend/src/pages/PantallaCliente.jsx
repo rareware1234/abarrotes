@@ -181,7 +181,7 @@ const PantallaCliente = () => {
           }}>
             {config.bannerUrl ? (
               <img 
-                src={config.bannerUrl} 
+                src={`${config.bannerUrl}?t=${Date.now()}`} 
                 alt="Banner promocional"
                 style={{ 
                   width: '100%', 
@@ -190,7 +190,18 @@ const PantallaCliente = () => {
                 }}
                 onError={(e) => {
                   console.log('Error loading banner image:', config.bannerUrl);
-                  e.target.style.display = 'none';
+                  console.log('Intentando cargar sin parámetro de tiempo...');
+                  // Intentar cargar sin el timestamp
+                  e.target.src = config.bannerUrl;
+                  e.target.onerror = () => {
+                    console.log('Error persistente cargando la imagen');
+                    e.target.style.display = 'none';
+                    // Mostrar placeholder
+                    const placeholder = document.createElement('div');
+                    placeholder.style.cssText = 'color: white; text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);';
+                    placeholder.innerHTML = '<i class="bi bi-image display-4"></i><p>Error al cargar imagen<br>Verifica el enlace de Google Drive</p>';
+                    e.target.parentElement.appendChild(placeholder);
+                  };
                 }}
               />
             ) : (
