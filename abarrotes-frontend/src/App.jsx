@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
+import Venta from './pages/Venta';
 import Products from './pages/Products';
 import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
@@ -24,7 +24,7 @@ function App() {
             {/* Contenido Principal */}
             <div style={{ flex: 1, backgroundColor: '#f4f6f9' }}>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<Venta />} />
                 <Route path="/productos" element={<Products />} />
                 <Route path="/inventario" element={<Inventory />} />
                 <Route path="/pedidos" element={<Orders />} />

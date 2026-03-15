@@ -28,7 +28,7 @@ const Navbar = () => {
       </div>
 
       <Link to="/" className={`nav-link rounded mb-2 ${isActive('/')}`}>
-        <i className="bi bi-speedometer2 me-2"></i> Dashboard
+        <i className="bi bi-speedometer2 me-2"></i> Venta
       </Link>
       
       <div className="mb-3 mt-4">

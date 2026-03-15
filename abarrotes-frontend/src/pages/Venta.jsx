@@ -12,7 +12,7 @@ const billingApi = axios.create({
   }
 });
 
-const Dashboard = () => {
+const Venta = () => {
   const navigate = useNavigate();
   const inputRef = useRef(null); // Referencia para el input de escaneo
 
@@ -21,9 +21,15 @@ const Dashboard = () => {
   const [scanCode, setScanCode] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
   
+  // Estado para autocompletar
+  const [productsList, setProductsList] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
   // Estado para el modal de pago
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('01'); // Por defecto: Efectivo
+  const [montoPagado, setMontoPagado] = useState(''); // Monto en efectivo entregado por el cliente
   
   // Estado para el modal de confirmación de venta
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -62,55 +68,93 @@ const Dashboard = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
+  // Cargar lista de productos para autocompletar
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await api.get('/products');
+        console.log('[DASHBOARD] Productos cargados:', response.data);
+        setProductsList(response.data);
+      } catch (error) {
+        console.error('[DASHBOARD] Error cargando productos:', error);
+      }
+    };
+    loadProducts();
+  }, []);
+
+  // Manejar input para autocompletar
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setScanCode(value);
+    
+    console.log('[DASHBOARD] Input changed:', value);
+    console.log('[DASHBOARD] Products list:', productsList);
+    
+    if (value.length > 0) {
+      const filtered = productsList.filter(product => 
+        product.nombre.toLowerCase().includes(value.toLowerCase())
+      );
+      console.log('[DASHBOARD] Filtered products:', filtered);
+      setSuggestions(filtered.slice(0, 5)); // Máximo 5 sugerencias
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Seleccionar sugerencia
+  const selectSuggestion = (product) => {
+    console.log('[DASHBOARD] selectSuggestion called for:', product.nombre);
+    setScanCode(product.nombre);
+    setShowSuggestions(false);
+    // Agregar al carrito inmediatamente
+    addToCart(product);
+    setScanCode('');
+  };
+
   // Manejar escaneo o entrada manual
   const handleScan = async (e) => {
+    console.log('[DASHBOARD] handleScan called');
     e.preventDefault();
     const code = scanCode.trim();
     if (!code) return;
 
+    console.log('[DASHBOARD] Escaneando código:', code);
+
     try {
-      // Intentar buscar el producto por SKU o Codigo de Barras
-      // Optimizado: busqueda directa por SKU primero (más eficiente)
-      let product = null;
+      // Obtener todos los productos
+      const response = await api.get(`/products`);
+      const products = response.data;
+      console.log('[DASHBOARD] Total productos disponibles:', products.length);
       
-      // Intentar buscar directamente por SKU si parece un SKU válido
-      if (code.length >= 3 && !code.includes(' ')) {
-        try {
-          const response = await api.get(`/products/search?sku=${encodeURIComponent(code)}`);
-          if (response.data && response.data.length > 0) {
-            product = response.data[0];
-          }
-        } catch (searchError) {
-          // Si el endpoint de búsqueda no existe, continuar con búsqueda local
-          console.log("Endpoint de búsqueda no disponible, usando búsqueda local");
-        }
-      }
-      
-      // Si no encontramos por SKU, buscar en todos los productos (fallback)
-      if (!product) {
-        const response = await api.get(`/products`);
-        const products = response.data;
-        product = products.find(p => p.nombre.toLowerCase().includes(code.toLowerCase()));
-      }
+      // Buscar por nombre exacto o parcial
+      const product = products.find(p => 
+        p.nombre.toLowerCase() === code.toLowerCase() || 
+        p.nombre.toLowerCase().includes(code.toLowerCase())
+      );
 
       if (product) {
+        console.log('[DASHBOARD] Producto encontrado:', product.nombre);
         addToCart(product);
         setScanCode('');
         setMessage({ type: 'success', text: `Producto agregado: ${product.nombre}` });
         // Limpiar mensaje después de 2 segundos
         setTimeout(() => setMessage({ type: '', text: '' }), 2000);
       } else {
+        console.log('[DASHBOARD] Producto NO encontrado:', code);
         setMessage({ type: 'error', text: `Producto no encontrado: ${code}` });
         // Limpiar mensaje después de 3 segundos
         setTimeout(() => setMessage({ type: '', text: '' }), 3000);
       }
     } catch (error) {
-      console.error("Error al buscar producto:", error);
+      console.error("[DASHBOARD] Error al buscar producto:", error);
       setMessage({ type: 'error', text: 'Error de conexión al buscar producto' });
     }
   };
 
   const addToCart = (product) => {
+    console.log('[DASHBOARD] addToCart ejecutada para:', product.nombre);
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
@@ -125,29 +169,80 @@ const Dashboard = () => {
     });
 
     // Enviar producto a la pantalla del cliente
+    console.log('[DASHBOARD] Llamando a enviarProductoACliente...');
     enviarProductoACliente(product);
   };
 
-  const enviarProductoACliente = (product) => {
+  // Función genérica para enviar datos a la pantalla del cliente
+  const enviarACliente = (data) => {
+    const timestamp = new Date().toISOString();
     const clienteData = {
-      type: 'product_scanned',
-      product: {
-        id: product.id,
-        nombre: product.nombre,
-        precio: product.precio,
-        imagen: product.imagen || 'https://via.placeholder.com/300x300/2a2a4a/00d4ff?text=Producto'
-      },
-      timestamp: new Date().toISOString()
+      ...data,
+      timestamp: timestamp
     };
     
-    // Guardar en localStorage para que la pantalla del cliente lo reciba
-    localStorage.setItem('cliente_pantalla', JSON.stringify(clienteData));
+    console.log('[VENTA] Enviando a cliente:', clienteData);
     
-    // También podemos usar BroadcastChannel para comunicación entre pestañas
+    // 1. Guardar en localStorage (Método Principal para pestañas separadas)
+    try {
+      localStorage.setItem('cliente_pantalla', JSON.stringify(clienteData));
+      console.log('[VENTA] Datos guardados en localStorage');
+    } catch (error) {
+      console.error('[VENTA] Error guardando en localStorage:', error);
+    }
+    
+    // 2. BroadcastChannel (Método Principal para comunicación en tiempo real)
     if (typeof BroadcastChannel !== 'undefined') {
       const channel = new BroadcastChannel('pantalla_cliente');
       channel.postMessage(clienteData);
+      console.log('[VENTA] Datos enviados por BroadcastChannel');
+      channel.close();
     }
+  };
+
+  const enviarProductoACliente = (product) => {
+    // Crear una copia pura del objeto para evitar problemas de referencia
+    const productoLimpio = {
+      id: product.id,
+      nombre: product.nombre,
+      precio: product.precio,
+      imagen: product.imagen || 'https://via.placeholder.com/300x300/2a2a4a/00d4ff?text=Producto'
+    };
+
+    const data = {
+      type: 'product_scanned',
+      product: productoLimpio
+    };
+
+    // Si el método de pago seleccionado es Transferencia, incluir la información de la cuenta
+    if (selectedPaymentMethod === '04') {
+      data.transferenciaInfo = {
+        clabe: config.clabeInterbancaria,
+        banco: config.banco,
+        beneficiario: config.nombreEmpresa
+      };
+    }
+
+    enviarACliente(data);
+  };
+
+  const enviarNuevaVenta = () => {
+    enviarACliente({
+      type: 'nueva_venta'
+    });
+  };
+
+  const enviarVentaCompletada = () => {
+    enviarACliente({
+      type: 'venta_completada'
+    });
+  };
+
+  const limpiarTransferenciaCliente = () => {
+    console.log('[VENTA] Enviando señal para limpiar transferencia');
+    enviarACliente({
+      type: 'clear_transferencia'
+    });
   };
 
   const updateQuantity = (id, delta) => {
@@ -180,6 +275,15 @@ const Dashboard = () => {
   };
 
   const confirmPayment = () => {
+    // Validación para pago en efectivo
+    if (selectedPaymentMethod === '01') {
+      const monto = parseFloat(montoPagado);
+      if (isNaN(monto) || monto < total) {
+        alert(`El monto entregado es insuficiente. Faltan: $${(total - monto).toFixed(2)}`);
+        return;
+      }
+    }
+
     // Formato esperado por el backend monolítico
     const newOrder = {
       userId: 1, // Usuario genérico de prueba
@@ -228,6 +332,12 @@ const Dashboard = () => {
           total: total,
           formaPago: selectedPaymentMethod
         };
+
+        // Agregar información de pago en efectivo si aplica
+        if (selectedPaymentMethod === '01' && montoPagado) {
+          ventaDataLocal.montoPagado = parseFloat(montoPagado);
+          ventaDataLocal.cambio = parseFloat(montoPagado) - total;
+        }
         
         const ticketDataLocal = {
           uuid: billingRes.data.uuid,
@@ -239,8 +349,10 @@ const Dashboard = () => {
         setTicketData(ticketDataLocal);
         setShowConfirmationModal(true);
         
-        // Limpiar carrito
+        // Limpiar carrito, monto pagado y enviar señal a pantalla cliente
         setCart([]);
+        setMontoPagado('');
+        enviarVentaCompletada();
         setShowPaymentModal(false);
       })
       .catch(err => {
@@ -253,6 +365,7 @@ const Dashboard = () => {
 
   const cancelPayment = () => {
     setShowPaymentModal(false);
+    setMontoPagado(''); // Limpiar monto pagado al cancelar
   };
 
   return (
@@ -283,23 +396,55 @@ const Dashboard = () => {
           
           {/* Barra de Escaneo */}
           <form onSubmit={handleScan} className="mb-4">
-            <div className="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
-              <span className="input-group-text bg-white border-end-0">
-                <i className="bi bi-upc-scan text-muted" style={{ fontSize: '1.5rem' }}></i>
-              </span>
-              <input
-                ref={inputRef}
-                type="text"
-                className="form-control border-start-0 ps-0"
-                placeholder="Escanear código o peso..."
-                value={scanCode}
-                onChange={(e) => setScanCode(e.target.value)}
-                autoFocus
-                style={{ fontSize: '1.2rem' }}
-              />
-              <button className="btn btn-primary px-4" type="submit" style={{ backgroundColor: '#006241', borderColor: '#006241' }}>
-                Agregar
-              </button>
+            {/* Contenedor principal con posición relativa para las sugerencias */}
+            <div className="position-relative">
+              <div className="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                <span className="input-group-text bg-white border-end-0">
+                  <i className="bi bi-upc-scan text-muted" style={{ fontSize: '1.5rem' }}></i>
+                </span>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className="form-control border-start-0 ps-0"
+                  placeholder="Escanear código o buscar producto..."
+                  value={scanCode}
+                  onChange={handleInputChange}
+                  onFocus={() => scanCode.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  autoFocus
+                  style={{ fontSize: '1.2rem' }}
+                />
+                <button className="btn btn-primary px-4" type="submit" style={{ backgroundColor: '#006241', borderColor: '#006241' }}>
+                  Agregar
+                </button>
+              </div>
+              
+              {/* Sugerencias de autocompletar - estilo Google */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="position-absolute w-100 bg-white shadow rounded-3 mt-1 overflow-hidden" style={{ zIndex: 1000 }}>
+                  {suggestions.map((product, index) => (
+                    <div 
+                      key={product.id} 
+                      className={`p-3 d-flex align-items-center ${index < suggestions.length - 1 ? 'border-bottom' : ''}`}
+                      onClick={() => selectSuggestion(product)}
+                      style={{ 
+                        cursor: 'pointer',
+                        backgroundColor: '#fff',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
+                    >
+                      <i className="bi bi-search me-3 text-muted"></i>
+                      <div className="flex-grow-1">
+                        <div className="fw-medium" style={{ color: '#202124' }}>{product.nombre}</div>
+                        <div className="text-muted small">{product.categoria || 'Producto'}</div>
+                      </div>
+                      <div className="text-primary fw-bold">${product.precio.toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <small className="text-muted ms-2">Presiona Ctrl+B para enfocar rápidamente</small>
           </form>
@@ -395,20 +540,24 @@ const Dashboard = () => {
 
           {/* Botones de Acción */}
           <div className="mt-auto">
-            <div className="d-grid gap-3">
-              <button 
-                className="btn btn-lg py-3 rounded-4 fw-bold text-white shadow-sm"
-                style={{ backgroundColor: '#006241', borderColor: '#006241' }}
-                onClick={handlePayment}
-              >
-                <i className="bi bi-credit-card-2-front me-2"></i> Cobrar
-              </button>
-              <button 
-                className="btn btn-lg py-3 rounded-4 fw-bold btn-outline-secondary"
-                onClick={() => setCart([])}
-              >
-                <i className="bi bi-x-circle me-2"></i> Cancelar Venta
-              </button>
+              <div className="d-grid gap-3">
+                <button 
+                  className="btn btn-lg py-3 rounded-4 fw-bold text-white shadow-sm"
+                  style={{ backgroundColor: '#006241', borderColor: '#006241' }}
+                  onClick={handlePayment}
+                >
+                  <i className="bi bi-credit-card-2-front me-2"></i> Cobrar
+                </button>
+                <button 
+                  className="btn btn-lg py-3 rounded-4 fw-bold btn-outline-secondary"
+                  onClick={() => {
+                    setCart([]);
+                    setMontoPagado('');
+                    enviarNuevaVenta();
+                  }}
+                >
+                  <i className="bi bi-x-circle me-2"></i> Limpiar
+                </button>
             </div>
           </div>
           
@@ -441,27 +590,74 @@ const Dashboard = () => {
                 <div className="d-grid gap-2">
                   <button 
                     className={`btn btn-lg py-3 ${selectedPaymentMethod === '01' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setSelectedPaymentMethod('01')}
+                    onClick={() => {
+                      setSelectedPaymentMethod('01');
+                      setMontoPagado(''); // Limpiar monto al cambiar a otro método
+                      limpiarTransferenciaCliente(); // Limpiar QR en pantalla cliente
+                    }}
                   >
                     <i className="bi bi-cash me-2"></i> Efectivo
                   </button>
                   <button 
                     className={`btn btn-lg py-3 ${selectedPaymentMethod === '03' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setSelectedPaymentMethod('03')}
+                    onClick={() => {
+                      setSelectedPaymentMethod('03');
+                      setMontoPagado(''); // Limpiar monto al cambiar a otro método
+                      limpiarTransferenciaCliente(); // Limpiar QR en pantalla cliente
+                    }}
                   >
                     <i className="bi bi-credit-card me-2"></i> Tarjeta
                   </button>
                   <button 
                     className={`btn btn-lg py-3 ${selectedPaymentMethod === '04' ? 'btn-primary' : 'btn-outline-primary'}`}
-                    onClick={() => setSelectedPaymentMethod('04')}
+                    onClick={() => {
+                      setSelectedPaymentMethod('04');
+                      setMontoPagado(''); // Limpiar monto al cambiar a otro método
+                      // Enviar información de transferencia inmediatamente
+                      enviarACliente({
+                        type: 'transferencia_info',
+                        clabe: config.clabeInterbancaria,
+                        banco: config.banco,
+                        beneficiario: config.nombreEmpresa
+                      });
+                    }}
                   >
                     <i className="bi bi-phone me-2"></i> Transferencia
                   </button>
                 </div>
               </div>
               
-              {/* Sección de QR para Transferencia */}
-              {selectedPaymentMethod === '04' && (
+              {/* Sección de Efectivo - Cálculo de Cambio */}
+              {selectedPaymentMethod === '01' && (
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Monto Entregado (Efectivo)</label>
+                  <div className="input-group input-group-lg">
+                    <span className="input-group-text">$</span>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="0.00"
+                      value={montoPagado}
+                      onChange={(e) => setMontoPagado(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  {/* Cálculo del cambio */}
+                  {montoPagado && parseFloat(montoPagado) >= total && (
+                    <div className="mt-3 p-3 bg-success text-white rounded text-center">
+                      <h5 className="mb-0">Cambio: ${(parseFloat(montoPagado) - total).toFixed(2)}</h5>
+                    </div>
+                  )}
+                  {montoPagado && parseFloat(montoPagado) < total && (
+                    <div className="mt-3 p-3 bg-danger text-white rounded text-center">
+                      <h5 className="mb-0">Faltan: ${(total - parseFloat(montoPagado)).toFixed(2)}</h5>
+                    </div>
+                  )}
+                </div>
+              )}
+
+               {/* Sección de QR para Transferencia */}
+               {selectedPaymentMethod === '04' && (
                 <div className="mt-4 p-3 bg-light rounded text-center">
                   <h6 className="mb-3">Código QR para Transferencia</h6>
                   <div className="d-flex justify-content-center mb-3">
@@ -563,4 +759,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Venta;
