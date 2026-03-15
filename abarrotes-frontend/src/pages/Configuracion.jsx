@@ -60,59 +60,8 @@ const Configuracion = () => {
   };
 
   const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validar que sea una imagen
-      if (!file.type.startsWith('image/')) {
-        setMessage({ type: 'error', text: 'Por favor selecciona un archivo de imagen válido' });
-        return;
-      }
-
-      // Validar tamaño (máximo 2MB antes de optimizar)
-      if (file.size > 2 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'La imagen no debe superar los 2MB' });
-        return;
-      }
-
-      // Leer el archivo como Data URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // Crear una imagen para optimizar
-        const img = new Image();
-        img.onload = () => {
-          // Crear un canvas para optimizar la imagen
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // Calcular nuevas dimensiones (máximo 800px de ancho)
-          const maxWidth = 800;
-          const ratio = img.width > maxWidth ? maxWidth / img.width : 1;
-          canvas.width = img.width * ratio;
-          canvas.height = img.height * ratio;
-          
-          // Dibujar la imagen optimizada
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          
-          // Convertir a Data URL con compresión
-          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          
-          // Actualizar el estado con la imagen optimizada
-          setConfig(prev => ({
-            ...prev,
-            bannerUrl: optimizedDataUrl
-          }));
-          setMessage({ type: 'success', text: 'Imagen optimizada y cargada correctamente' });
-          setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-        };
-        
-        img.onerror = () => {
-          setMessage({ type: 'error', text: 'Error al procesar la imagen' });
-        };
-        
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
-    }
+    setMessage({ type: 'info', text: 'Por favor, sube la imagen a Google Drive y pega el enlace en el campo de URL' });
+    setTimeout(() => setMessage({ type: '', text: '' }), 3000);
   };
 
   const handleSave = async (e) => {
@@ -121,17 +70,8 @@ const Configuracion = () => {
       // En producción, esto sería una llamada a la API del backend
       // api.post('/api/configuracion', config)
       
-      // Verificar el tamaño de la configuración antes de guardar
-      const configString = JSON.stringify(config);
-      const configSize = new Blob([configString]).size;
-      
-      if (configSize > 4 * 1024 * 1024) { // 4MB límite aproximado
-        setMessage({ type: 'error', text: 'La configuración es demasiado grande. Intenta con una imagen más pequeña.' });
-        return;
-      }
-      
       // Por ahora, guardamos en localStorage
-      localStorage.setItem('sistemaConfig', configString);
+      localStorage.setItem('sistemaConfig', JSON.stringify(config));
       
       setMessage({ type: 'success', text: 'Configuración guardada exitosamente' });
       
@@ -330,24 +270,21 @@ const Configuracion = () => {
                   <div className="row mb-4">
                     <div className="col-12 mb-3">
                       <label className="form-label">URL de la Imagen del Banner</label>
-                      <div className="input-group">
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          name="bannerUrl"
-                          value={config.bannerUrl}
-                          onChange={handleInputChange}
-                          placeholder="https://ejemplo.com/imagen-banner.jpg"
-                        />
-                        <input 
-                          type="file" 
-                          className="form-control" 
-                          accept="image/*"
-                          onChange={handleFileUpload}
-                          style={{ maxWidth: '150px' }}
-                        />
-                      </div>
-                      <small className="text-muted">Pega una URL o selecciona un archivo desde tu equipo</small>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        name="bannerUrl"
+                        value={config.bannerUrl}
+                        onChange={handleInputChange}
+                        placeholder="https://drive.google.com/uc?export=view&id=YOUR_FILE_ID"
+                      />
+                      <small className="text-muted">
+                        <i className="bi bi-info-circle me-1"></i> 
+                        Usa una imagen de Google Drive: 
+                        <a href="https://support.google.com/drive/answer/10801134" target="_blank" rel="noopener noreferrer">
+                          Cómo obtener el enlace directo
+                        </a>
+                      </small>
                     </div>
                     
                     <div className="col-12 mb-3">
@@ -361,6 +298,20 @@ const Configuracion = () => {
                         placeholder="¡Bienvenido a nuestra tienda!"
                       />
                       <small className="text-muted">Texto que se mostrará debajo del banner</small>
+                    </div>
+                    
+                    {/* Instrucciones para Google Drive */}
+                    <div className="col-12">
+                      <div className="alert alert-info">
+                        <h6 className="alert-heading"><i className="bi bi-google me-2"></i>Cómo usar imágenes de Google Drive:</h6>
+                        <ol className="mb-0 small">
+                          <li>Sube la imagen a Google Drive</li>
+                          <li>Haz clic derecho en la imagen > "Obtener enlace"</li>
+                          <li>Cambia los permisos a "Cualquier persona con el enlace"</li>
+                          <li>Copia el ID del archivo de la URL (el texto entre /d/ y /view)</li>
+                          <li>Pega el ID en este formato: <code>https://drive.google.com/uc?export=view&id=TU_ID_AQUI</code></li>
+                        </ol>
+                      </div>
                     </div>
                   </div>
 
