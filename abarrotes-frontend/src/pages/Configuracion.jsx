@@ -57,6 +57,30 @@ const Configuracion = () => {
     }));
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        setMessage({ type: 'error', text: 'Por favor selecciona un archivo de imagen válido' });
+        return;
+      }
+
+      // Leer el archivo como Data URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Actualizar el estado con la imagen en formato base64
+        setConfig(prev => ({
+          ...prev,
+          bannerUrl: reader.result
+        }));
+        setMessage({ type: 'success', text: 'Imagen cargada correctamente' });
+        setTimeout(() => setMessage({ type: '', text: '' }), 2000);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -263,15 +287,24 @@ const Configuracion = () => {
                   <div className="row mb-4">
                     <div className="col-12 mb-3">
                       <label className="form-label">URL de la Imagen del Banner</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="bannerUrl"
-                        value={config.bannerUrl}
-                        onChange={handleInputChange}
-                        placeholder="https://ejemplo.com/imagen-banner.jpg"
-                      />
-                      <small className="text-muted">URL de la imagen que se mostrará en la pantalla del cliente</small>
+                      <div className="input-group">
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          name="bannerUrl"
+                          value={config.bannerUrl}
+                          onChange={handleInputChange}
+                          placeholder="https://ejemplo.com/imagen-banner.jpg"
+                        />
+                        <input 
+                          type="file" 
+                          className="form-control" 
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          style={{ maxWidth: '150px' }}
+                        />
+                      </div>
+                      <small className="text-muted">Pega una URL o selecciona un archivo desde tu equipo</small>
                     </div>
                     
                     <div className="col-12 mb-3">
