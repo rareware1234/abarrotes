@@ -48,6 +48,14 @@ const Navbar = () => {
       </Link>
       
       <div className="mb-3 mt-4">
+        <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Finanzas</small>
+      </div>
+
+      <Link to="/caja" className={`nav-link rounded mb-2 ${isActive('/caja')}`}>
+        <i className="bi bi-cash-stack me-2"></i> Caja
+      </Link>
+      
+      <div className="mb-3 mt-4">
         <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Sistema</small>
       </div>
 

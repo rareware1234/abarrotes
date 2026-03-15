@@ -6,6 +6,7 @@ import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
 import VentaDetalles from './pages/VentaDetalles';
 import Configuracion from './pages/Configuracion';
+import Caja from './pages/Caja';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
                 <Route path="/inventario" element={<Inventory />} />
                 <Route path="/pedidos" element={<Orders />} />
                 <Route path="/configuracion" element={<Configuracion />} />
+                <Route path="/caja" element={<Caja />} />
               </Routes>
             </div>
           </div>
