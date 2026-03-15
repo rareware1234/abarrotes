@@ -164,53 +164,46 @@ const PantallaCliente = () => {
 
       {/* Contenido Principal */}
       <div className="row g-0" style={{ minHeight: 'calc(100vh - 80px)' }}>
-        {/* Columna Izquierda: Banner */}
-        <div className="col-md-8 d-flex align-items-center justify-content-center p-5" style={{ backgroundColor: '#ffffff' }}>
-          <div className="text-center w-100">
-            {/* Banner desde configuración */}
-            <div style={{ 
-              width: '100%', 
-              height: '300px', 
-              margin: '0 auto',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-              backgroundColor: '#006241',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              {config.bannerUrl ? (
-                <img 
-                  src={config.bannerUrl} 
-                  alt="Banner promocional"
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover'
-                  }}
-                  onError={(e) => {
-                    console.log('Error loading banner image:', config.bannerUrl);
-                    e.target.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div style={{ color: 'white', textAlign: 'center' }}>
-                  <i className="bi bi-image display-4"></i>
-                  <p>Sin imagen configurada</p>
-                </div>
-              )}
-            </div>
-            
-            {/* Texto del banner */}
-            <h2 className="fw-bold mt-4" style={{ fontSize: '2rem', color: '#006241' }}>
-              {config.bannerText}
-            </h2>
+        {/* Columna Izquierda: Banner (50%) */}
+        <div className="col-md-6 d-flex align-items-center justify-content-center p-4" style={{ backgroundColor: '#ffffff' }}>
+          {/* Banner desde configuración */}
+          <div style={{ 
+            width: '100%', 
+            height: '100%', 
+            minHeight: '400px',
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            backgroundColor: '#006241',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            {config.bannerUrl ? (
+              <img 
+                src={config.bannerUrl} 
+                alt="Banner promocional"
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  console.log('Error loading banner image:', config.bannerUrl);
+                  e.target.style.display = 'none';
+                }}
+              />
+            ) : (
+              <div style={{ color: 'white', textAlign: 'center' }}>
+                <i className="bi bi-image display-4"></i>
+                <p>Sin imagen configurada</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Columna Derecha: Resumen */}
-        <div className="col-md-4 p-4" style={{ backgroundColor: '#f8f9fa' }}>
+        {/* Columna Derecha: Resumen (50%) */}
+        <div className="col-md-6 p-4" style={{ backgroundColor: '#f8f9fa' }}>
           {/* Resumen de Compra */}
           <div className="card mb-4 shadow-sm" style={{ borderRadius: '15px', border: 'none' }}>
             <div className="card-header" style={{ backgroundColor: '#006241', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px' }}>
