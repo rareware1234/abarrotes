@@ -46,6 +46,14 @@ const Navbar = () => {
       <Link to="/pedidos" className={`nav-link rounded mb-2 ${isActive('/pedidos')}`}>
         <i className="bi bi-cart-check me-2"></i> Pedidos
       </Link>
+      
+      <div className="mb-3 mt-4">
+        <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Sistema</small>
+      </div>
+
+      <Link to="/configuracion" className={`nav-link rounded mb-2 ${isActive('/configuracion')}`}>
+        <i className="bi bi-gear me-2"></i> Configuración
+      </Link>
 
       <div className="mt-auto pt-4">
         <small className="opacity-60 text-white">

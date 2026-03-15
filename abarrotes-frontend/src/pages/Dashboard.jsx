@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import axios from 'axios';
+import { QRCodeCanvas } from 'qrcode.react';
 
 // Instancia separada para el servicio de facturación
 const billingApi = axios.create({
-  baseURL: '/billing/api',
+  baseURL: '/billing',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -22,6 +23,31 @@ const Dashboard = () => {
   
   // Estado para el modal de pago
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('01'); // Por defecto: Efectivo
+  
+  // Estado para el modal de confirmación de venta
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [ventaData, setVentaData] = useState(null);
+  const [ticketData, setTicketData] = useState(null);
+  
+  // Configuración de CLABE Interbancaria (cargada desde localStorage o valores por defecto)
+  const [config, setConfig] = useState({
+    clabeInterbancaria: '044185002754631919',
+    nombreEmpresa: 'Abarrotes Digitales',
+    banco: 'BBVA',
+    regimenFiscal: '612',
+    lugarExpedicion: '06000',
+    rfcEmpresa: 'AAD980314XXX',
+    direccionEmpresa: 'Av. Principal #123, Col. Centro, CDMX'
+  });
+
+  // Cargar configuración desde localStorage
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('sistemaConfig');
+    if (savedConfig) {
+      setConfig(JSON.parse(savedConfig));
+    }
+  }, []);
 
   // Efecto para mantener el foco en el input de escaneo
   useEffect(() => {
@@ -150,19 +176,47 @@ const Dashboard = () => {
             cantidad: item.quantity,
             precio: item.precio
           })),
-          formaPago: "01" // Efectivo
+          formaPago: selectedPaymentMethod
         };
 
         console.log("Generando ticket:", billingRequest);
         
-        return billingApi.post('/billing/ticket', billingRequest);
+        return billingApi.post('/api/billing/ticket', billingRequest);
       })
       .then(billingRes => {
         console.log("Ticket generado:", billingRes.data);
-        setMessage({ type: 'success', text: `Venta realizada con éxito. UUID: ${billingRes.data.uuid}` });
+        
+        // Calcular totales para la página de detalles
+        const subtotal = cart.reduce((sum, item) => sum + (item.precio * item.quantity), 0);
+        const totalImpuestos = subtotal * 0.16;
+        const total = subtotal + totalImpuestos;
+        
+        // Preparar datos para la página de detalles
+        const ventaDataLocal = {
+          items: cart.map(item => ({
+            nombre: item.nombre,
+            quantity: item.quantity,
+            subtotal: item.precio * item.quantity
+          })),
+          subtotal: subtotal,
+          totalImpuestos: totalImpuestos,
+          total: total,
+          formaPago: selectedPaymentMethod
+        };
+        
+        const ticketDataLocal = {
+          uuid: billingRes.data.uuid,
+          fechaEmision: billingRes.data.fechaEmision
+        };
+        
+        // Guardar datos y mostrar modal de confirmación
+        setVentaData(ventaDataLocal);
+        setTicketData(ticketDataLocal);
+        setShowConfirmationModal(true);
+        
+        // Limpiar carrito
         setCart([]);
         setShowPaymentModal(false);
-        setTimeout(() => setMessage({ type: '', text: '' }), 5000);
       })
       .catch(err => {
         console.error("Error details:", err.response ? err.response.data : err.message);
@@ -360,17 +414,48 @@ const Dashboard = () => {
               <div className="mb-3">
                 <label className="form-label fw-bold">Método de Pago</label>
                 <div className="d-grid gap-2">
-                  <button className="btn btn-outline-primary btn-lg py-3">
+                  <button 
+                    className={`btn btn-lg py-3 ${selectedPaymentMethod === '01' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => setSelectedPaymentMethod('01')}
+                  >
                     <i className="bi bi-cash me-2"></i> Efectivo
                   </button>
-                  <button className="btn btn-outline-primary btn-lg py-3">
+                  <button 
+                    className={`btn btn-lg py-3 ${selectedPaymentMethod === '03' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => setSelectedPaymentMethod('03')}
+                  >
                     <i className="bi bi-credit-card me-2"></i> Tarjeta
                   </button>
-                  <button className="btn btn-outline-primary btn-lg py-3">
+                  <button 
+                    className={`btn btn-lg py-3 ${selectedPaymentMethod === '04' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => setSelectedPaymentMethod('04')}
+                  >
                     <i className="bi bi-phone me-2"></i> Transferencia
                   </button>
                 </div>
               </div>
+              
+              {/* Sección de QR para Transferencia */}
+              {selectedPaymentMethod === '04' && (
+                <div className="mt-4 p-3 bg-light rounded text-center">
+                  <h6 className="mb-3">Código QR para Transferencia</h6>
+                  <div className="d-flex justify-content-center mb-3">
+                    <div className="p-2 bg-white rounded shadow-sm">
+                      <QRCodeCanvas 
+                        value={config.clabeInterbancaria} 
+                        size={150}
+                        level={"H"}
+                        includeMargin={true}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-start">
+                    <p className="mb-1"><strong>CLABE:</strong> {config.clabeInterbancaria}</p>
+                    <p className="mb-1"><strong>Banco:</strong> {config.banco}</p>
+                    <p className="mb-0"><strong>Beneficiario:</strong> {config.nombreEmpresa}</p>
+                  </div>
+                </div>
+              )}
               
               <div className="mt-4 p-3 bg-light rounded">
                 <h6>Resumen del Pedido</h6>
@@ -395,6 +480,54 @@ const Dashboard = () => {
                 onClick={confirmPayment}
               >
                 <i className="bi bi-check-circle me-2"></i> Confirmar Pago
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {/* Modal de Confirmación de Venta */}
+    {showConfirmationModal && ticketData && (
+      <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header" style={{ backgroundColor: '#006241', color: 'white' }}>
+              <h5 className="modal-title">
+                <i className="bi bi-check-circle me-2"></i> Venta Exitosa
+              </h5>
+              <button type="button" className="btn-close btn-close-white" onClick={() => setShowConfirmationModal(false)}></button>
+            </div>
+            <div className="modal-body text-center py-4">
+              <div className="mb-3">
+                <i className="bi bi-receipt" style={{ fontSize: '4rem', color: '#006241' }}></i>
+              </div>
+              <h6 className="text-muted mb-2">UUID del Comprobante</h6>
+              <p className="fw-bold mb-3" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                {ticketData.uuid}
+              </p>
+              <div className="alert alert-success" role="alert">
+                <i className="bi bi-check-circle me-2"></i> Venta registrada exitosamente
+              </div>
+            </div>
+            <div className="modal-footer justify-content-center">
+              <button 
+                className="btn btn-primary btn-lg" 
+                style={{ backgroundColor: '#006241', borderColor: '#006241' }}
+                onClick={() => {
+                  // Navegar a la página de detalles en una nueva pestaña
+                  window.open(`/venta-detalles?uuid=${ticketData.uuid}`, '_blank');
+                  setShowConfirmationModal(false);
+                }}
+              >
+                <i className="bi bi-eye me-2"></i> Ver Detalles
+              </button>
+              <button 
+                className="btn btn-outline-primary btn-lg"
+                style={{ borderColor: '#006241', color: '#006241' }}
+                onClick={() => setShowConfirmationModal(false)}
+              >
+                <i className="bi bi-plus-circle me-2"></i> Nueva Venta
               </button>
             </div>
           </div>
