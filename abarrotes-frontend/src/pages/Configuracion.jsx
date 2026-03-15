@@ -276,14 +276,11 @@ const Configuracion = () => {
                         name="bannerUrl"
                         value={config.bannerUrl}
                         onChange={handleInputChange}
-                        placeholder="https://drive.google.com/uc?export=view&id=YOUR_FILE_ID"
+                        placeholder="https://i.imgur.com/ABC1234.jpg"
                       />
                       <small className="text-muted">
                         <i className="bi bi-info-circle me-1"></i> 
-                        Usa una imagen de Google Drive: 
-                        <a href="https://support.google.com/drive/answer/10801134" target="_blank" rel="noopener noreferrer">
-                          Cómo obtener el enlace directo
-                        </a>
+                        Usa una imagen de Imgur para mejor compatibilidad
                       </small>
                     </div>
                     
@@ -300,22 +297,22 @@ const Configuracion = () => {
                       <small className="text-muted">Texto que se mostrará debajo del banner</small>
                     </div>
                     
-                    {/* Instrucciones para Google Drive */}
+                    {/* Instrucciones para Imgur */}
                     <div className="col-12">
                       <div className="alert alert-info">
-                        <h6 className="alert-heading"><i className="bi bi-google me-2"></i>Cómo usar imágenes de Google Drive:</h6>
+                        <h6 className="alert-heading"><i className="bi bi-image me-2"></i>Cómo usar imágenes de Imgur:</h6>
                         <ol className="mb-0 small">
-                          <li>Sube la imagen a Google Drive</li>
-                          <li>Haz clic derecho en la imagen {"&gt;"} "Obtener enlace"</li>
-                          <li>Cambia los permisos a "Cualquier persona con el enlace"</li>
-                          <li>Copia el ID del archivo de la URL (el texto entre /d/ y /view)</li>
-                          <li>Pega el ID en este formato: <code>https://drive.google.com/uc?export=view&id=TU_ID_AQUI</code></li>
+                          <li>Ve a <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer">imgur.com/upload</a></li>
+                          <li>Sube tu imagen de banner</li>
+                          <li>Haz clic derecho en la imagen {"&gt;"} "Copiar dirección de la imagen"</li>
+                          <li>Pega la URL completa en el campo de arriba</li>
                         </ol>
                         <hr />
                         <p className="mb-0 small">
-                          <strong>Nota:</strong> Si la imagen no se muestra, prueba con: <code>https://drive.google.com/thumbnail?id=TU_ID_AQUI</code>
+                          <strong>Ejemplo de URL:</strong> <code>https://i.imgur.com/ABC1234.jpg</code>
                         </p>
                       </div>
+                    </div>
                     </div>
                   </div>
 
