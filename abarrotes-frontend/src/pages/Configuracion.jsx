@@ -306,7 +306,7 @@ const Configuracion = () => {
                         <h6 className="alert-heading"><i className="bi bi-google me-2"></i>Cómo usar imágenes de Google Drive:</h6>
                         <ol className="mb-0 small">
                           <li>Sube la imagen a Google Drive</li>
-                          <li>Haz clic derecho en la imagen > "Obtener enlace"</li>
+                          <li>Haz clic derecho en la imagen {"&gt;"} "Obtener enlace"</li>
                           <li>Cambia los permisos a "Cualquier persona con el enlace"</li>
                           <li>Copia el ID del archivo de la URL (el texto entre /d/ y /view)</li>
                           <li>Pega el ID en este formato: <code>https://drive.google.com/uc?export=view&id=TU_ID_AQUI</code></li>
