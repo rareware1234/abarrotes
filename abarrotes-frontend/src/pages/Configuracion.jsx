@@ -9,7 +9,9 @@ const Configuracion = () => {
     regimenFiscal: '612',
     lugarExpedicion: '06000',
     rfcEmpresa: '',
-    direccionEmpresa: ''
+    direccionEmpresa: '',
+    bannerUrl: '',
+    bannerText: ''
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -248,6 +250,41 @@ const Configuracion = () => {
                         rows="2"
                         required
                       ></textarea>
+                    </div>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Sección de Banner de Pantalla del Cliente */}
+                  <h6 className="fw-bold mb-3" style={{ color: '#006241' }}>
+                    <i className="bi bi-image me-2"></i> Banner de Pantalla del Cliente
+                  </h6>
+                  
+                  <div className="row mb-4">
+                    <div className="col-12 mb-3">
+                      <label className="form-label">URL de la Imagen del Banner</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        name="bannerUrl"
+                        value={config.bannerUrl}
+                        onChange={handleInputChange}
+                        placeholder="https://ejemplo.com/imagen-banner.jpg"
+                      />
+                      <small className="text-muted">URL de la imagen que se mostrará en la pantalla del cliente</small>
+                    </div>
+                    
+                    <div className="col-12 mb-3">
+                      <label className="form-label">Texto del Banner</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        name="bannerText"
+                        value={config.bannerText}
+                        onChange={handleInputChange}
+                        placeholder="¡Bienvenido a nuestra tienda!"
+                      />
+                      <small className="text-muted">Texto que se mostrará debajo del banner</small>
                     </div>
                   </div>
 

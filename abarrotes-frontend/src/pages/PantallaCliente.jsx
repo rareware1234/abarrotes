@@ -9,7 +9,9 @@ const PantallaCliente = () => {
   const [config, setConfig] = useState({
     nombreEmpresa: 'Abarrotes Digitales',
     clabeInterbancaria: '044185002754631919',
-    banco: 'BBVA'
+    banco: 'BBVA',
+    bannerUrl: 'https://via.placeholder.com/800x400/006241/ffffff?text=¡Bienvenido+a+Abarrotes+Digitales!',
+    bannerText: '¡Bienvenido a Abarrotes Digitales!'
   });
 
   // Escuchar productos del Dashboard
@@ -21,7 +23,9 @@ const PantallaCliente = () => {
       setConfig({
         nombreEmpresa: parsed.nombreEmpresa || 'Abarrotes Digitales',
         clabeInterbancaria: parsed.clabeInterbancaria || '044185002754631919',
-        banco: parsed.banco || 'BBVA'
+        banco: parsed.banco || 'BBVA',
+        bannerUrl: parsed.bannerUrl || 'https://via.placeholder.com/800x400/006241/ffffff?text=¡Bienvenido+a+Abarrotes+Digitales!',
+        bannerText: parsed.bannerText || '¡Bienvenido a Abarrotes Digitales!'
       });
     }
 
@@ -159,61 +163,38 @@ const PantallaCliente = () => {
 
       {/* Contenido Principal */}
       <div className="row g-0" style={{ minHeight: 'calc(100vh - 80px)' }}>
-        {/* Columna Izquierda: Producto Actual */}
+        {/* Columna Izquierda: Banner */}
         <div className="col-md-8 d-flex align-items-center justify-content-center p-5" style={{ backgroundColor: '#ffffff' }}>
-          {productoActual ? (
-            <div className={`text-center ${animacion ? 'animate-pop' : ''}`} style={{ animation: animacion ? 'pop 0.3s ease-out' : 'none' }}>
-              {/* Imagen del Producto */}
-              <div className="mb-4" style={{ 
-                width: '300px', 
-                height: '300px', 
-                margin: '0 auto',
-                borderRadius: '20px',
-                overflow: 'hidden',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                backgroundColor: '#f8f9fa',
-                border: '3px solid #e9ecef'
-              }}>
-                <img 
-                  src={productoActual.imagen} 
-                  alt={productoActual.nombre}
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'contain',
-                    padding: '20px'
-                  }}
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300x300/f8f9fa/666?text=Producto';
-                  }}
-                />
-              </div>
-              
-              {/* Nombre del Producto */}
-              <h2 className="fw-bold mb-2" style={{ fontSize: '2rem', color: '#333' }}>
-                {productoActual.nombre}
-              </h2>
-              
-              {/* Precio */}
-              <div className="display-4 fw-bold" style={{ color: '#006241' }}>
-                {formatCurrency(productoActual.precio)}
-              </div>
-              
-              {/* Cantidad (si es mayor a 1) */}
-              {productoActual.cantidad > 1 && (
-                <div className="mt-3">
-                  <span className="badge bg-success fs-5 px-4 py-2">
-                    Cantidad: {productoActual.cantidad}
-                  </span>
-                </div>
-              )}
+          <div className="text-center w-100">
+            {/* Banner desde configuración */}
+            <div style={{ 
+              width: '100%', 
+              height: '300px', 
+              margin: '0 auto',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+              backgroundColor: '#006241'
+            }}>
+              <img 
+                src={config.bannerUrl} 
+                alt="Banner promocional"
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/800x400/006241/ffffff?text=Banner';
+                }}
+              />
             </div>
-          ) : (
-            <div className="text-center">
-              <i className="bi bi-upc-scan display-1 text-muted"></i>
-              <p className="text-muted mt-3 fs-5">Escanea un producto para verlo aquí</p>
-            </div>
-          )}
+            
+            {/* Texto del banner */}
+            <h2 className="fw-bold mt-4" style={{ fontSize: '2rem', color: '#006241' }}>
+              {config.bannerText}
+            </h2>
+          </div>
         </div>
 
         {/* Columna Derecha: Resumen */}
