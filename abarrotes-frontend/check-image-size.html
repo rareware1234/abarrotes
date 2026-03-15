@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verificar tamaño de imagen</title>
+</head>
+<body>
+    <h1>Verificador de Tamaño de Imagen Base64</h1>
+    <input type="file" id="fileInput" accept="image/*">
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    const base64String = reader.result;
+                    const sizeInBytes = new Blob([base64String]).size;
+                    const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
+                    
+                    document.getElementById('result').innerHTML = `
+                        <p><strong>Tamaño del archivo original:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+                        <p><strong>Tamaño en Base64:</strong> ${sizeInMB} MB</p>
+                        <p><strong>Límite de localStorage:</strong> ~5-10 MB</p>
+                        ${sizeInMB > 5 ? '<p style="color: red;">¡La imagen es demasiado grande para localStorage!</p>' : '<p style="color: green;">La imagen debería funcionar.</p>'}
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>

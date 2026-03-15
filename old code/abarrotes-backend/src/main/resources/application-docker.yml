@@ -1,0 +1,3 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:db}:${DB_PORT:3306}/${DB_NAME:abarrotes}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true

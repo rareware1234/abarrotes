@@ -7,8 +7,12 @@ const Caja = () => {
   const [cajaAbierta, setCajaAbierta] = useState(false);
   const [montoApertura, setMontoApertura] = useState('');
   const [montoCierre, setMontoCierre] = useState('');
+  const [numeroEmpleado, setNumeroEmpleado] = useState('');
   
-  // Datos de ventas
+  // Datos de caja actual
+  const [sesionCaja, setSesionCaja] = useState(null);
+  
+  // Datos de ventas (simulados para ahora)
   const [ventasDelDia, setVentasDelDia] = useState([]);
   const [resumen, setResumen] = useState({
     totalVentas: 0,
@@ -37,25 +41,34 @@ const Caja = () => {
   const verificarEstadoCaja = async () => {
     setLoading(true);
     try {
-      const estadoCaja = localStorage.getItem('cajaAbierta');
-      const fechaCaja = localStorage.getItem('cajaFecha');
-      
-      if (estadoCaja === 'true' && fechaCaja === fecha) {
-        setCajaAbierta(true);
-        cargarVentasDelDia();
-      } else {
-        setCajaAbierta(false);
-        setLoading(false);
+      // Obtener empleado guardado en localStorage
+      const empleadoGuardado = localStorage.getItem('empleadoNumero');
+      if (empleadoGuardado) {
+        setNumeroEmpleado(empleadoGuardado);
+        
+        // Verificar si tiene una caja abierta
+        const response = await api.get(`/api/caja/abierta/${empleadoGuardado}`);
+        if (response.data) {
+          setCajaAbierta(true);
+          setSesionCaja(response.data);
+          cargarVentasDelDia();
+        }
       }
     } catch (error) {
       console.error('Error verificando estado de caja:', error);
-      setCajaAbierta(false);
+      // Si no hay caja abierta, simplemente continuamos
+    } finally {
       setLoading(false);
     }
   };
 
   // Función para abrir caja
   const handleAbrirCaja = async () => {
+    if (!numeroEmpleado) {
+      setMessage({ type: 'error', text: 'Ingresa tu número de empleado' });
+      return;
+    }
+    
     if (!montoApertura || parseFloat(montoApertura) <= 0) {
       setMessage({ type: 'error', text: 'Ingresa el monto inicial de tu caja' });
       return;
@@ -63,20 +76,30 @@ const Caja = () => {
 
     setLoadingAction(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      localStorage.setItem('cajaAbierta', 'true');
-      localStorage.setItem('cajaFecha', fecha);
-      localStorage.setItem('montoApertura', montoApertura);
-      
+      // Verificar que el empleado existe
+      const empleadoResponse = await api.get(`/api/empleados/numero/${numeroEmpleado}`);
+      if (!empleadoResponse.data || !empleadoResponse.data.activo) {
+        setMessage({ type: 'error', text: 'Empleado no encontrado o inactivo' });
+        setLoadingAction(false);
+        return;
+      }
+
+      // Abrir caja en el backend
+      const response = await api.post('/api/caja/abrir', {
+        numeroEmpleado: numeroEmpleado,
+        montoApertura: parseFloat(montoApertura)
+      });
+
+      setSesionCaja(response.data);
       setCajaAbierta(true);
-      setMessage({ type: 'success', text: '¡Caja abierta exitosamente! Listo para vender.' });
+      localStorage.setItem('empleadoNumero', numeroEmpleado);
       
+      setMessage({ type: 'success', text: `¡Caja abierta exitosamente, ${empleadoResponse.data.nombre}! Listo para vender.` });
       cargarVentasDelDia();
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error al abrir la caja' });
+      setMessage({ type: 'error', text: error.response?.data || 'Error al abrir la caja' });
       console.error('Error abriendo caja:', error);
     } finally {
       setLoadingAction(false);
@@ -92,28 +115,24 @@ const Caja = () => {
 
     setLoadingAction(true);
     try {
-      const montoAperturaGuardado = parseFloat(localStorage.getItem('montoApertura') || '0');
-      const totalEfectivoVentas = resumen.totalEfectivo;
-      const totalEsperado = montoAperturaGuardado + totalEfectivoVentas;
-      const diferencia = parseFloat(montoCierre) - totalEsperado;
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      localStorage.setItem('cajaAbierta', 'false');
-      localStorage.setItem('montoCierre', montoCierre);
-      localStorage.setItem('diferenciaCierre', diferencia.toFixed(2));
+      const response = await api.post(`/api/caja/cerrar/${sesionCaja.id}?montoCierre=${parseFloat(montoCierre)}`);
       
       setCajaAbierta(false);
+      setSesionCaja(null);
+      setNumeroEmpleado('');
+      setMontoApertura('');
+      setMontoCierre('');
+      
       setMessage({ 
-        type: diferencia === 0 ? 'success' : 'warning', 
-        text: diferencia === 0 
+        type: response.data.diferencia === 0 ? 'success' : 'warning', 
+        text: response.data.diferencia === 0 
           ? '¡Caja cerrada perfectamente!' 
-          : `Caja cerrada. Diferencia: $${diferencia.toFixed(2)}` 
+          : `Caja cerrada. Diferencia: $${response.data.diferencia.toFixed(2)}` 
       });
       
       setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error al cerrar la caja' });
+      setMessage({ type: 'error', text: error.response?.data || 'Error al cerrar la caja' });
       console.error('Error cerrando caja:', error);
     } finally {
       setLoadingAction(false);
@@ -123,6 +142,8 @@ const Caja = () => {
   const cargarVentasDelDia = async () => {
     setLoading(true);
     try {
+      // En producción, esto sería una llamada a la API de ventas
+      // Por ahora, simulamos datos
       const simulatedData = generarDatosSimulados();
       setVentasDelDia(simulatedData);
       calcularResumen(simulatedData);
@@ -344,13 +365,34 @@ const Caja = () => {
                   </div>
                   <h3 className="fw-bold text-dark mb-4">Abrir Caja</h3>
                   <p className="text-muted mb-4">
-                    Ingresa el monto inicial en efectivo para comenzar a operar.
+                    Ingresa tu número de empleado y el monto inicial en efectivo.
                   </p>
+                  
+                  <div className="mb-3">
+                    <div className="input-group input-group-lg">
+                      <span className="input-group-text bg-white text-muted">
+                        <i className="bi bi-person"></i>
+                      </span>
+                      <input 
+                        type="text" 
+                        className="form-control form-control-lg"
+                        placeholder="Número de empleado"
+                        value={numeroEmpleado}
+                        onChange={(e) => setNumeroEmpleado(e.target.value.toUpperCase())}
+                        style={{ fontSize: '1.1rem' }}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') document.getElementById('monto-apertura').focus();
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="mb-4">
                     <div className="input-group input-group-lg">
                       <span className="input-group-text bg-white text-muted">$</span>
                       <input 
                         type="number" 
+                        id="monto-apertura"
                         className="form-control form-control-lg text-center"
                         placeholder="0.00"
                         value={montoApertura}
@@ -358,13 +400,13 @@ const Caja = () => {
                         min="0"
                         step="0.01"
                         style={{ fontSize: '1.5rem', fontWeight: 'bold' }}
-                        autoFocus
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') handleAbrirCaja();
                         }}
                       />
                     </div>
                   </div>
+                  
                   <button 
                     className="btn btn-primary btn-lg w-100 py-3"
                     style={{ fontSize: '1.1rem' }}
@@ -389,10 +431,23 @@ const Caja = () => {
                 <div className="card shadow-sm h-100 border-0">
                   <div className="card-body text-center py-4">
                     <div className="mb-2">
-                      <i className="bi bi-cash-stack text-primary" style={{ fontSize: '2rem' }}></i>
+                      <i className="bi bi-person-check text-primary" style={{ fontSize: '2rem' }}></i>
+                    </div>
+                    <h6 className="text-muted mb-1">Empleado</h6>
+                    <h4 className="fw-bold mb-0" style={{ color: '#006241' }}>
+                      {sesionCaja?.numeroEmpleado}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+              <div className="col-md-3 mb-3">
+                <div className="card shadow-sm h-100 border-0">
+                  <div className="card-body text-center py-4">
+                    <div className="mb-2">
+                      <i className="bi bi-cash-stack text-success" style={{ fontSize: '2rem' }}></i>
                     </div>
                     <h6 className="text-muted mb-1">Total Ventas</h6>
-                    <h3 className="fw-bold mb-0" style={{ color: '#006241', fontSize: '1.8rem' }}>
+                    <h3 className="fw-bold text-success mb-0" style={{ fontSize: '1.8rem' }}>
                       {formatCurrency(resumen.totalVentas)}
                     </h3>
                     <small className="text-muted">{resumen.cantidadTransacciones} transacciones</small>
@@ -403,10 +458,10 @@ const Caja = () => {
                 <div className="card shadow-sm h-100 border-0">
                   <div className="card-body text-center py-4">
                     <div className="mb-2">
-                      <i className="bi bi-cash text-success" style={{ fontSize: '2rem' }}></i>
+                      <i className="bi bi-cash text-primary" style={{ fontSize: '2rem' }}></i>
                     </div>
                     <h6 className="text-muted mb-1">Efectivo</h6>
-                    <h3 className="fw-bold text-success mb-0" style={{ fontSize: '1.8rem' }}>
+                    <h3 className="fw-bold text-primary mb-0" style={{ fontSize: '1.8rem' }}>
                       {formatCurrency(resumen.totalEfectivo)}
                     </h3>
                   </div>
@@ -416,24 +471,11 @@ const Caja = () => {
                 <div className="card shadow-sm h-100 border-0">
                   <div className="card-body text-center py-4">
                     <div className="mb-2">
-                      <i className="bi bi-credit-card text-info" style={{ fontSize: '2rem' }}></i>
+                      <i className="bi bi-box-arrow-right text-danger" style={{ fontSize: '2rem' }}></i>
                     </div>
-                    <h6 className="text-muted mb-1">Tarjeta</h6>
-                    <h3 className="fw-bold text-info mb-0" style={{ fontSize: '1.8rem' }}>
-                      {formatCurrency(resumen.totalTarjeta)}
-                    </h3>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-3 mb-3">
-                <div className="card shadow-sm h-100 border-0">
-                  <div className="card-body text-center py-4">
-                    <div className="mb-2">
-                      <i className="bi bi-phone text-warning" style={{ fontSize: '2rem' }}></i>
-                    </div>
-                    <h6 className="text-muted mb-1">Transferencia</h6>
-                    <h3 className="fw-bold text-warning mb-0" style={{ fontSize: '1.8rem' }}>
-                      {formatCurrency(resumen.totalTransferencia)}
+                    <h6 className="text-muted mb-1">Monto Apertura</h6>
+                    <h3 className="fw-bold text-danger mb-0" style={{ fontSize: '1.8rem' }}>
+                      {formatCurrency(sesionCaja?.montoApertura || 0)}
                     </h3>
                   </div>
                 </div>
@@ -450,7 +492,7 @@ const Caja = () => {
                     </div>
                     <h3 className="fw-bold text-dark mb-2">Cerrar Caja</h3>
                     <p className="text-muted mb-4">
-                      Total en efectivo esperado: <strong>{formatCurrency(resumen.totalEfectivo + parseFloat(localStorage.getItem('montoApertura') || '0'))}</strong>
+                      Total en efectivo esperado: <strong>{formatCurrency(resumen.totalEfectivo + (sesionCaja?.montoApertura || 0))}</strong>
                     </p>
                     <div className="mb-4">
                       <div className="input-group input-group-lg">

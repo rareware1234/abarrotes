@@ -1,0 +1,3 @@
+com/abarrotes/efficient/gateway/ApiGatewayApplication.class
+com/abarrotes/efficient/gateway/config/CorsConfig.class
+com/abarrotes/efficient/gateway/controller/HealthController.class

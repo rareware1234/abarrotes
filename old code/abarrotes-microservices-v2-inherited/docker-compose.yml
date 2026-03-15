@@ -1,0 +1,84 @@
+services:
+  api-gateway:
+    build: ./api-gateway
+    ports: ["8081:8080"]
+    depends_on:
+      - user-service
+      - product-service
+      - membership-service
+      - order-service
+      - payment-service
+    environment:
+      USERS_URL: http://user-service:8080
+      PRODUCTS_URL: http://product-service:8080
+      MEMBERS_URL: http://membership-service:8080
+      ORDERS_URL: http://order-service:8080
+      PAYMENTS_URL: http://payment-service:8080
+
+  # --- Product Service + DB ---
+  product-db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: products
+      MYSQL_USER: products
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports: ["3307:3306"]
+    command: ["--default-authentication-plugin=mysql_native_password","--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+  product-service:
+    build: ./product-service
+    environment:
+      DB_HOST: product-db
+      DB_PORT: 3306
+      DB_NAME: products
+      DB_USER: products
+      DB_PASSWORD: secret
+    depends_on: [product-db]
+
+  # --- Membership Service + DB ---
+  membership-db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: memberships
+      MYSQL_USER: memberships
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports: ["3308:3306"]
+    command: ["--default-authentication-plugin=mysql_native_password","--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+  membership-service:
+    build: ./membership-service
+    environment:
+      DB_HOST: membership-db
+      DB_PORT: 3306
+      DB_NAME: memberships
+      DB_USER: memberships
+      DB_PASSWORD: secret
+    depends_on: [membership-db]
+
+  # --- Order Service + DB ---
+  order-db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: orders
+      MYSQL_USER: orders
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports: ["3309:3306"]
+    command: ["--default-authentication-plugin=mysql_native_password","--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+  order-service:
+    build: ./order-service
+    environment:
+      DB_HOST: order-db
+      DB_PORT: 3306
+      DB_NAME: orders
+      DB_USER: orders
+      DB_PASSWORD: secret
+      PRODUCTS_URL: http://product-service:8080
+      MEMBERS_URL: http://membership-service:8080
+    depends_on: [order-db, product-service, membership-service]
+
+  # leave user-service & payment-service as stubs for now
+  user-service:
+    build: ./user-service
+  payment-service:
+    build: ./payment-service

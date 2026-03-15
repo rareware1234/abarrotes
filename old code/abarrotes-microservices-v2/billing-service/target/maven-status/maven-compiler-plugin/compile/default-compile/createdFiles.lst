@@ -1,0 +1,10 @@
+com/abarrotes/billingservice/entity/Ticket$TicketBuilder.class
+com/abarrotes/billingservice/BillingApplication.class
+com/abarrotes/billingservice/service/BillingService.class
+com/abarrotes/billingservice/entity/TicketItem.class
+com/abarrotes/billingservice/repository/TicketRepository.class
+com/abarrotes/billingservice/entity/Ticket.class
+com/abarrotes/billingservice/entity/TicketItem$TicketItemBuilder.class
+com/abarrotes/billingservice/controller/BillingController$CreateTicketRequest.class
+com/abarrotes/billingservice/service/BillingService$OrderItemDTO.class
+com/abarrotes/billingservice/controller/BillingController.class
