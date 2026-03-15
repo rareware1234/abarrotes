@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
+import * as XLSX from 'xlsx';
 
 const Caja = () => {
   // Estado de la caja
@@ -191,6 +192,97 @@ const Caja = () => {
     setResumen(resumen);
   };
 
+  // Función para generar reporte en Excel
+  const generarReporteExcel = () => {
+    try {
+      // Crear datos para el reporte
+      const reporteData = ventasDelDia.map(venta => ({
+        'Fecha': new Date(venta.fecha).toLocaleDateString('es-MX'),
+        'Hora': formatTime(venta.fecha),
+        'UUID': venta.uuid,
+        'Método de Pago': venta.metodoPagoNombre,
+        'Total': venta.total
+      }));
+
+      // Agregar fila de resumen al final
+      reporteData.push({});
+      reporteData.push({
+        'Fecha': 'RESUMEN',
+        'Hora': '',
+        'UUID': '',
+        'Método de Pago': 'Total Ventas',
+        'Total': resumen.totalVentas
+      });
+      reporteData.push({
+        'Fecha': '',
+        'Hora': '',
+        'UUID': '',
+        'Método de Pago': 'Efectivo',
+        'Total': resumen.totalEfectivo
+      });
+      reporteData.push({
+        'Fecha': '',
+        'Hora': '',
+        'UUID': '',
+        'Método de Pago': 'Tarjeta',
+        'Total': resumen.totalTarjeta
+      });
+      reporteData.push({
+        'Fecha': '',
+        'Hora': '',
+        'UUID': '',
+        'Método de Pago': 'Transferencia',
+        'Total': resumen.totalTransferencia
+      });
+      reporteData.push({
+        'Fecha': '',
+        'Hora': '',
+        'UUID': '',
+        'Método de Pago': 'Transacciones',
+        'Total': resumen.cantidadTransacciones
+      });
+
+      // Crear libro de trabajo
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(reporteData);
+
+      // Ajustar ancho de columnas
+      ws['!cols'] = [
+        { wch: 12 }, // Fecha
+        { wch: 10 }, // Hora
+        { wch: 25 }, // UUID
+        { wch: 15 }, // Método de Pago
+        { wch: 12 }  // Total
+      ];
+
+      // Agregar formato de moneda a la columna Total
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: 4 }); // Columna E (Total)
+        if (ws[cellAddress]) {
+          ws[cellAddress].z = '"$"#,##0.00'; // Formato de moneda
+        }
+      }
+
+      // Agregar hoja al libro
+      XLSX.utils.book_append_sheet(wb, ws, 'Ventas del Día');
+
+      // Generar nombre de archivo con fecha
+      const nombreArchivo = `Reporte_Caja_${fecha}.xlsx`;
+
+      // Descargar el archivo
+      XLSX.writeFile(wb, nombreArchivo);
+
+      // Mostrar mensaje de éxito
+      setMessage({ type: 'success', text: 'Reporte generado exitosamente' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+
+    } catch (error) {
+      console.error('Error generando reporte:', error);
+      setMessage({ type: 'error', text: 'Error al generar el reporte' });
+    }
+  };
+
   const handleFechaChange = (e) => {
     setFecha(e.target.value);
   };
@@ -244,6 +336,14 @@ const Caja = () => {
             style={{ width: 'auto' }}
             disabled={cajaAbierta}
           />
+          {cajaAbierta && (
+            <button 
+              className="btn btn-outline-success"
+              onClick={generarReporteExcel}
+            >
+              <i className="bi bi-file-earmark-excel me-2"></i> Reporte Excel
+            </button>
+          )}
         </div>
       </div>
 
