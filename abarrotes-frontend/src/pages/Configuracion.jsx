@@ -38,7 +38,9 @@ const Configuracion = () => {
           regimenFiscal: '612',
           lugarExpedicion: '06000',
           rfcEmpresa: 'AAD980314XXX',
-          direccionEmpresa: 'Av. Principal #123, Col. Centro, CDMX'
+          direccionEmpresa: 'Av. Principal #123, Col. Centro, CDMX',
+          bannerUrl: 'https://via.placeholder.com/800x400/006241/ffffff?text=¡Bienvenido+a+Abarrotes+Digitales!',
+          bannerText: '¡Bienvenido a Abarrotes Digitales!'
         });
       }
       setLoading(false);
@@ -66,16 +68,48 @@ const Configuracion = () => {
         return;
       }
 
+      // Validar tamaño (máximo 2MB antes de optimizar)
+      if (file.size > 2 * 1024 * 1024) {
+        setMessage({ type: 'error', text: 'La imagen no debe superar los 2MB' });
+        return;
+      }
+
       // Leer el archivo como Data URL
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Actualizar el estado con la imagen en formato base64
-        setConfig(prev => ({
-          ...prev,
-          bannerUrl: reader.result
-        }));
-        setMessage({ type: 'success', text: 'Imagen cargada correctamente' });
-        setTimeout(() => setMessage({ type: '', text: '' }), 2000);
+        // Crear una imagen para optimizar
+        const img = new Image();
+        img.onload = () => {
+          // Crear un canvas para optimizar la imagen
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Calcular nuevas dimensiones (máximo 800px de ancho)
+          const maxWidth = 800;
+          const ratio = img.width > maxWidth ? maxWidth / img.width : 1;
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          
+          // Dibujar la imagen optimizada
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Convertir a Data URL con compresión
+          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          
+          // Actualizar el estado con la imagen optimizada
+          setConfig(prev => ({
+            ...prev,
+            bannerUrl: optimizedDataUrl
+          }));
+          setMessage({ type: 'success', text: 'Imagen optimizada y cargada correctamente' });
+          setTimeout(() => setMessage({ type: '', text: '' }), 2000);
+        };
+        
+        img.onerror = () => {
+          setMessage({ type: 'error', text: 'Error al procesar la imagen' });
+        };
+        
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
@@ -87,8 +121,17 @@ const Configuracion = () => {
       // En producción, esto sería una llamada a la API del backend
       // api.post('/api/configuracion', config)
       
+      // Verificar el tamaño de la configuración antes de guardar
+      const configString = JSON.stringify(config);
+      const configSize = new Blob([configString]).size;
+      
+      if (configSize > 4 * 1024 * 1024) { // 4MB límite aproximado
+        setMessage({ type: 'error', text: 'La configuración es demasiado grande. Intenta con una imagen más pequeña.' });
+        return;
+      }
+      
       // Por ahora, guardamos en localStorage
-      localStorage.setItem('sistemaConfig', JSON.stringify(config));
+      localStorage.setItem('sistemaConfig', configString);
       
       setMessage({ type: 'success', text: 'Configuración guardada exitosamente' });
       

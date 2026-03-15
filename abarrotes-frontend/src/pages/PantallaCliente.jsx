@@ -20,6 +20,7 @@ const PantallaCliente = () => {
     const savedConfig = localStorage.getItem('sistemaConfig');
     if (savedConfig) {
       const parsed = JSON.parse(savedConfig);
+      console.log('Config loaded:', parsed);
       setConfig({
         nombreEmpresa: parsed.nombreEmpresa || 'Abarrotes Digitales',
         clabeInterbancaria: parsed.clabeInterbancaria || '044185002754631919',
@@ -174,20 +175,31 @@ const PantallaCliente = () => {
               borderRadius: '20px',
               overflow: 'hidden',
               boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-              backgroundColor: '#006241'
+              backgroundColor: '#006241',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
-              <img 
-                src={config.bannerUrl} 
-                alt="Banner promocional"
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  objectFit: 'cover'
-                }}
-                onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/800x400/006241/ffffff?text=Banner';
-                }}
-              />
+              {config.bannerUrl ? (
+                <img 
+                  src={config.bannerUrl} 
+                  alt="Banner promocional"
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    console.log('Error loading banner image:', config.bannerUrl);
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div style={{ color: 'white', textAlign: 'center' }}>
+                  <i className="bi bi-image display-4"></i>
+                  <p>Sin imagen configurada</p>
+                </div>
+              )}
             </div>
             
             {/* Texto del banner */}
