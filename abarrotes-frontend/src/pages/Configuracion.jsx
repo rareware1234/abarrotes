@@ -311,6 +311,10 @@ const Configuracion = () => {
                           <li>Copia el ID del archivo de la URL (el texto entre /d/ y /view)</li>
                           <li>Pega el ID en este formato: <code>https://drive.google.com/uc?export=view&id=TU_ID_AQUI</code></li>
                         </ol>
+                        <hr />
+                        <p className="mb-0 small">
+                          <strong>Nota:</strong> Si la imagen no se muestra, prueba con: <code>https://drive.google.com/thumbnail?id=TU_ID_AQUI</code>
+                        </p>
                       </div>
                     </div>
                   </div>
