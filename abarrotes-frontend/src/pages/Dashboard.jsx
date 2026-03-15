@@ -116,13 +116,38 @@ const Dashboard = () => {
       if (existingItem) {
         return prevCart.map(item =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.precio }
+            ? { ...item, quantity: item.quantity + 1, subtotal: item.precio * (item.quantity + 1) }
             : item
         );
       } else {
         return [...prevCart, { ...product, quantity: 1, subtotal: product.precio }];
       }
     });
+
+    // Enviar producto a la pantalla del cliente
+    enviarProductoACliente(product);
+  };
+
+  const enviarProductoACliente = (product) => {
+    const clienteData = {
+      type: 'product_scanned',
+      product: {
+        id: product.id,
+        nombre: product.nombre,
+        precio: product.precio,
+        imagen: product.imagen || 'https://via.placeholder.com/300x300/2a2a4a/00d4ff?text=Producto'
+      },
+      timestamp: new Date().toISOString()
+    };
+    
+    // Guardar en localStorage para que la pantalla del cliente lo reciba
+    localStorage.setItem('cliente_pantalla', JSON.stringify(clienteData));
+    
+    // También podemos usar BroadcastChannel para comunicación entre pestañas
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('pantalla_cliente');
+      channel.postMessage(clienteData);
+    }
   };
 
   const updateQuantity = (id, delta) => {

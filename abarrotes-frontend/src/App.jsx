@@ -7,6 +7,7 @@ import Orders from './pages/Orders';
 import VentaDetalles from './pages/VentaDetalles';
 import Configuracion from './pages/Configuracion';
 import Caja from './pages/Caja';
+import PantallaCliente from './pages/PantallaCliente';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         
         {/* Rutas sin barra lateral */}
         <Route path="/venta-detalles" element={<VentaDetalles />} />
+        <Route path="/pantalla-cliente" element={<PantallaCliente />} />
       </Routes>
     </Router>
   );
