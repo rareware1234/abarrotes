@@ -27,10 +27,6 @@ const Navbar = () => {
         <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Menú Principal</small>
       </div>
 
-      <Link to="/dashboard" className={`nav-link rounded mb-2 ${isActive('/dashboard')}`}>
-        <i className="bi bi-graph-up me-2"></i> Dashboard
-      </Link>
-
       <Link to="/" className={`nav-link rounded mb-2 ${isActive('/')}`}>
         <i className="bi bi-speedometer2 me-2"></i> Venta
       </Link>
@@ -54,6 +50,10 @@ const Navbar = () => {
       <div className="mb-3 mt-4">
         <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Finanzas</small>
       </div>
+
+      <Link to="/dashboard" className={`nav-link rounded mb-2 ${isActive('/dashboard')}`}>
+        <i className="bi bi-graph-up me-2"></i> Dashboard
+      </Link>
 
       <Link to="/caja" className={`nav-link rounded mb-2 ${isActive('/caja')}`}>
         <i className="bi bi-cash-stack me-2"></i> Caja
