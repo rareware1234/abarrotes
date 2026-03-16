@@ -4,6 +4,8 @@ import { useDropzone } from 'react-dropzone';
 
 const Inventory = () => {
   const [inventory, setInventory] = useState([]);
+  const [filteredInventory, setFilteredInventory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -28,17 +30,32 @@ const Inventory = () => {
     fetchProducts();
   }, []);
 
+  // Efecto para filtrar inventario cuando cambie el término de búsqueda o la lista
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredInventory(inventory);
+    } else {
+      const term = searchTerm.toLowerCase();
+      const filtered = inventory.filter(item =>
+        item.name.toLowerCase().includes(term) ||
+        item.sku.toLowerCase().includes(term) ||
+        item.category.toLowerCase().includes(term)
+      );
+      setFilteredInventory(filtered);
+    }
+  }, [searchTerm, inventory]);
+
   const fetchInventory = async () => {
     try {
       // Como no hay un endpoint único para todo el inventario, 
       // vamos a obtener los productos y calcular el stock disponible para cada uno.
-      const response = await api.get('/products');
+      const response = await api.get('/api/products');
       
       // Para cada producto, obtenemos el stock disponible
       const inventoryData = await Promise.all(
         response.data.map(async (product) => {
           try {
-            const stockResponse = await api.get(`/inventory/stock/${product.id}`);
+            const stockResponse = await api.get(`/api/inventory/stock/${product.id}`);
             return {
               ...product,
               availableStock: stockResponse.data
@@ -62,7 +79,7 @@ const Inventory = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await api.get('/products');
+      const response = await api.get('/api/products');
       setProducts(response.data);
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -88,7 +105,7 @@ const Inventory = () => {
         expiryDate: formData.expiryDate + 'T00:00:00' // Añadir hora para formato correcto
       });
 
-      await api.post(`/inventory/receive?${params.toString()}`);
+      await api.post(`/api/inventory/receive?${params.toString()}`);
       alert('Entrada de inventario registrada exitosamente');
       setShowModal(false);
       fetchInventory(); // Recargar lista
@@ -175,6 +192,34 @@ const Inventory = () => {
         </button>
       </div>
 
+      {/* Barra de Búsqueda */}
+      <div className="card border-0 shadow-sm mb-4">
+        <div className="card-body">
+          <div className="input-group">
+            <span className="input-group-text bg-white">
+              <i className="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Buscar por nombre, SKU o categoría..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoComplete="new-password"
+              style={{
+                backgroundColor: 'white',
+                color: '#212529'
+              }}
+            />
+            {searchTerm && (
+              <button className="btn btn-outline-secondary" onClick={() => setSearchTerm('')}>
+                <i className="bi bi-x-lg"></i>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Tabla de Inventario */}
       <div className="card border-0 shadow-sm">
         <div className="table-responsive">
@@ -192,7 +237,7 @@ const Inventory = () => {
               </tr>
             </thead>
             <tbody>
-              {inventory.map((item) => (
+              {filteredInventory.map((item) => (
                 <tr key={item.id}>
                   <td className="text-center">
                     <img 
@@ -239,6 +284,11 @@ const Inventory = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Contador de items */}
+      <div className="mt-2 text-muted small">
+        Mostrando {filteredInventory.length} de {inventory.length} productos
       </div>
 
       {/* Modal para Registrar Entrada */}
