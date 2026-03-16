@@ -8,6 +8,7 @@ services:
       - membership-service
       - order-service
       - payment-service
+      - auth-service
     environment:
       USERS_URL: http://user-service:8080
       PRODUCTS_URL: http://product-service:8080
@@ -15,6 +16,7 @@ services:
       ORDERS_URL: http://order-service:8080
       PAYMENTS_URL: http://payment-service:8080
       BILLING_URL: http://billing-service:8084
+      AUTH_URL: http://auth-service:8080
 
   # --- Product Service + DB ---
   product-db:
@@ -98,6 +100,26 @@ services:
       DB_PASSWORD: secret
     depends_on: [billing-db]
     ports: ["8084:8084"]
+
+  # --- Auth Service + DB ---
+  auth-db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: auth
+      MYSQL_USER: auth
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports: ["3311:3306"]
+    command: ["--default-authentication-plugin=mysql_native_password","--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+  auth-service:
+    build: ./auth-service
+    environment:
+      DB_HOST: auth-db
+      DB_PORT: 3306
+      DB_NAME: auth
+      DB_USER: auth
+      DB_PASSWORD: secret
+    depends_on: [auth-db]
 
   # leave user-service & payment-service as stubs for now
   user-service:
