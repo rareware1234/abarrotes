@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Venta from './pages/Venta';
 import Products from './pages/Products';
@@ -9,9 +10,37 @@ import Configuracion from './pages/Configuracion';
 import Caja from './pages/Caja';
 import PantallaCliente from './pages/PantallaCliente';
 
+// Componente para detectar cambios de ruta
+function RouteTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Guardar la ruta actual en localStorage para que PantallaCliente pueda leerla
+    // Ignorar la ruta de la pantalla del cliente
+    if (location.pathname !== '/pantalla-cliente') {
+      localStorage.setItem('dashboard_current_path', location.pathname);
+      console.log('[App] Ruta actual guardada:', location.pathname);
+      
+      // Disparar un evento de storage para notificar a otras pestañas
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'dashboard_current_path',
+        newValue: location.pathname
+      }));
+    } else {
+      // Si estamos en la pantalla del cliente, limpiar la ruta del dashboard
+      // para que PantallaCliente no se bloquee
+      localStorage.removeItem('dashboard_current_path');
+      console.log('[App] Ruta del dashboard limpiada (estamos en pantalla cliente)');
+    }
+  }, [location]);
+
+  return null; // Componente invisible solo para rastreo
+}
+
 function App() {
   return (
     <Router>
+      <RouteTracker /> {/* Componente para rastrear ruta */}
       <Routes>
         {/* Rutas con barra lateral */}
         <Route path="/*" element={
