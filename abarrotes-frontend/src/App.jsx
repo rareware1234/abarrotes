@@ -12,6 +12,7 @@ import Configuracion from './pages/Configuracion';
 import Caja from './pages/Caja';
 import PantallaCliente from './pages/PantallaCliente';
 import Login from './pages/Login';
+import Employees from './pages/Employees';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }) => {
@@ -84,6 +85,7 @@ function App() {
                     <Route path="/productos" element={<Products />} />
                     <Route path="/inventario" element={<Inventory />} />
                     <Route path="/pedidos" element={<Orders />} />
+                    <Route path="/empleados" element={<Employees />} />
                     <Route path="/configuracion" element={<Configuracion />} />
                     <Route path="/caja" element={<Caja />} />
                   </Routes>

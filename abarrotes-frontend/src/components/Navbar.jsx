@@ -71,6 +71,10 @@ const Navbar = () => {
         <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Sistema</small>
       </div>
 
+      <Link to="/empleados" className={`nav-link rounded mb-2 ${isActive('/empleados')}`}>
+        <i className="bi bi-people me-2"></i> Empleados
+      </Link>
+
       <Link to="/configuracion" className={`nav-link rounded mb-2 ${isActive('/configuracion')}`}>
         <i className="bi bi-gear me-2"></i> Configuración
       </Link>
