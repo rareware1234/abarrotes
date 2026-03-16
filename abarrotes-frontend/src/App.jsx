@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Venta from './pages/Venta';
+import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
@@ -54,6 +55,7 @@ function App() {
             <div style={{ flex: 1, backgroundColor: '#f4f6f9' }}>
               <Routes>
                 <Route path="/" element={<Venta />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/productos" element={<Products />} />
                 <Route path="/inventario" element={<Inventory />} />
                 <Route path="/pedidos" element={<Orders />} />
