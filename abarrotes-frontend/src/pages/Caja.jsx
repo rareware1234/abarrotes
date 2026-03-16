@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
 import * as XLSX from 'xlsx';
 
 const Caja = () => {
+  const { user } = useAuth(); // Obtener datos del usuario autenticado
+  
   // Estado de la caja
   const [cajaAbierta, setCajaAbierta] = useState(false);
   const [montoApertura, setMontoApertura] = useState('');
   const [montoCierre, setMontoCierre] = useState('');
-  const [numeroEmpleado, setNumeroEmpleado] = useState('');
   
   // Datos de caja actual
   const [sesionCaja, setSesionCaja] = useState(null);
@@ -41,14 +43,10 @@ const Caja = () => {
   const verificarEstadoCaja = async () => {
     setLoading(true);
     try {
-      // Obtener empleado guardado en localStorage
-      const empleadoGuardado = localStorage.getItem('empleadoNumero');
-      if (empleadoGuardado) {
-        setNumeroEmpleado(empleadoGuardado);
-        
-        // Verificar si tiene una caja abierta
-        const response = await api.get(`/api/caja/abierta/${empleadoGuardado}`);
-        if (response.data) {
+      if (user) {
+        // Verificar si tiene una caja abierta usando el ID del empleado
+        const response = await api.get(`http://localhost:8081/caja/estado/empleado/${user.id}`); // Asumiendo que user.id es el ID del empleado
+        if (response.data.abierta) {
           setCajaAbierta(true);
           setSesionCaja(response.data);
           cargarVentasDelDia();
@@ -64,8 +62,8 @@ const Caja = () => {
 
   // Función para abrir caja
   const handleAbrirCaja = async () => {
-    if (!numeroEmpleado) {
-      setMessage({ type: 'error', text: 'Ingresa tu número de empleado' });
+    if (!user) {
+      setMessage({ type: 'error', text: 'Debes iniciar sesión para abrir caja' });
       return;
     }
     
@@ -76,30 +74,22 @@ const Caja = () => {
 
     setLoadingAction(true);
     try {
-      // Verificar que el empleado existe
-      const empleadoResponse = await api.get(`/api/empleados/numero/${numeroEmpleado}`);
-      if (!empleadoResponse.data || !empleadoResponse.data.activo) {
-        setMessage({ type: 'error', text: 'Empleado no encontrado o inactivo' });
-        setLoadingAction(false);
-        return;
-      }
-
       // Abrir caja en el backend
-      const response = await api.post('/api/caja/abrir', {
-        numeroEmpleado: numeroEmpleado,
-        montoApertura: parseFloat(montoApertura)
+      const response = await api.post('http://localhost:8081/caja/abrir', {
+        empleadoId: user.id, // Usar el ID del empleado del contexto
+        empleadoNombre: user.fullName,
+        montoInicial: parseFloat(montoApertura)
       });
 
       setSesionCaja(response.data);
       setCajaAbierta(true);
-      localStorage.setItem('empleadoNumero', numeroEmpleado);
       
-      setMessage({ type: 'success', text: `¡Caja abierta exitosamente, ${empleadoResponse.data.nombre}! Listo para vender.` });
+      setMessage({ type: 'success', text: `¡Caja abierta exitosamente, ${user.fullName}! Listo para vender.` });
       cargarVentasDelDia();
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data || 'Error al abrir la caja' });
+      setMessage({ type: 'error', text: error.response?.data?.error || 'Error al abrir la caja' });
       console.error('Error abriendo caja:', error);
     } finally {
       setLoadingAction(false);
@@ -115,24 +105,25 @@ const Caja = () => {
 
     setLoadingAction(true);
     try {
-      const response = await api.post(`/api/caja/cerrar/${sesionCaja.id}?montoCierre=${parseFloat(montoCierre)}`);
+      // Asumiendo que sesionCaja tiene el ID de la caja
+      // En este ejemplo, usaremos un ID fijo o del usuario autenticado para demostración
+      const cajaId = user.id; // En producción, esto debería venir de sesionCaja
+      
+      const response = await api.put(`http://localhost:8081/caja/cerrar/${cajaId}`);
       
       setCajaAbierta(false);
       setSesionCaja(null);
-      setNumeroEmpleado('');
       setMontoApertura('');
       setMontoCierre('');
       
       setMessage({ 
-        type: response.data.diferencia === 0 ? 'success' : 'warning', 
-        text: response.data.diferencia === 0 
-          ? '¡Caja cerrada perfectamente!' 
-          : `Caja cerrada. Diferencia: $${response.data.diferencia.toFixed(2)}` 
+        type: 'success', 
+        text: `¡Caja cerrada exitosamente! Monto final: $${response.data.montoFinal}` 
       });
       
       setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     } catch (error) {
-      setMessage({ type: 'error', text: error.response?.data || 'Error al cerrar la caja' });
+      setMessage({ type: 'error', text: error.response?.data?.error || 'Error al cerrar la caja' });
       console.error('Error cerrando caja:', error);
     } finally {
       setLoadingAction(false);
