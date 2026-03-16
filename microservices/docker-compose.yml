@@ -121,6 +121,26 @@ services:
       DB_PASSWORD: secret
     depends_on: [auth-db]
 
+  # --- Caja Service + DB ---
+  caja-db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: caja
+      MYSQL_USER: caja
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports: ["3312:3306"]
+    command: ["--default-authentication-plugin=mysql_native_password","--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+  caja-service:
+    build: ./caja-service
+    environment:
+      DB_HOST: caja-db
+      DB_PORT: 3306
+      DB_NAME: caja
+      DB_USER: caja
+      DB_PASSWORD: secret
+    depends_on: [caja-db]
+
   # leave user-service & payment-service as stubs for now
   user-service:
     build: ./user-service
