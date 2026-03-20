@@ -1,0 +1,49 @@
+.dashboard-container {
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f8f9fa;
+}
+
+/* Sidebar Izquierdo */
+.sidebar-dashboard {
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Perfil Avatar Grande */
+.profile-avatar div {
+  width: 80px;
+  height: 80px;
+  font-size: 1.5rem;
+}
+
+/* Animaciones suaves */
+.stat-card, .profile-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover, .profile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* Efecto activo en navegación */
+.btn-success {
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}

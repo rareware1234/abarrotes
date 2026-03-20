@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "nombre": "Leche Entera Lala 1L",
+    "sku": "LEL1L",
+    "precio": 22.50,
+    "categoria": "Lácteos",
+    "unitMeasure": "Litro",
+    "activo": true
+  },
+  {
+    "id": 2,
+    "nombre": "Pan Bimbo Blanco",
+    "sku": "PBB",
+    "precio": 18.90,
+    "categoria": "Panadería",
+    "unitMeasure": "Pieza",
+    "activo": true
+  },
+  {
+    "id": 3,
+    "nombre": "Huevos Jumbo 30pz",
+    "sku": "HJM30",
+    "precio": 75.00,
+    "categoria": "Huevos",
+    "unitMeasure": "Caja",
+    "activo": true
+  },
+  {
+    "id": 4,
+    "nombre": "Coca-Cola 600ml",
+    "sku": "CC600",
+    "precio": 16.00,
+    "categoria": "Bebidas",
+    "unitMeasure": "Botella",
+    "activo": true
+  },
+  {
+    "id": 5,
+    "nombre": "Sabritas Original",
+    "sku": "SABORIG",
+    "precio": 18.50,
+    "categoria": "Golosinas",
+    "unitMeasure": "Paquete",
+    "activo": true
+  },
+  {
+    "id": 6,
+    "nombre": "Jabón Zote 200g",
+    "sku": "JZ200",
+    "precio": 15.00,
+    "categoria": "Limpieza",
+    "unitMeasure": "Pieza",
+    "activo": true
+  },
+  {
+    "id": 7,
+    "nombre": "Arroz Extra 1kg",
+    "sku": "AREX1K",
+    "precio": 25.00,
+    "categoria": "Abarrotes",
+    "unitMeasure": "Kilo",
+    "activo": true
+  },
+  {
+    "id": 8,
+    "nombre": "Frijol Negro 1kg",
+    "sku": "FNE1K",
+    "precio": 30.00,
+    "categoria": "Abarrotes",
+    "unitMeasure": "Kilo",
+    "activo": true
+  },
+  {
+    "id": 9,
+    "nombre": "Aceite Vegetal 1L",
+    "sku": "ACV1L",
+    "precio": 35.00,
+    "categoria": "Abarrotes",
+    "unitMeasure": "Litro",
+    "activo": true
+  },
+  {
+    "id": 10,
+    "nombre": "Cereal Corn Flakes",
+    "sku": "CERCF",
+    "precio": 45.00,
+    "categoria": "Desayuno",
+    "unitMeasure": "Caja",
+    "activo": true
+  }
+]
