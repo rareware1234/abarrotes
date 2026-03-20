@@ -1,6 +1,0 @@
-com/abarrotes/efficient/order/client/ProductServiceClient.class
-com/abarrotes/efficient/order/entity/Order.class
-com/abarrotes/efficient/order/OrderServiceApplication.class
-com/abarrotes/efficient/order/controller/OrderController.class
-com/abarrotes/efficient/order/repository/OrderRepository.class
-com/abarrotes/efficient/order/entity/OrderItem.class

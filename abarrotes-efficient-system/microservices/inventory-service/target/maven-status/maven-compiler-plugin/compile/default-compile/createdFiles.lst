@@ -1,8 +1,0 @@
-com/abarrotes/efficient/inventory/entity/InventoryItem.class
-com/abarrotes/efficient/inventory/waste/entity/WasteRecord.class
-com/abarrotes/efficient/inventory/InventoryServiceApplication.class
-com/abarrotes/efficient/inventory/service/InventoryService.class
-com/abarrotes/efficient/inventory/repository/InventoryRepository.class
-com/abarrotes/efficient/inventory/controller/InventoryController.class
-com/abarrotes/efficient/inventory/waste/repository/WasteRepository.class
-com/abarrotes/efficient/inventory/waste/service/WasteService.class

@@ -1,1 +1,0 @@
-package com.abarrotes.orderservice; import org.springframework.data.jpa.repository.JpaRepository; import java.time.LocalDateTime; import java.util.List; public interface OrderRepo extends JpaRepository<Order,Long>{ List<Order> findByUserIdAndFreeShippingTrueAndCreatedAtBetween(Long userId, LocalDateTime start, LocalDateTime end);}
