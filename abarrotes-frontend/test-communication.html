@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Comunicación</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .column {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .log {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prueba de Comunicación entre Pestañas</h1>
+    <p>Abre esta página en dos pestañas diferentes para probar la comunicación.</p>
+    
+    <div class="container">
+        <div class="column">
+            <h2>Pestaña 1 (Venta)</h2>
+            <button onclick="enviarProducto()">Enviar Producto</button>
+            <button onclick="limpiarPantalla()">Nueva Venta</button>
+            <div class="log" id="log1"></div>
+        </div>
+        <div class="column">
+            <h2>Pestaña 2 (Cliente)</h2>
+            <button onclick="leerMensaje()">Leer Mensaje</button>
+            <div class="log" id="log2"></div>
+        </div>
+    </div>
+
+    <script>
+        const channel = new BroadcastChannel('pantalla_cliente');
+        
+        function log1(message) {
+            const log = document.getElementById('log1');
+            log.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function log2(message) {
+            const log = document.getElementById('log2');
+            log.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function enviarProducto() {
+            const data = {
+                type: 'product_scanned',
+                product: {
+                    id: 1,
+                    nombre: 'Leche',
+                    precio: 20.00
+                },
+                timestamp: new Date().toISOString()
+            };
+            
+            // Guardar en localStorage
+            localStorage.setItem('cliente_pantalla', JSON.stringify(data));
+            log1('Guardado en localStorage');
+            
+            // Enviar por BroadcastChannel
+            channel.postMessage(data);
+            log1('Enviado por BroadcastChannel');
+        }
+        
+        function limpiarPantalla() {
+            const data = {
+                type: 'nueva_venta',
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('cliente_pantalla', JSON.stringify(data));
+            log1('Limpiar pantalla guardado en localStorage');
+            
+            channel.postMessage(data);
+            log1('Limpiar pantalla enviado por BroadcastChannel');
+        }
+        
+        function leerMensaje() {
+            const dataStr = localStorage.getItem('cliente_pantalla');
+            if (dataStr) {
+                const data = JSON.parse(dataStr);
+                log2(`Leído de localStorage: ${data.type}`);
+                localStorage.removeItem('cliente_pantalla');
+            } else {
+                log2('No hay mensaje en localStorage');
+            }
+        }
+        
+        // Escuchar BroadcastChannel
+        channel.onmessage = (event) => {
+            log2(`Recibido por BroadcastChannel: ${event.data.type}`);
+        };
+        
+        // Escuchar cambios en localStorage (storage event)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'cliente_pantalla' && e.newValue) {
+                log2(`Storage event: ${e.newValue}`);
+            }
+        });
+        
+        // Polling cada segundo
+        setInterval(() => {
+            const dataStr = localStorage.getItem('cliente_pantalla');
+            if (dataStr) {
+                const data = JSON.parse(dataStr);
+                log2(`Polling: ${data.type}`);
+                // No eliminamos aquí para que el botón "Leer Mensaje" pueda leerlo
+            }
+        }, 1000);
+        
+        log1('Listo para enviar mensajes');
+        log2('Listo para recibir mensajes');
+    </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Test Comunicación Simplificada</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #006241;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #004d33;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Comunicación Simplificada</h1>
+    <p>Prueba la comunicación entre pestañas usando localStorage simplificado.</p>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Pestaña Emisora (Dashboard)</h2>
+            <button class="btn" onclick="enviarProducto()">Enviar Producto "Leche"</button>
+            <button class="btn" onclick="enviarNuevaVenta()">Enviar Nueva Venta</button>
+            <button class="btn" onclick="enviarVentaCompletada()">Enviar Venta Completada</button>
+            <div class="log" id="logEmisor"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>Pestaña Receptora (Pantalla Cliente)</h2>
+            <button class="btn" onclick="leerMensaje()">Leer Mensaje Ahora</button>
+            <div class="log" id="logReceptor"></div>
+        </div>
+    </div>
+
+    <script>
+        function logEmisor(msg) {
+            document.getElementById('logEmisor').innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        }
+        
+        function logReceptor(msg) {
+            document.getElementById('logReceptor').innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        }
+        
+        // Simular el comportamiento de PantallaCliente (polling simplificado)
+        let lastProcessedTimestamp = '';
+        
+        function leerMensaje() {
+            try {
+                const dataStr = localStorage.getItem('cliente_pantalla');
+                if (!dataStr) {
+                    logReceptor('No hay mensaje en localStorage');
+                    return;
+                }
+
+                const data = JSON.parse(dataStr);
+                
+                // Verificar duplicados
+                if (data.timestamp && data.timestamp === lastProcessedTimestamp) {
+                    logReceptor('Mensaje duplicado, ignorando');
+                    return;
+                }
+                
+                lastProcessedTimestamp = data.timestamp;
+                logReceptor(`Recibido: ${data.type}`);
+                
+                // Procesar según tipo
+                if (data.type === 'product_scanned') {
+                    logReceptor(`Producto: ${data.product.nombre} - $${data.product.precio}`);
+                } else if (data.type === 'nueva_venta') {
+                    logReceptor('Nueva venta iniciada');
+                } else if (data.type === 'venta_completada') {
+                    logReceptor('Venta completada');
+                }
+                
+                // Limpiar mensaje procesado
+                localStorage.removeItem('cliente_pantalla');
+                
+            } catch (error) {
+                logReceptor(`Error: ${error.message}`);
+            }
+        }
+        
+        // Polling automático cada 1 segundo
+        setInterval(leerMensaje, 1000);
+        
+        // Funciones para enviar mensajes
+        function enviarProducto() {
+            const data = {
+                type: 'product_scanned',
+                product: { id: 1, nombre: 'Leche', precio: 22.50 },
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('cliente_pantalla', JSON.stringify(data));
+            logEmisor('Enviado: product_scanned - Leche');
+        }
+        
+        function enviarNuevaVenta() {
+            const data = {
+                type: 'nueva_venta',
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('cliente_pantalla', JSON.stringify(data));
+            logEmisor('Enviado: nueva_venta');
+        }
+        
+        function enviarVentaCompletada() {
+            const data = {
+                type: 'venta_completada',
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('cliente_pantalla', JSON.stringify(data));
+            logEmisor('Enviado: venta_completada');
+        }
+        
+        logEmisor('Listo para enviar mensajes');
+        logReceptor('Listo para recibir mensajes (polling cada 1s)');
+    </script>
+</body>
+</html>

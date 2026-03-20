@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Test Handshake</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .btn { margin: 5px; padding: 10px; }
+        .log { border: 1px solid #ccc; padding: 10px; margin-top: 10px; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Test Handshake</h1>
+    <div>
+        <button class="btn" onclick="enviarMensaje()">Enviar Mensaje</button>
+        <button class="btn" onclick="leerMensaje()">Leer Mensaje Manual</button>
+    </div>
+    <div class="log" id="log"></div>
+
+    <script>
+        function log(msg) {
+            document.getElementById('log').innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        }
+
+        let lastProcessedTimestamp = '';
+
+        // Configurar BroadcastChannel
+        let channel = null;
+        if (typeof BroadcastChannel !== 'undefined') {
+            channel = new BroadcastChannel('pantalla_cliente');
+            channel.onmessage = (event) => {
+                log(`BroadcastChannel: ${event.data.type}`);
+                procesarMensaje(event.data);
+            };
+            log('BroadcastChannel configurado');
+        } else {
+            log('BroadcastChannel no disponible');
+        }
+
+        // Leer mensajes de localStorage al montar
+        const dataStr = localStorage.getItem('cliente_pantalla');
+        if (dataStr) {
+            try {
+                const data = JSON.parse(dataStr);
+                log(`LocalStorage al montar: ${data.type}`);
+                procesarMensaje(data);
+                localStorage.removeItem('cliente_pantalla');
+            } catch (error) {
+                log(`Error al montar: ${error.message}`);
+            }
+        }
+
+        function procesarMensaje(data) {
+            if (!data || !data.type) return;
+
+            // Verificar timestamp para evitar duplicados
+            if (data.timestamp && data.timestamp === lastProcessedTimestamp) {
+                log('Mensaje duplicado, ignorando');
+                return;
+            }
+
+            lastProcessedTimestamp = data.timestamp;
+            log(`Procesado: ${data.type}`);
+        }
+
+        function enviarMensaje() {
+            const data = {
+                type: 'product_scanned',
+                product: { id: 1, nombre: 'Leche', precio: 22.50 },
+                timestamp: new Date().toISOString()
+            };
+
+            // Guardar en localStorage
+            localStorage.setItem('cliente_pantalla', JSON.stringify(data));
+            log('Enviado a localStorage');
+
+            // Enviar por BroadcastChannel
+            if (channel) {
+                channel.postMessage(data);
+                log('Enviado por BroadcastChannel');
+            }
+        }
+
+        function leerMensaje() {
+            const dataStr = localStorage.getItem('cliente_pantalla');
+            if (!dataStr) {
+                log('No hay mensaje en localStorage');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(dataStr);
+                log(`Leído de localStorage: ${data.type}`);
+                procesarMensaje(data);
+                localStorage.removeItem('cliente_pantalla');
+            } catch (error) {
+                log(`Error al leer: ${error.message}`);
+            }
+        }
+
+        log('Listo');
+    </script>
+</body>
+</html>
