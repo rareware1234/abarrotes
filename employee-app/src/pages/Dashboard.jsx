@@ -21,7 +21,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     // Obtener nombre del empleado del localStorage
-    const name = localStorage.getItem('employeeName') || 'Empleado';
+    const name = sessionStorage.getItem('mobile_employeeName') || 'Empleado';
     setEmployeeName(name);
 
     // Cargar datos del dashboard

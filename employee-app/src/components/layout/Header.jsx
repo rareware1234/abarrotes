@@ -1,58 +1,42 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaBell, FaUserCircle } from 'react-icons/fa';
+import { FaBell, FaBars } from 'react-icons/fa';
 
-const Header = ({ profileColor = '#1e7f5c' }) => {
+const Header = ({ profileColor = '#00843D' }) => {
   const location = useLocation();
   const employeeName = sessionStorage.getItem('mobile_employeeName') || 'Empleado';
-  
-  // Determinar el título según la ruta actual
+  const initials = employeeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
   const getTitle = () => {
     switch (location.pathname) {
-      case '/pos':
-        return 'Punto de Venta';
-      case '/scanner':
-        return 'Buscar Producto';
-      case '/asistencia':
-        return 'Asistencia';
-      case '/caja':
-        return 'Caja';
-      case '/tasks':
-        return 'Tareas';
-      case '/perfil':
-        return 'Mi Perfil';
-      default:
-        return 'Empleado';
+      case '/': return 'Inicio';
+      case '/pos': return 'Punto de Venta';
+      case '/scanner': return 'Buscar Producto';
+      case '/asistencia': return 'Asistencia';
+      case '/caja': return 'Caja';
+      case '/tasks': return 'Tareas';
+      case '/perfil': return 'Mi Perfil';
+      default: return 'Abarrotes';
     }
   };
 
   return (
-    <header className="bg-white shadow-sm py-3 px-4 d-flex align-items-center justify-content-between"
-            style={{ 
-              position: 'sticky',
-              top: 0,
-              zIndex: 1000,
-              borderBottom: `3px solid ${profileColor}`
-            }}>
-      <div className="d-flex align-items-center">
-        <h1 className="h5 mb-0 fw-bold" style={{ color: profileColor }}>
-          {getTitle()}
-        </h1>
+    <header className="app-header">
+      <div className="header-left">
+        <div className="header-logo">
+          <span style={{ color: 'white', fontWeight: '800', fontSize: '1rem' }}>AD</span>
+        </div>
+        <h1 className="header-title">{getTitle()}</h1>
       </div>
-      
-      <div className="d-flex align-items-center gap-3">
-        <div className="text-muted small d-none d-sm-block">
-          {employeeName}
-        </div>
-        <Link to="/perfil" className="text-decoration-none">
-          <div className="avatar avatar-sm" style={{ backgroundColor: profileColor }}>
-            <FaUserCircle size={20} />
-          </div>
+
+      <div className="header-right">
+        <span className="header-emp-name d-none d-sm-block">{employeeName}</span>
+        <Link to="/perfil" className="header-avatar" title="Mi Perfil">
+          {initials}
         </Link>
-        
-        <div className="text-decoration-none position-relative notification-badge">
-          <FaBell size={20} style={{ color: '#666' }} />
-        </div>
+        <button className="notif-btn" title="Notificaciones">
+          <FaBell size={18} />
+        </button>
       </div>
     </header>
   );

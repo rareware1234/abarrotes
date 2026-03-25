@@ -1,78 +1,91 @@
-// Servicio de autenticación con Firebase para Abarrotes Digitales - Mobile App
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged,
-  createUserWithEmailAndPassword
+  onAuthStateChanged
 } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../firebase-config/firebase-config';
 
-// Prefijo para evitar conflictos con la versión de escritorio
 const STORAGE_PREFIX = 'mobile_';
+const OTHER_APP_PREFIX = 'desktop_';
 
-// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
-// Datos de los empleados (mapeo de UID a perfil)
-const EMPLOYEE_PROFILES = {
-  'EMP001': { profile: 'staff', color: '#1e7f5c', name: 'Juan García' },
-  'EMP002': { profile: 'staff', color: '#1e7f5c', name: 'María López' },
-  'EMP003': { profile: 'supervisor', color: '#007bff', name: 'Carlos Rodríguez' },
-  'EMP004': { profile: 'supervisor', color: '#007bff', name: 'Ana Martínez' },
-  'EMP005': { profile: 'director', color: '#fd7e14', name: 'Pedro Sánchez' },
-  'EMP006': { profile: 'director', color: '#fd7e14', name: 'Laura Fernández' },
-  'ADMIN001': { profile: 'director', color: '#fd7e14', name: 'Juan Perez' }
+const ROLE_COLORS = {
+  STAFF: '#00843D',
+  SUPERVISOR: '#007bff',
+  DIRECTOR: '#fd7e14'
 };
 
-// Iniciar sesión
 export const loginWithEmail = async (numeroEmpleado, password) => {
   try {
-    // El email será el número de empleado + @abarrotes.com
+    sessionStorage.setItem(`${STORAGE_PREFIX}pendingLogin`, 'true');
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}isDesktopApp`);
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}employeeId`);
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}employeeName`);
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}employeeProfile`);
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}employeeProfileColor`);
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}loginTime`);
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}firebaseUid`);
+    sessionStorage.removeItem(`${OTHER_APP_PREFIX}isDesktopApp`);
+
     const email = `${numeroEmpleado}@abarrotesdigitales.com`;
-    
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    const firebaseUser = userCredential.user;
     
-    // Obtener el perfil del empleado
-    const employeeProfile = EMPLOYEE_PROFILES[numeroEmpleado] || EMPLOYEE_PROFILES.EMP001;
+    const perfilDoc = await getDoc(doc(db, 'empleados', firebaseUser.uid));
     
-    // Guardar en sessionStorage con prefijo móvil
+    let nombre = 'Empleado';
+    let rol = 'STAFF';
+    let activo = true;
+    
+    if (perfilDoc.exists()) {
+      const perfil = perfilDoc.data();
+      nombre = perfil.nombre || nombre;
+      rol = perfil.rol || rol;
+      activo = perfil.activo !== false;
+    }
+    
+    if (!activo) {
+      await signOut(auth);
+      sessionStorage.removeItem(`${STORAGE_PREFIX}pendingLogin`);
+      return { success: false, error: 'Empleado desactivado' };
+    }
+    
     sessionStorage.setItem(`${STORAGE_PREFIX}employeeId`, numeroEmpleado);
-    sessionStorage.setItem(`${STORAGE_PREFIX}employeeName`, employeeProfile.name);
-    sessionStorage.setItem(`${STORAGE_PREFIX}employeeProfile`, employeeProfile.profile);
-    sessionStorage.setItem(`${STORAGE_PREFIX}employeeProfileColor`, employeeProfile.color);
+    sessionStorage.setItem(`${STORAGE_PREFIX}employeeName`, nombre);
+    sessionStorage.setItem(`${STORAGE_PREFIX}employeeProfile`, rol);
+    sessionStorage.setItem(`${STORAGE_PREFIX}employeeProfileColor`, ROLE_COLORS[rol] || ROLE_COLORS.STAFF);
     sessionStorage.setItem(`${STORAGE_PREFIX}loginTime`, Date.now().toString());
-    sessionStorage.setItem(`${STORAGE_PREFIX}firebaseUid`, user.uid);
+    sessionStorage.setItem(`${STORAGE_PREFIX}firebaseUid`, firebaseUser.uid);
     sessionStorage.setItem(`${STORAGE_PREFIX}isMobileApp`, 'true');
+    sessionStorage.removeItem(`${STORAGE_PREFIX}pendingLogin`);
     
     return {
       success: true,
       user: {
         id: numeroEmpleado,
-        uid: user.uid,
-        email: user.email,
-        nombre: employeeProfile.name,
-        profile: employeeProfile.profile,
-        color: employeeProfile.color
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        nombre,
+        profile: rol,
+        color: ROLE_COLORS[rol] || ROLE_COLORS.STAFF
       }
     };
   } catch (error) {
     console.error('Error de login:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+    sessionStorage.removeItem(`${STORAGE_PREFIX}pendingLogin`);
+    return { success: false, error: error.message };
   }
 };
 
-// Cerrar sesión
 export const logout = async () => {
   try {
     await signOut(auth);
-    // Limpiar sessionStorage con prefijo móvil
     sessionStorage.removeItem(`${STORAGE_PREFIX}employeeId`);
     sessionStorage.removeItem(`${STORAGE_PREFIX}employeeName`);
     sessionStorage.removeItem(`${STORAGE_PREFIX}employeeProfile`);
@@ -87,32 +100,59 @@ export const logout = async () => {
   }
 };
 
-// Verificar estado de autenticación
 export const onAuthChange = (callback) => {
-  return onAuthStateChanged(auth, (user) => {
-    if (user) {
-      // Extraer el número de empleado del email
-      const numeroEmpleado = user.email.split('@')[0].toUpperCase();
-      const employeeProfile = EMPLOYEE_PROFILES[numeroEmpleado] || EMPLOYEE_PROFILES.EMP001;
-      
-      callback({
-        isAuthenticated: true,
-        user: {
-          id: numeroEmpleado,
-          uid: user.uid,
-          email: user.email,
-          nombre: employeeProfile.name,
-          profile: employeeProfile.profile,
-          color: employeeProfile.color
+  return onAuthStateChanged(auth, async (firebaseUser) => {
+    const pendingLogin = sessionStorage.getItem(`${STORAGE_PREFIX}pendingLogin`);
+    const otherAppActive = sessionStorage.getItem(`${OTHER_APP_PREFIX}isDesktopApp`);
+
+    if (pendingLogin === 'true') {
+      sessionStorage.removeItem(`${STORAGE_PREFIX}pendingLogin`);
+      return;
+    }
+
+    if (otherAppActive === 'true') {
+      if (!firebaseUser) return;
+      if (firebaseUser) {
+        try { await signOut(auth); } catch(e) {}
+      }
+      return;
+    }
+
+    if (firebaseUser) {
+      try {
+        const perfilDoc = await getDoc(doc(db, 'empleados', firebaseUser.uid));
+        const numEmpleado = firebaseUser.email.split('@')[0].toUpperCase();
+        
+        let nombre = 'Empleado';
+        let rol = 'STAFF';
+        
+        if (perfilDoc.exists()) {
+          const perfil = perfilDoc.data();
+          nombre = perfil.nombre || nombre;
+          rol = perfil.rol || rol;
         }
-      });
+        
+        callback({
+          isAuthenticated: true,
+          user: {
+            id: numEmpleado,
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            nombre,
+            profile: rol,
+            color: ROLE_COLORS[rol] || ROLE_COLORS.STAFF
+          }
+        });
+      } catch (error) {
+        console.error('Error cargando perfil en onAuthChange:', error);
+        callback({ isAuthenticated: false, user: null });
+      }
     } else {
       callback({ isAuthenticated: false, user: null });
     }
   });
 };
 
-// Verificar si hay sesión activa en la app móvil
 export const checkMobileSession = () => {
   const isMobileApp = sessionStorage.getItem(`${STORAGE_PREFIX}isMobileApp`);
   if (isMobileApp === 'true') {
@@ -127,9 +167,8 @@ export const checkMobileSession = () => {
   return null;
 };
 
-// Obtener usuario actual
 export const getCurrentUser = () => {
   return auth.currentUser;
 };
 
-export { auth, STORAGE_PREFIX };
+export { STORAGE_PREFIX };

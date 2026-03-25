@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../services/firebaseAuth';
+import { db } from '../services/firebaseDb';
 import { FaBox, FaSearch, FaPlus, FaTh, FaList, FaExclamationTriangle, FaSync, FaEdit, FaTrash } from 'react-icons/fa';
 
 const DEFAULT_CATEGORIES = ["Abarrotes", "Frescos", "Limpieza", "Higiene Personal", "Bebidas", "Golosinas", "Lácteos", "Carnes", "Otros"];

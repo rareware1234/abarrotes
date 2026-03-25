@@ -8,6 +8,14 @@
     ],
     "rewrites": [
       {
+        "source": "/empleado/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/empleado",
+        "destination": "/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

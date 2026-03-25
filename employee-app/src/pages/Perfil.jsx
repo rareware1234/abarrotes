@@ -1,271 +1,167 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaSignOutAlt, FaIdCard, FaStore, FaClock, FaPhone, FaEnvelope, FaShoppingCart, FaBox, FaMoneyBillWave, FaChartLine, FaUserShield, FaUserTie, FaUserCog } from 'react-icons/fa';
-import { getProfileById, getProfileColor } from '../data/employeeProfiles';
+import { FaUser, FaSignOutAlt, FaClock, FaChartLine, FaCheck, FaIdCard, FaStore, FaCog, FaBell } from 'react-icons/fa';
 import { logout } from '../services/firebaseAuth';
+import { getProfileById } from '../data/employeeProfiles';
 
 const Perfil = () => {
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  
-  // Colores dinámicos basados en el perfil
-  const [colors, setColors] = useState({
-    primary: '#1e7f5c',
-    primaryDark: '#165f45',
-    primaryLight: '#2fbf8c',
-    secondary: '#2c3e50',
-    success: '#28a745',
-    danger: '#dc3545',
-    warning: '#ffc107',
-    info: '#17a2b8',
-    light: '#f8f9fa',
-    dark: '#343a40',
-    border: '#dee2e6'
-  });
+  const [activeTab, setActiveTab] = useState('perfil');
 
-  useEffect(() => {
-    const profileColor = getProfileColor(localStorage.getItem('employeeProfile') || 'staff');
-    const adjustColor = (color, amount) => {
-      const hex = color.replace('#', '');
-      const num = parseInt(hex, 16);
-      const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-      const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
-      const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
-      return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
-    };
-
-    setColors({
-      primary: profileColor,
-      primaryDark: adjustColor(profileColor, -20),
-      primaryLight: adjustColor(profileColor, 20),
-      secondary: '#2c3e50',
-      success: '#28a745',
-      danger: '#dc3545',
-      warning: '#ffc107',
-      info: '#17a2b8',
-      light: '#f8f9fa',
-      dark: '#343a40',
-      border: '#dee2e6'
-    });
-  }, []);
-
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      
-      // Obtener datos del perfil desde localStorage (guardados por Firebase Auth)
-      const employeeId = localStorage.getItem('employeeId');
-      const employeeName = localStorage.getItem('employeeName') || 'Empleado';
-      const employeeProfileId = localStorage.getItem('employeeProfile') || 'staff';
-      const profileColor = localStorage.getItem('employeeProfileColor') || '#1e7f5c';
-      
-      const profileData = getProfileById(employeeProfileId);
-      
-      setProfile({
-        id: employeeId,
-        name: employeeName,
-        profileId: employeeProfileId,
-        profileName: profileData.name,
-        profileColor: profileColor,
-        role: profileData.name,
-        sucursal: 'Tulipanes',
-        turno: 'Matutino',
-        email: `${employeeId}@abarrotesdigitales.com`,
-        phone: '555-123-4567',
-        joinDate: 'N/A'
-      });
-    } catch (error) {
-      console.error('Error cargando perfil:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const employeeId = sessionStorage.getItem('mobile_employeeId') || '';
+  const employeeName = sessionStorage.getItem('mobile_employeeName') || 'Empleado';
+  const employeeProfile = sessionStorage.getItem('mobile_employeeProfile') || 'STAFF';
+  const profileColor = sessionStorage.getItem('mobile_employeeProfileColor') || '#00843D';
+  const profile = getProfileById(employeeProfile);
+  const initials = employeeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-    // Limpiar localStorage
-    localStorage.removeItem('employeeId');
-    localStorage.removeItem('employeeName');
-    localStorage.removeItem('employeeProfile');
-    localStorage.removeItem('employeeProfileColor');
-    navigate('/login');
+    } catch (e) {}
+    sessionStorage.removeItem('mobile_employeeId');
+    sessionStorage.removeItem('mobile_employeeName');
+    sessionStorage.removeItem('mobile_employeeProfile');
+    sessionStorage.removeItem('mobile_employeeProfileColor');
+    sessionStorage.removeItem('mobile_loginTime');
+    sessionStorage.removeItem('mobile_isMobileApp');
+    sessionStorage.removeItem('mobile_firebaseUid');
+    navigate('/login', { replace: true });
   };
 
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Cargando...</span>
-        </div>
-      </div>
-    );
-  }
+  const STATS_DATA = [
+    { label: 'Ventas hoy', value: '$1,234', icon: FaChartLine, color: 'var(--primary)' },
+    { label: 'Tickets hoy', value: '12', icon: FaCheck, color: 'var(--success)' },
+    { label: 'Tareas completadas', value: '8/10', icon: FaCheck, color: 'var(--info)' },
+    { label: 'Horas trabajadas', value: '6.5h', icon: FaClock, color: 'var(--warning)' },
+  ];
 
   return (
-    <div className="fade-in">
-      {/* Header del perfil */}
-      <div className="card mb-4">
-        <div className="card-body text-center py-4">
-            <div 
-              className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
-              style={{ 
-                width: '100px', 
-                height: '100px', 
-                backgroundColor: colors.primaryLight,
-                color: 'white'
-              }}
-            >
-            <FaUser size={48} />
-          </div>
-          
-           <h3 className="h5 fw-bold mb-1">
-            {profile?.name || 'Empleado'}
-          </h3>
-          <p className="text-muted mb-2">
-            {profile?.role || 'Cajero'}
-          </p>
-          
-          <div className="d-flex justify-content-center gap-2 flex-wrap">
-            <span className="badge px-3 py-2" style={{ backgroundColor: profile?.profileColor || '#1e7f5c' }}>
-              {profile?.profileName || 'Staff'}
-            </span>
-            <span className="badge bg-secondary px-3 py-2">
-              {profile?.sucursal || 'Sucursal'}
-            </span>
-            <span className="badge bg-light text-dark px-3 py-2">
-              {profile?.turno || 'Turno'}
-            </span>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: 0 }}>
+      <div className="card" style={{ textAlign: 'center', padding: '24px 16px' }}>
+        <div className="avatar avatar-xl" style={{ margin: '0 auto 12px', background: profileColor, fontSize: '2rem' }}>
+          {initials}
         </div>
+        <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-dark)', marginBottom: 4 }}>
+          {employeeName}
+        </h2>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 8 }}>
+          <span className="badge" style={{ background: profileColor + '20', color: profileColor }}>
+            <FaIdCard style={{ marginRight: 4 }} />{profile.name}
+          </span>
+          <span className="badge badge-muted">
+            <FaStore style={{ marginRight: 4 }} />Tulipanes
+          </span>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+          Turno: Matutino 09:00 - 17:00
+        </p>
       </div>
 
-      {/* Inicio - Estadísticas rápidas */}
-      <div className="card mb-4">
-        <div className="card-header d-flex justify-content-between align-items-center">
-          <h3 className="h6 mb-0 fw-bold">
-             <FaChartLine className="me-2" style={{ color: colors.primary }} />
-             Resumen del Día
-           </h3>
-        </div>
-        <div className="card-body">
-          <div className="row g-3">
-            <div className="col-6">
-              <div className="text-center p-3 rounded" style={{ backgroundColor: colors.light }}>
-                <FaShoppingCart className="mb-2" style={{ color: colors.primary, fontSize: '1.5rem' }} />
-                <div className="fw-bold fs-5">12</div>
-                <div className="text-muted small">Ventas</div>
-              </div>
-            </div>
-            <div className="col-6">
-              <div className="text-center p-3 rounded" style={{ backgroundColor: colors.light }}>
-                <FaMoneyBillWave className="mb-2" style={{ color: colors.primary, fontSize: '1.5rem' }} />
-                <div className="fw-bold fs-5">$8,450</div>
-                <div className="text-muted small">Ingresos</div>
-              </div>
-            </div>
-            <div className="col-6">
-              <div className="text-center p-3 rounded" style={{ backgroundColor: colors.light }}>
-                <FaBox className="mb-2" style={{ color: colors.primary, fontSize: '1.5rem' }} />
-                <div className="fw-bold fs-5">156</div>
-                <div className="text-muted small">Productos</div>
-              </div>
-            </div>
-            <div className="col-6">
-              <div className="text-center p-3 rounded" style={{ backgroundColor: colors.light }}>
-                <FaChartLine className="mb-2" style={{ color: colors.primary, fontSize: '1.5rem' }} />
-                <div className="fw-bold fs-5">+15%</div>
-                <div className="text-muted small">Crecimiento</div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="tabs">
+        <button className={`tab-btn ${activeTab === 'perfil' ? 'active' : ''}`} onClick={() => setActiveTab('perfil')}>
+          Resumen
+        </button>
+        <button className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>
+          Mi Info
+        </button>
+        <button className={`tab-btn ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>
+          Config
+        </button>
       </div>
 
-      {/* Información del perfil */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h3 className="h6 mb-0 fw-bold">Información Personal</h3>
-        </div>
-        <div className="card-body p-0">
-          <div className="profile-item px-3 py-3">
-            <FaIdCard className="me-3 text-muted" />
-            <div className="profile-label">ID Empleado</div>
-            <div className="profile-value">{profile?.id || 'N/A'}</div>
+      {activeTab === 'perfil' && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+            {STATS_DATA.map((s, i) => (
+              <div key={i} className="stat-card">
+                <div className="stat-icon" style={{ background: s.color + '20', color: s.color, width: 42, height: 42 }}>
+                  <s.icon style={{ fontSize: '1.1rem' }} />
+                </div>
+                <div>
+                  <div className="stat-value" style={{ fontSize: '1.2rem' }}>{s.value}</div>
+                  <div className="stat-label">{s.label}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="profile-item px-3 py-3">
-            <FaEnvelope className="me-3 text-muted" />
-            <div className="profile-label">Correo</div>
-            <div className="profile-value small">{profile?.email || 'N/A'}</div>
-          </div>
-          <div className="profile-item px-3 py-3">
-            <FaPhone className="me-3 text-muted" />
-            <div className="profile-label">Teléfono</div>
-            <div className="profile-value">{profile?.phone || 'N/A'}</div>
-          </div>
-          <div className="profile-item px-3 py-3">
-            <FaStore className="me-3 text-muted" />
-            <div className="profile-label">Sucursal</div>
-            <div className="profile-value">{profile?.sucursal || 'N/A'}</div>
-          </div>
-          <div className="profile-item px-3 py-3">
-            <FaClock className="me-3 text-muted" />
-            <div className="profile-label">Turno</div>
-            <div className="profile-value">{profile?.turno || 'N/A'}</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Estado de asistencia */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h3 className="h6 mb-0 fw-bold">Estado de Asistencia</h3>
-        </div>
-        <div className="card-body">
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <div className="fw-medium">Estado Actual</div>
-              <small className="text-muted">Dentro de turno</small>
+          <div className="card">
+            <div className="card-header-section">
+              <h3 className="card-title">Actividad reciente</h3>
             </div>
-            <div className="status-indicator">
-              <div className="status-dot active" style={{ backgroundColor: colors.primary }}></div>
-              <span className="ms-2 fw-medium" style={{ color: colors.primary }}>Activo</span>
+            <div style={{ padding: '4px 0' }}>
+              {[
+                { icon: FaCheck, time: 'Hace 10 min', text: 'Venta completada - $156.00', color: 'var(--success)' },
+                { icon: FaCheck, time: 'Hace 25 min', text: 'Tarea: Reposición estantes', color: 'var(--success)' },
+                { icon: FaCheck, time: 'Hace 1 hora', text: 'Venta completada - $89.50', color: 'var(--success)' },
+                { icon: FaUser, time: 'Hace 2 horas', text: 'Entrada registrada', color: 'var(--primary)' },
+              ].map((a, i) => (
+                <div key={i} className="list-item" style={{ padding: '10px 16px' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: a.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, color: a.color, fontSize: '0.85rem', flexShrink: 0 }}>
+                    <a.icon />
+                  </div>
+                  <div className="list-item-content">
+                    <div className="list-item-title" style={{ fontSize: '0.85rem' }}>{a.text}</div>
+                    <div className="list-item-subtitle">{a.time}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
-      {/* Botón de cerrar sesión */}
+      {activeTab === 'info' && (
+        <div className="card">
+          {[
+            { label: 'Nombre', value: employeeName, icon: FaUser },
+            { label: 'ID de Empleado', value: employeeId, icon: FaIdCard },
+            { label: 'Puesto', value: profile.name, icon: FaUser },
+            { label: 'Sucursal', value: 'Tulipanes - Central', icon: FaStore },
+            { label: 'Turno', value: 'Matutino (09:00 - 17:00)', icon: FaClock },
+            { label: 'Permisos', value: profile.description, icon: FaCog },
+          ].map((item, i) => (
+            <div key={i} className="list-item" style={{ borderBottom: i < 5 ? '1px solid var(--border-light)' : 'none' }}>
+              <div style={{ width: 36, height: 36, background: 'var(--primary-muted)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, color: 'var(--primary)', fontSize: '0.9rem', flexShrink: 0 }}>
+                <item.icon />
+              </div>
+              <div className="list-item-content">
+                <div className="list-item-subtitle" style={{ fontSize: '0.75rem' }}>{item.label}</div>
+                <div className="list-item-title" style={{ fontSize: '0.9rem' }}>{item.value}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'config' && (
+        <div className="card">
+          {[
+            { label: 'Notificaciones', icon: FaBell, action: true, value: 'Activadas' },
+            { label: 'Tema oscuro', icon: FaCog, action: true, value: 'Apagado' },
+            { label: 'Sonidos', icon: FaCog, action: true, value: 'Activados' },
+          ].map((item, i) => (
+            <div key={i} className="list-item" style={{ borderBottom: i < 2 ? '1px solid var(--border-light)' : 'none' }}>
+              <div style={{ width: 36, height: 36, background: 'var(--primary-muted)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, color: 'var(--primary)', fontSize: '0.9rem', flexShrink: 0 }}>
+                <item.icon />
+              </div>
+              <div className="list-item-content">
+                <div className="list-item-title" style={{ fontSize: '0.9rem' }}>{item.label}</div>
+              </div>
+              <span className="badge badge-muted">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <button
-        className="btn btn-lg w-100 d-flex align-items-center justify-content-center"
-        style={{ 
-          backgroundColor: 'transparent', 
-          borderColor: colors.danger, 
-          color: colors.danger 
-        }}
+        className="btn btn-block"
+        style={{ background: '#fee2e2', color: '#dc2626', fontWeight: 700, marginTop: 8 }}
         onClick={handleLogout}
       >
-        <FaSignOutAlt className="me-2" />
-        Cerrar Sesión
+        <FaSignOutAlt /> Cerrar Sesión
       </button>
-
-      {/* Info de la app */}
-      <div className="text-center mt-4 text-muted small">
-        <p className="mb-0">
-          App de Empleados v1.0.0
-        </p>
-        <p className="mb-0">
-          Abarrotes Digitales
-        </p>
-      </div>
     </div>
   );
 };

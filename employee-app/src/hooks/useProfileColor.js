@@ -6,7 +6,7 @@ export const useProfileColor = () => {
 
   useEffect(() => {
     const updateColor = () => {
-      const employeeProfile = localStorage.getItem('employeeProfile') || 'staff';
+      const employeeProfile = sessionStorage.getItem('mobile_employeeProfile') || 'staff';
       const color = getProfileColor(employeeProfile);
       setProfileColor(color);
     };
@@ -35,7 +35,7 @@ export const adjustColor = (color, amount) => {
 };
 
 export const getProfileColors = () => {
-  const profileColor = getProfileColor(localStorage.getItem('employeeProfile') || 'staff');
+  const profileColor = getProfileColor(sessionStorage.getItem('mobile_employeeProfile') || 'staff');
   return {
     primary: profileColor,
     primaryDark: adjustColor(profileColor, -20),

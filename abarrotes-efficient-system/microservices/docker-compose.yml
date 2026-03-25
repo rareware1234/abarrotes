@@ -1,0 +1,203 @@
+version: '3.8'
+
+services:
+  # --- Base de Datos ---
+  mysql-products:
+    image: mysql:8.0
+    container_name: mysql_products
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: abarrotes_products
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_products_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+
+  mysql-inventory:
+    image: mysql:8.0
+    container_name: mysql_inventory
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: abarrotes_inventory
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_inventory_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+
+  mysql-orders:
+    image: mysql:8.0
+    container_name: mysql_orders
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: abarrotes_orders
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql_orders_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+
+  mysql-caja:
+    image: mysql:8.0
+    container_name: mysql_caja
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: abarrotes_efficient
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql_caja_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+
+  auth-db:
+    image: mysql:8.0
+    container_name: auth_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3311:3306"
+    volumes:
+      - auth_db_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+
+  # --- Microservicios ---
+  
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - product-service
+      - inventory-service
+      - order-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+  # Product Service
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql-products
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-products:3306/abarrotes_products?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+  # Inventory Service
+  inventory-service:
+    build: ./inventory-service
+    container_name: inventory-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysql-inventory
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-inventory:3306/abarrotes_inventory?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+  # Order Service
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mysql-orders
+      - product-service
+      - inventory-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-orders:3306/abarrotes_orders?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+  # Empleado Service
+  empleado-service:
+    build: ./empleado-service
+    container_name: empleado-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - mysql-caja
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-caja:3306/abarrotes_efficient?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+  # Caja Service
+  caja-service:
+    build: ./caja-service
+    container_name: caja-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - mysql-caja
+      - empleado-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-caja:3306/abarrotes_efficient?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+  # Auth Service
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8087:8087"
+    depends_on:
+      - auth-db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://auth-db:3306/auth_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=MySuperSecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLong
+    restart: always
+
+  # Promotion Service
+  promotion-service:
+    build: ./promotion-service
+    container_name: promotion-service
+    ports:
+      - "8089:8089"
+    depends_on:
+      - mysql-caja
+      - inventory-service
+      - order-service
+      - product-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-caja:3306/abarrotes_efficient?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+  # Employee Service (Backend para app de empleados)
+  employee-service:
+    build: ./employee-service
+    container_name: employee-service
+    ports:
+      - "8090:8090"
+    depends_on:
+      - mysql-caja
+      - product-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-caja:3306/abarrotes_efficient?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_PROFILES_ACTIVE=docker
+    restart: always
+
+volumes:
+  mysql_products_data:
+  mysql_inventory_data:
+  mysql_orders_data:
+  mysql_caja_data:
+  auth_db_data:

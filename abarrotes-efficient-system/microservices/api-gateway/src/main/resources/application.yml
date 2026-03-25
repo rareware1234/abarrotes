@@ -1,0 +1,87 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configs:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000, http://localhost:4200, http://localhost:5173, http://localhost:5174, http://127.0.0.1:5173, http://127.0.0.1:5174"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: product-service
+          uri: http://product-service:8081
+          predicates:
+            - Path=/api/products/**
+          filters:
+            - RewritePath=/api/products/(?<segment>.*), /api/products/${segment}
+        - id: inventory-service
+          uri: http://inventory-service:8082
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - RewritePath=/api/inventory/(?<segment>.*), /api/inventory/${segment}
+        - id: order-service
+          uri: http://order-service:8083
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - RewritePath=/api/orders/(?<segment>.*), /api/orders/${segment}
+        - id: waste-service
+          uri: http://inventory-service:8082
+          predicates:
+            - Path=/api/waste/**
+          filters:
+            - RewritePath=/api/waste/(?<segment>.*), /api/waste/${segment}
+        - id: empleado-service
+          uri: http://caja-service:8086
+          predicates:
+            - Path=/api/empleados/**
+          filters:
+            - RewritePath=/api/empleados/(?<segment>.*), /api/empleados/${segment}
+        - id: caja-service
+          uri: http://caja-service:8086
+          predicates:
+            - Path=/api/caja/**
+          filters:
+            - RewritePath=/api/caja/(?<segment>.*), /api/caja/${segment}
+        - id: auth-service
+          uri: http://caja-service:8086
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /api/auth/${segment}
+        - id: promotion-service
+          uri: http://promotion-service:8089
+          predicates:
+            - Path=/api/promotions/**
+          filters:
+            - RewritePath=/api/promotions/(?<segment>.*), /api/promotions/${segment}
+        - id: product-service-scanner
+          uri: http://product-service:8081
+          predicates:
+            - Path=/api/scanner/product/**
+          filters:
+            - RewritePath=/api/scanner/product/(?<segment>.*), /api/scanner/product/${segment}
+
+eureka:
+  client:
+    enabled: false
+  instance:
+    enabled: false
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  level:
+    root: INFO

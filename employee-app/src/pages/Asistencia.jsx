@@ -16,7 +16,7 @@ const Asistencia = () => {
     try {
       setLoading(true);
       // Generar QR de asistencia (simulado)
-      const employeeId = localStorage.getItem('employeeId') || 'EMP001';
+      const employeeId = sessionStorage.getItem('mobile_employeeId') || 'EMP001';
       const timestamp = new Date().toISOString();
       const qrContent = `ATTENDANCE|${employeeId}|${timestamp}`;
       setQrData(qrContent);
@@ -77,7 +77,7 @@ const Asistencia = () => {
       <div className="card mb-4">
         <div className="card-header">
           <h3 className="h6 mb-0 fw-bold d-flex align-items-center">
-            <FaQrcode className="me-2" style={{ color: '#1e7f5c' }} />
+            <FaQrcode className="me-2" style={{ color: 'var(--primary)' }} />
             QR de Asistencia
           </h3>
         </div>

@@ -1,10 +1,9 @@
-// Definición de perfiles de empleado
 export const EMPLOYEE_PROFILES = {
   STAFF: {
-    id: 'staff',
+    id: 'STAFF',
     name: 'Staff',
-    color: '#1e7f5c', // Verde
-    colorHex: '#1e7f5c',
+    color: '#00843D',
+    colorHex: '#00843D',
     allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja'],
     canAssignTasks: false,
     canViewReports: false,
@@ -12,9 +11,9 @@ export const EMPLOYEE_PROFILES = {
     description: 'Personal de operaciones'
   },
   SUPERVISOR: {
-    id: 'supervisor',
+    id: 'SUPERVISOR',
     name: 'Supervisor',
-    color: '#007bff', // Azul
+    color: '#007bff',
     colorHex: '#007bff',
     allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja'],
     canAssignTasks: true,
@@ -23,9 +22,9 @@ export const EMPLOYEE_PROFILES = {
     description: 'Supervisión de operaciones'
   },
   DIRECTOR: {
-    id: 'director',
+    id: 'DIRECTOR',
     name: 'Director',
-    color: '#fd7e14', // Anaranjado
+    color: '#fd7e14',
     colorHex: '#fd7e14',
     allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja', 'dashboard'],
     canAssignTasks: true,
@@ -35,34 +34,21 @@ export const EMPLOYEE_PROFILES = {
   }
 };
 
-// Datos de ejemplo de empleados
-export const EMPLOYEES = [
-  { id: 'EMP001', name: 'Juan García', profile: 'staff', password: '1234' },
-  { id: 'EMP002', name: 'María López', profile: 'staff', password: '1234' },
-  { id: 'EMP003', name: 'Carlos Rodríguez', profile: 'supervisor', password: '1234' },
-  { id: 'EMP004', name: 'Ana Martínez', profile: 'supervisor', password: '1234' },
-  { id: 'EMP005', name: 'Pedro Sánchez', profile: 'director', password: '1234' },
-  { id: 'EMP006', name: 'Laura Fernández', profile: 'director', password: '1234' }
-];
-
-// Función para obtener el perfil por ID
 export const getProfileById = (profileId) => {
-  return Object.values(EMPLOYEE_PROFILES).find(p => p.id === profileId) || EMPLOYEE_PROFILES.STAFF;
+  return EMPLOYEE_PROFILES[profileId?.toUpperCase()] || EMPLOYEE_PROFILES.STAFF;
 };
 
-// Función para obtener empleado por ID
-export const getEmployeeById = (employeeId) => {
-  return EMPLOYEES.find(e => e.id === employeeId) || null;
+export const getProfileColor = (profileId) => {
+  const profile = getProfileById(profileId);
+  return profile.colorHex;
 };
 
-// Función para verificar si un empleado tiene acceso a una ruta
 export const canAccessRoute = (employeeProfile, route) => {
   const profile = getProfileById(employeeProfile);
   return profile.allowedRoutes.includes(route);
 };
 
-// Función para obtener el color del perfil
-export const getProfileColor = (profileId) => {
-  const profile = getProfileById(profileId);
-  return profile.colorHex;
+export const getPermisosByRol = (rol) => {
+  const profile = getProfileById(rol);
+  return profile.allowedRoutes;
 };

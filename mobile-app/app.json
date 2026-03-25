@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Abarrotes Digitales",
+    "slug": "abarrotes-digitales",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "abarrotesdigitales",
+    "splash": {
+      "backgroundColor": "#0d5c36",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "bundleIdentifier": "com.abarrotes.digitales",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Usamos la cámara para escanear códigos de barras de productos"
+      }
+    },
+    "android": {
+      "package": "com.abarrotes.digitales",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d5c36"
+      },
+      "permissions": [
+        "CAMERA",
+        "VIBRATE",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Usamos la cámara para escanear códigos de barras"
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

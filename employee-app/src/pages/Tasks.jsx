@@ -1,392 +1,178 @@
 import React, { useState, useEffect } from 'react';
-import { FaCheckSquare, FaPlus, FaFilter, FaUser, FaUserTie, FaUserShield } from 'react-icons/fa';
-import { getProfileColor, getProfileById } from '../data/employeeProfiles';
+import { FaCheck, FaPlus, FaCheckSquare, FaCircle, FaClock, FaUser } from 'react-icons/fa';
+
+const MOCK_TASKS = [
+  { id: 1, title: 'Reposición de estantes', desc: 'Sector A3 - Refrescos y jugos', priority: 'high', status: 'pending', due: 'Hoy 17:00', assignee: 'Carlos M.' },
+  { id: 2, title: 'Revisar caducidades', desc: 'Productos lácteos -nevera 2', priority: 'medium', status: 'pending', due: 'Hoy 19:00', assignee: 'María L.' },
+  { id: 3, title: 'Limpieza de cajas', desc: 'Cajas registradoras 1-4', priority: 'low', status: 'done', due: 'Hoy 18:00', assignee: 'Juan P.' },
+  { id: 4, title: 'Inventario mensual', desc: 'Sección de abarrotes generales', priority: 'high', status: 'pending', due: 'Mañana 10:00', assignee: 'Laura R.' },
+  { id: 5, title: 'Atención al cliente', desc: 'Mostrador principal', priority: 'medium', status: 'pending', due: 'En curso', assignee: 'Todos' },
+];
+
+const PRIORITY_CONFIG = {
+  high: { color: 'var(--danger)', bg: '#fee2e2', label: 'Alta' },
+  medium: { color: 'var(--warning)', bg: '#fef3c7', label: 'Media' },
+  low: { color: 'var(--info)', bg: '#dbeafe', label: 'Baja' },
+};
 
 const Tasks = () => {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, pending, completed
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-  const [newTask, setNewTask] = useState({
-    title: '',
-    priority: 'media',
-    dueDate: '',
-    assignedTo: ''
-  });
-  const [employees, setEmployees] = useState([]);
-  const [currentProfile, setCurrentProfile] = useState(null);
-  
-  // Colores dinámicos basados en el perfil
-  const [colors, setColors] = useState({
-    primary: '#1e7f5c',
-    primaryDark: '#165f45',
-    primaryLight: '#2fbf8c',
-    secondary: '#2c3e50',
-    success: '#28a745',
-    danger: '#dc3545',
-    warning: '#ffc107',
-    info: '#17a2b8',
-    light: '#f8f9fa',
-    dark: '#343a40',
-    border: '#dee2e6'
-  });
+  const [tasks, setTasks] = useState(MOCK_TASKS);
+  const [filter, setFilter] = useState('all');
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '', desc: '', priority: 'medium' });
 
-  useEffect(() => {
-    const profileColor = getProfileColor(localStorage.getItem('employeeProfile') || 'staff');
-    const adjustColor = (color, amount) => {
-      const hex = color.replace('#', '');
-      const num = parseInt(hex, 16);
-      const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-      const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
-      const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
-      return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
-    };
+  const employeeName = sessionStorage.getItem('mobile_employeeName') || 'Empleado';
+  const employeeId = sessionStorage.getItem('mobile_employeeId') || '';
 
-    setColors({
-      primary: profileColor,
-      primaryDark: adjustColor(profileColor, -20),
-      primaryLight: adjustColor(profileColor, 20),
-      secondary: '#2c3e50',
-      success: '#28a745',
-      danger: '#dc3545',
-      warning: '#ffc107',
-      info: '#17a2b8',
-      light: '#f8f9fa',
-      dark: '#343a40',
-      border: '#dee2e6'
-    });
-    
-    // Cargar perfil actual
-    const employeeProfile = localStorage.getItem('employeeProfile') || 'staff';
-    setCurrentProfile(getProfileById(employeeProfile));
-    
-    // Cargar lista de empleados para asignar tareas
-    const demoEmployees = [
-      { id: 'EMP001', name: 'Juan García', profile: 'staff' },
-      { id: 'EMP002', name: 'María López', profile: 'staff' },
-      { id: 'EMP003', name: 'Carlos Rodríguez', profile: 'supervisor' },
-      { id: 'EMP004', name: 'Ana Martínez', profile: 'supervisor' },
-      { id: 'EMP005', name: 'Pedro Sánchez', profile: 'director' },
-      { id: 'EMP006', name: 'Laura Fernández', profile: 'director' }
-    ];
-    setEmployees(demoEmployees);
-  }, []);
+  const filtered = filter === 'all' ? tasks :
+    filter === 'done' ? tasks.filter(t => t.status === 'done') :
+    tasks.filter(t => t.status === 'pending');
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
-
-  const loadTasks = async () => {
-    try {
-      setLoading(true);
-      
-      // Tareas de demo
-      const demoTasks = [
-        {
-          id: 1,
-          title: 'Vender 5 membresías hoy',
-          completed: false,
-          priority: 'alta',
-          dueDate: 'Hoy',
-          type: 'automatic',
-          assignedBy: 'Sistema'
-        },
-        {
-          id: 2,
-          title: 'Limpiar área de cajas registradoras',
-          completed: true,
-          priority: 'media',
-          dueDate: 'Ayer',
-          type: 'manual',
-          assignedBy: 'Gerente'
-        },
-        {
-          id: 3,
-          title: 'Actualizar exhibición de productos nuevos',
-          completed: false,
-          priority: 'baja',
-          dueDate: 'Mañana',
-          type: 'manual',
-          assignedBy: 'Supervisor'
-        },
-        {
-          id: 4,
-          title: 'Verificar inventario de membresías',
-          completed: false,
-          priority: 'alta',
-          dueDate: 'Hoy',
-          type: 'automatic',
-          assignedBy: 'Sistema'
-        },
-        {
-          id: 5,
-          title: 'Capacitar a nuevo empleado',
-          completed: false,
-          priority: 'media',
-          dueDate: 'En 2 días',
-          type: 'manual',
-          assignedBy: 'Gerente'
-        },
-        {
-          id: 6,
-          title: 'Revisar reporte de ventas',
-          completed: true,
-          priority: 'alta',
-          dueDate: 'Ayer',
-          type: 'automatic',
-          assignedBy: 'Sistema'
-        }
-      ];
-      
-      setTasks(demoTasks);
-    } catch (error) {
-      console.error('Error cargando tareas:', error);
-    } finally {
-      setLoading(false);
-    }
+  const stats = {
+    total: tasks.length,
+    done: tasks.filter(t => t.status === 'done').length,
+    pending: tasks.filter(t => t.status === 'pending').length,
+    high: tasks.filter(t => t.priority === 'high' && t.status === 'pending').length
   };
 
-  const toggleTask = (taskId) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const toggleTask = (id) => {
+    setTasks(tasks.map(t =>
+      t.id === id ? { ...t, status: t.status === 'done' ? 'pending' : 'done' } : t
+    ));
   };
 
-  const handleAddTask = (e) => {
-    e.preventDefault();
+  const addTask = () => {
     if (!newTask.title.trim()) return;
-
-    const employeeName = localStorage.getItem('employeeName') || 'Empleado';
-    const assignedToEmployee = employees.find(emp => emp.id === newTask.assignedTo);
-    
-    const task = {
+    setTasks([{
       id: Date.now(),
-      title: newTask.title.trim(),
-      completed: false,
+      title: newTask.title,
+      desc: newTask.desc,
       priority: newTask.priority,
-      dueDate: newTask.dueDate || 'Sin fecha',
-      type: 'manual',
-      assignedBy: employeeName,
-      assignedTo: newTask.assignedTo || null,
-      assignedToName: assignedToEmployee ? assignedToEmployee.name : null,
-      profileColor: currentProfile?.colorHex || '#1e7f5c'
-    };
-
-    setTasks(prevTasks => [task, ...prevTasks]);
-    setNewTask({ title: '', priority: 'media', dueDate: '', assignedTo: '' });
-    setShowAddTaskModal(false);
+      status: 'pending',
+      due: 'Pendiente',
+      assignee: employeeName
+    }, ...tasks]);
+    setNewTask({ title: '', desc: '', priority: 'medium' });
+    setShowAdd(false);
   };
-
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'pending') return !task.completed;
-    if (filter === 'completed') return task.completed;
-    return true;
-  });
-
-  const pendingCount = tasks.filter(t => !t.completed).length;
 
   return (
-    <div className="fade-in px-3 pb-5">
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="h5 fw-bold mb-1">Tareas Pendientes</h2>
-          <p className="text-muted small mb-0">
-            {pendingCount} tarea{pendingCount !== 1 ? 's' : ''} pendiente{pendingCount !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <button 
-          className="btn btn-primary btn-sm"
-          style={{ backgroundColor: colors.primary, borderColor: colors.primary }}
-          onClick={() => setShowAddTaskModal(true)}
-        >
-          <FaPlus className="me-1" /> Nueva
-        </button>
-      </div>
-
-      {/* Filtros */}
-      <div className="d-flex gap-2 mb-4">
-        <button 
-          className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={filter === 'all' ? { backgroundColor: colors.primary, borderColor: colors.primary } : {}}
-          onClick={() => setFilter('all')}
-        >
-          Todas
-        </button>
-        <button 
-          className={`btn btn-sm ${filter === 'pending' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={filter === 'pending' ? { backgroundColor: colors.primary, borderColor: colors.primary } : {}}
-          onClick={() => setFilter('pending')}
-        >
-          Pendientes
-        </button>
-        <button 
-          className={`btn btn-sm ${filter === 'completed' ? 'btn-primary' : 'btn-outline-secondary'}`}
-          style={filter === 'completed' ? { backgroundColor: colors.primary, borderColor: colors.primary } : {}}
-          onClick={() => setFilter('completed')}
-        >
-          Completadas
-        </button>
-      </div>
-
-      {/* Lista de tareas */}
-      {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Cargando...</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+        <div className="stat-card">
+          <div className="stat-icon green"><FaCheckSquare /></div>
+          <div>
+            <div className="stat-value">{stats.pending}</div>
+            <div className="stat-label">Pendientes</div>
           </div>
         </div>
-      ) : filteredTasks.length > 0 ? (
-        <div className="d-flex flex-column gap-3">
-          {filteredTasks.map((task) => (
-            <div 
-              key={task.id}
-              className="card p-3"
-              style={{ 
-                opacity: task.completed ? 0.7 : 1,
-                borderLeft: task.priority === 'alta' ? '4px solid #dc3545' : 
-                           task.priority === 'media' ? '4px solid #ffc107' : 
-                           '4px solid #6c757d',
-                borderRight: task.assignedTo ? `3px solid ${task.profileColor || colors.primary}` : 'none'
-              }}
-            >
-              <div className="d-flex align-items-start">
-                <input 
-                  type="checkbox" 
-                  className="form-check-input me-3 mt-1"
-                  checked={task.completed}
-                  onChange={() => toggleTask(task.id)}
-                  style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-                />
-                <div className="flex-grow-1">
-                  <div className={`fw-medium ${task.completed ? 'text-muted text-decoration-line-through' : ''}`}>
-                    {task.title}
-                  </div>
-                  <div className="d-flex align-items-center gap-3 mt-2">
-                    <small className={`text-muted ${task.completed ? '' : 'text-success'}`}>
-                      {task.completed ? '✓ Completada' : task.dueDate}
-                    </small>
-                    <small className="text-muted">
-                      {task.type === 'automatic' ? '🤖 Sistema' : '👤 ' + task.assignedBy}
-                    </small>
-                    {task.assignedToName && (
-                      <small className="badge bg-light text-dark">
-                        <FaUser className="me-1" />
-                        {task.assignedToName}
-                      </small>
-                    )}
-                  </div>
-                </div>
-                <span className={`badge ${
-                  task.priority === 'alta' ? 'bg-danger' :
-                  task.priority === 'media' ? 'bg-warning' :
-                  'bg-secondary'
-                }`}>
-                  {task.priority === 'alta' ? 'Alta' : task.priority === 'media' ? 'Media' : 'Baja'}
-                </span>
-              </div>
-            </div>
-          ))}
+        <div className="stat-card">
+          <div className="stat-icon blue"><FaCheck /></div>
+          <div>
+            <div className="stat-value">{stats.done}</div>
+            <div className="stat-label">Completadas</div>
+          </div>
         </div>
-      ) : (
-        <div className="text-center py-5 text-muted">
-          <FaCheckSquare size={48} className="mb-3 opacity-50" />
-          <p>No hay tareas {filter === 'pending' ? 'pendientes' : filter === 'completed' ? 'completadas' : ''}</p>
+      </div>
+
+      {stats.high > 0 && (
+        <div style={{
+          background: '#fee2e2', color: '#dc2626', padding: '10px 14px',
+          borderRadius: 'var(--radius-md)', fontSize: '0.85rem', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: 8
+        }}>
+          <i className="bi bi-exclamation-triangle"></i>
+          {stats.high} tarea{stats.high !== 1 ? 's' : ''} urgente{stats.high !== 1 ? 's' : ''} pendiente{stats.high !== 1 ? 's' : ''}
         </div>
       )}
 
-      {/* Modal para agregar tarea */}
-      {showAddTaskModal && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Nueva Tarea</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => setShowAddTaskModal(false)}
-                ></button>
-              </div>
-              <form onSubmit={handleAddTask}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Descripción</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={newTask.title}
-                      onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                      placeholder="¿Qué tarea necesitas hacer?"
-                      required
-                      autoFocus
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Prioridad</label>
-                    <select
-                      className="form-select"
-                      value={newTask.priority}
-                      onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
-                    >
-                      <option value="baja">Baja</option>
-                      <option value="media">Media</option>
-                      <option value="alta">Alta</option>
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Fecha límite (opcional)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={newTask.dueDate}
-                      onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
-                      placeholder="Ej: Hoy, Mañana, Este viernes"
-                    />
-                  </div>
-                  
-                  {/* Selector de empleado (solo para perfiles con permisos) */}
-                  {currentProfile?.canAssignTasks && (
-                    <div className="mb-3">
-                      <label className="form-label">Asignar a</label>
-                      <select
-                        className="form-select"
-                        value={newTask.assignedTo}
-                        onChange={(e) => setNewTask({...newTask, assignedTo: e.target.value})}
-                      >
-                        <option value="">Seleccionar empleado...</option>
-                        {employees
-                          .filter(emp => emp.id !== localStorage.getItem('employeeId')) // No mostrarse a sí mismo
-                          .map(emp => (
-                            <option key={emp.id} value={emp.id}>
-                              {emp.name} ({emp.profile})
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-                <div className="modal-footer">
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
-                    onClick={() => setShowAddTaskModal(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary"
-                    style={{ backgroundColor: colors.primary, borderColor: colors.primary }}
-                  >
-                    Crear Tarea
-                  </button>
-                </div>
-              </form>
-            </div>
+      <div className="tabs">
+        <button className={`tab-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
+          Todas ({stats.total})
+        </button>
+        <button className={`tab-btn ${filter === 'pending' ? 'active' : ''}`} onClick={() => setFilter('pending')}>
+          Pendientes ({stats.pending})
+        </button>
+        <button className={`tab-btn ${filter === 'done' ? 'active' : ''}`} onClick={() => setFilter('done')}>
+          Hechas ({stats.done})
+        </button>
+      </div>
+
+      <button className="btn btn-primary btn-block" onClick={() => setShowAdd(true)}>
+        <FaPlus /> Nueva Tarea
+      </button>
+
+      {showAdd && (
+        <div className="card fade-up">
+          <div className="card-header-section">
+            <h3 className="card-title">Nueva Tarea</h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowAdd(false)}>
+              <i className="bi bi-x-lg"></i>
+            </button>
           </div>
+          <div className="card-body">
+            <div className="form-group">
+              <label className="form-label">Título</label>
+              <input type="text" className="form-control" placeholder="¿Qué necesitas hacer?"
+                value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} autoFocus />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Descripción</label>
+              <input type="text" className="form-control" placeholder="Detalles adicionales..."
+                value={newTask.desc} onChange={(e) => setNewTask({...newTask, desc: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Prioridad</label>
+              <select className="form-select" value={newTask.priority}
+                onChange={(e) => setNewTask({...newTask, priority: e.target.value})}>
+                <option value="low">Baja</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
+              </select>
+            </div>
+            <button className="btn btn-primary btn-block" onClick={addTask}>
+              <FaPlus /> Agregar Tarea
+            </button>
+          </div>
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="empty-state">
+          <FaCheckSquare />
+          <h4>Sin tareas</h4>
+          <p>{filter === 'all' ? 'No hay tareas registradas' : filter === 'pending' ? '¡Felicidades! No tienes pendientes' : 'Aún no completas tareas'}</p>
+        </div>
+      ) : (
+        <div className="card">
+          {filtered.map(task => {
+            const priority = PRIORITY_CONFIG[task.priority];
+            return (
+              <div key={task.id} className="check-item" style={{ opacity: task.status === 'done' ? 0.6 : 1 }}>
+                <div
+                  className={`check-box ${task.status === 'done' ? 'checked' : ''}`}
+                  onClick={() => toggleTask(task.id)}
+                >
+                  {task.status === 'done' && <FaCheck size={12} />}
+                </div>
+                <div className="check-content" style={{ flex: 1 }}>
+                  <div className="check-title">{task.title}</div>
+                  {task.desc && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{task.desc}</div>}
+                  <div className="check-meta" style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <span className="badge" style={{ background: priority.bg, color: priority.color }}>
+                      {priority.label}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <FaClock size={10} /> {task.due}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <FaUser size={10} /> {task.assignee}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

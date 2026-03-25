@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 
 const TestAuth = () => {
   useEffect(() => {
-    const employeeId = localStorage.getItem('employeeId');
-    const employeeName = localStorage.getItem('employeeName');
+    const employeeId = sessionStorage.getItem('mobile_employeeId');
+    const employeeName = sessionStorage.getItem('mobile_employeeName');
     
     console.log('TestAuth: employeeId =', employeeId);
     console.log('TestAuth: employeeName =', employeeName);
@@ -19,8 +19,8 @@ const TestAuth = () => {
   return (
     <div>
       <h1>Test de Autenticación</h1>
-      <p>employeeId: {localStorage.getItem('employeeId')}</p>
-      <p>employeeName: {localStorage.getItem('employeeName')}</p>
+      <p>employeeId: {sessionStorage.getItem('mobile_employeeId')}</p>
+      <p>employeeName: {sessionStorage.getItem('mobile_employeeName')}</p>
     </div>
   );
 };

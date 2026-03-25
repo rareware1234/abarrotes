@@ -1,0 +1,1 @@
+package com.abarrotes.repository; import com.abarrotes.domain.Membresia; import org.springframework.data.jpa.repository.JpaRepository; public interface MembresiaRepository extends JpaRepository<Membresia, Long>{}

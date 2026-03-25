@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+target/
+.gradle/
+*.swp
+*.swo
+*~
+.vscode/
