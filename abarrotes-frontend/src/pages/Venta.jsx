@@ -316,6 +316,20 @@ const Venta = () => {
     }
   };
 
+  const handleInputFocus = (e) => {
+    e.target.blur();
+    setTimeout(() => e.target.focus(), 10);
+  };
+
+  const handleInputBlur = () => {
+    // Cleanup if needed
+  };
+
+  const handleInputTouchStart = (e) => {
+    e.target.focus();
+    e.stopPropagation();
+  };
+
   // Seleccionar sugerencia
   const selectSuggestion = (product) => {
     setScanCode(product.name);
@@ -818,66 +832,90 @@ const Venta = () => {
 
   return (
     <>
-      <div className="container-fluid p-0" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-        {/* Header */}
-        <div className="d-flex justify-content-between align-items-center px-4 py-3 bg-white shadow-sm">
-          <div className="d-flex align-items-center">
-             <img src="/src/assets/logo.png" alt="Logo" style={{ height: '40px', marginRight: '15px' }} />
-            <h4 className="mb-0 fw-bold text-dark">Punto de Venta</h4>
-          </div>
-          <div className="d-flex gap-2">
-              <button className="btn btn-outline-secondary rounded-pill" onClick={() => navigate('/productos')}>
-                  <i className="bi bi-box-seam me-2"></i> Inventario
-              </button>
-              <button className="btn btn-outline-secondary rounded-pill" onClick={() => navigate('/pedidos')}>
-                  <i className="bi bi-clock-history me-2"></i> Historial
-              </button>
-          </div>
-        </div>
+      {/* Barra de Escaneo - fixed below navbar */}
+      <div style={{
+        display: 'flex',
+        width: '100%',
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
+        padding: '8px',
+        gap: '0',
+        overflow: 'hidden',
+        position: 'fixed',
+        top: '56px',
+        left: 0,
+        right: 0,
+        background: 'white',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        zIndex: 100
+      }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={scanCode}
+          onChange={handleInputChange}
+          placeholder="Escanear código..."
+          style={{
+            flex: '1 1 0',
+            minWidth: '0',
+            fontSize: '16px',
+            boxSizing: 'border-box',
+            padding: '12px',
+            border: '1px solid #ddd',
+            borderRadius: '8px 0 0 8px',
+            outline: 'none',
+            WebkitAppearance: 'none',
+            touchAction: 'manipulation'
+          }}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck="false"
+        />
+        <button 
+          onClick={handleScan}
+          style={{
+            flex: '0 0 auto',
+            whiteSpace: 'nowrap',
+            backgroundColor: '#00843D',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0 8px 8px 0',
+            padding: '12px 16px',
+            fontSize: '16px',
+            cursor: 'pointer'
+          }}
+        >
+          +
+        </button>
+      </div>
+
+        {/* Main Content - flex: 1 para scroll interno */}
+        <div 
+          className="area-scroll"
+          style={{ 
+            flex: 1,
+            paddingLeft: '8px', 
+            paddingRight: '8px',
+            paddingBottom: '8px',
+            paddingTop: '120px',
+            backgroundColor: '#f4f7f6',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            boxSizing: 'border-box',
+            touchAction: 'pan-y',
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
+            width: '100%',
+            maxWidth: '100%'
+          }}
+        >
 
         {/* Contenido Principal */}
-        <div className="flex-grow-1 d-flex">
+        <div className="venta-layout">
           {/* Columna Izquierda: Buscador y Carrito */}
-          <div className="col-md-8 d-flex flex-column p-4">
-            {/* Barra de Escaneo */}
-            <form onSubmit={handleScan} className="mb-4">
-              <div className="position-relative">
-                <div className="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
-                  <span className="input-group-text bg-white border-end-0">
-                    <i className="bi bi-upc-scan text-muted" style={{ fontSize: '1.5rem' }}></i>
-                  </span>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    className="form-control border-start-0 ps-0"
-                    placeholder="Escanear código o buscar producto..."
-                    value={scanCode}
-                    onChange={handleInputChange}
-                    onClick={() => {
-                      // Si las sugerencias ya están visibles, ocultarlas (toggle)
-                      if (showSuggestions) {
-                        setShowSuggestions(false);
-                      } else {
-                        // Si no están visibles, mostrarlas
-                        if (scanCode.length > 0) {
-                          setShowSuggestions(true);
-                        } else {
-                          // Mostrar productos más vendidos al hacer clic sin texto
-                          const topSelling = getTopSellingProducts();
-                          setSuggestions(topSelling);
-                          setShowSuggestions(true);
-                        }
-                      }
-                    }}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    autoFocus
-                    style={{ fontSize: '1.2rem' }}
-                  />
-                  <button className="btn btn-primary px-4" type="submit" style={{ backgroundColor: colors.primary, borderColor: colors.primary }}>
-                    Agregar
-                  </button>
-                </div>
-                
+          <div className="venta-left-panel">
+              
                 {/* Sugerencias de autocompletar */}
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="position-absolute w-100 bg-white shadow-lg rounded-3 mt-1 overflow-hidden border" style={{ zIndex: 9999, borderColor: '#dadce0' }}>
@@ -916,16 +954,10 @@ const Venta = () => {
                             <div className="fw-medium text-truncate" style={{ color: '#202124', fontSize: '0.95rem' }}>
                               {product.name}
                             </div>
-                            <div className="text-muted small text-truncate" style={{ fontSize: '0.8rem' }}>
-                              {product.category || 'Producto'} • SKU: {product.sku || 'N/A'}
-                            </div>
                           </div>
-                          <div className="text-end ms-3" style={{ minWidth: '80px' }}>
-                            <div className="fw-bold" style={{ color: '#1a73e8', fontSize: '1rem' }}>
+                          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '8px' }}>
+                            <div style={{ color: '#00843D', fontWeight: 600, fontSize: '0.9rem' }}>
                               ${product.price ? (product.price * 1.16).toFixed(2) : '0.00'}
-                            </div>
-                            <div className="text-muted small" style={{ fontSize: '0.75rem' }}>
-                              MXN
                             </div>
                           </div>
                         </div>
@@ -933,110 +965,98 @@ const Venta = () => {
                     </div>
                   </div>
                 )}
-              </div>
-              <small className="text-muted ms-2">Presiona Ctrl+B para enfocar rápidamente</small>
-            </form>
 
             {/* Mensaje de Feedback */}
             {message.text && (
-              <div className={`alert alert-${message.type === 'success' ? 'success' : message.type === 'error' ? 'danger' : 'warning'} d-flex align-items-center mb-3`} role="alert">
+              <div className={`alert alert-${message.type === 'success' ? 'success' : message.type === 'error' ? 'danger' : 'warning'} d-flex align-items-center py-2 px-3 mb-3`} role="alert" style={{ fontSize: '0.9rem' }}>
                 <i className={`bi ${message.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2`}></i>
-                {message.text}
+                <span style={{ fontSize: '0.85rem' }}>{message.text}</span>
               </div>
             )}
 
             {/* Lista de Productos en Carrito */}
-            <div className="card border-0 shadow-sm flex-grow-1 rounded-4 overflow-hidden">
-              <div className="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                <h5 className="mb-0 fw-bold">Artículos en Venta</h5>
-                <span className="badge bg-secondary rounded-pill">{cart.length} items</span>
+            <div className="card border-0 shadow-sm flex-grow-1 rounded-4 overflow-hidden d-flex flex-column">
+              <div className="card-header bg-white py-2 py-md-3 border-0 d-flex justify-content-between align-items-center">
+                <h5 className="mb-0 fw-bold" style={{ fontSize: '0.95rem' }}>Artículos ({cart.length})</h5>
               </div>
-              <div className="card-body p-0 overflow-auto" style={{ maxHeight: '60vh' }}>
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light sticky-top">
-                    <tr>
-                      <th className="border-0 ps-4 py-3">Producto</th>
-                      <th className="border-0 text-center">Cant.</th>
-                      <th className="border-0 text-end pe-4">Precio</th>
-                      <th className="border-0 text-end pe-4">Subtotal</th>
-                      <th className="border-0"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="text-center py-5 text-muted">
-                          <i className="bi bi-cart-x display-4 d-block mb-2"></i>
-                          El carrito está vacío<br/>
-                          <small>Escanee un producto para comenzar</small>
-                        </td>
-                      </tr>
-                    ) : (
-                      cart.map((item) => (
-                        <tr key={item.id} className="border-bottom">
-                          <td className="ps-4 py-3 fw-medium">{item.name}</td>
-                          <td className="text-center">
-                            <div className="btn-group btn-group-sm" role="group">
-                              <button type="button" className="btn btn-outline-secondary" onClick={() => updateQuantity(item.id, -1)}>-</button>
-                              <button type="button" className="btn btn-outline-secondary disabled text-dark" style={{ minWidth: '40px' }}>{item.quantity}</button>
-                              <button type="button" className="btn btn-outline-secondary" onClick={() => updateQuantity(item.id, 1)}>+</button>
-                            </div>
-                          </td>
-                          <td className="text-end pe-4">${(item.price * 1.16).toFixed(2)}</td>
-                          <td className="text-end pe-4 fw-bold">${(item.subtotal * 1.16).toFixed(2)}</td>
-                          <td className="text-end pe-3">
-                            <button className="btn btn-link text-danger p-0" onClick={() => removeItem(item.id)}>
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+              <div className="card-body p-0 overflow-auto flex-grow-1">
+                {cart.length === 0 ? (
+                  <div className="text-center py-4 py-md-5 text-muted">
+                    <i className="bi bi-cart-x d-block mb-2" style={{ fontSize: '2rem' }}></i>
+                    <span style={{ fontSize: '0.9rem' }}>Carrito vacío</span>
+                  </div>
+                ) : (
+                  <div className="list-group list-group-flush">
+                    {cart.map((item) => (
+                      <div key={item.id} className="list-group-item d-flex align-items-center py-2 py-md-3 px-2 px-md-3 border-bottom">
+                        <div className="flex-grow-1 min-width-0">
+                          <div className="text-truncate fw-medium" style={{ fontSize: '0.9rem' }}>{item.name}</div>
+                          <div className="text-muted" style={{ fontSize: '0.75rem' }}>${(item.price * 1.16).toFixed(2)} c/u</div>
+                        </div>
+                        <div className="d-flex align-items-center gap-1 gap-md-2 ms-2">
+                          <button className="btn btn-sm btn-outline-secondary" style={{ width: '32px', height: '32px', padding: '0' }} onClick={() => updateQuantity(item.id, -1)}>
+                            <i className="bi bi-dash"></i>
+                          </button>
+                          <span className="fw-bold mx-1" style={{ minWidth: '24px', textAlign: 'center', fontSize: '0.9rem' }}>{item.quantity}</span>
+                          <button className="btn btn-sm btn-outline-secondary" style={{ width: '32px', height: '32px', padding: '0' }} onClick={() => updateQuantity(item.id, 1)}>
+                            <i className="bi bi-plus"></i>
+                          </button>
+                        </div>
+                        <div className="text-end ms-2 ms-md-3" style={{ minWidth: '60px' }}>
+                          <div className="fw-bold" style={{ fontSize: '0.9rem' }}>${(item.subtotal * 1.16).toFixed(2)}</div>
+                        </div>
+                        <button className="btn btn-link text-danger p-1 ms-1" style={{ fontSize: '1rem' }} onClick={() => removeItem(item.id)}>
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Columna Derecha: Resumen de Pago */}
-          <div className="col-md-4 bg-white shadow-lg p-4 d-flex flex-column" style={{ minHeight: '100vh', overflowY: 'auto' }}>
-            <h4 className="mb-4 fw-bold">Resumen de Venta</h4>
+          {/* Columna Derecha: Resumen de Pago - STICKY */}
+          <div className="venta-right-panel bg-white shadow-lg p-3 p-md-4 rounded-4">
+            <h4 className="mb-3 mb-md-4 fw-bold" style={{ fontSize: '1.1rem' }}>Resumen de Venta</h4>
             
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">Subtotal (con IVA)</span>
+            <div className="d-flex justify-content-between mb-2" style={{ fontSize: '0.85rem' }}>
+              <span className="text-muted">Subtotal</span>
               <span className="fw-medium">${subtotalConIVA.toFixed(2)}</span>
             </div>
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-muted">IVA (16%)</span>
+            <div className="d-flex justify-content-between mb-2" style={{ fontSize: '0.85rem' }}>
+              <span className="text-muted">IVA</span>
               <span className="fw-medium">${iva.toFixed(2)}</span>
             </div>
-            <hr />
+            <hr className="my-2 my-md-3" />
             <div className="d-flex justify-content-between mb-4">
               <span className="h5 mb-0 fw-bold">Total</span>
               <span className="h4 mb-0 fw-bold text-primary">${totalConIVA.toFixed(2)}</span>
             </div>
 
-            {/* Botón de Pago */}
-            <button 
-              className="btn btn-primary btn-lg w-100 mb-3" 
-              style={{ backgroundColor: colors.primary, borderColor: colors.primary }}
-              onClick={openPaymentModal}
-            >
-              <i className="bi bi-credit-card me-2"></i> Proceder a Pago
-            </button>
-
-            <button 
-              className="btn btn-outline-danger w-100"
-              onClick={enviarNuevaVenta}
-            >
-              <i className="bi bi-plus-circle me-2"></i> Nueva Venta
-            </button>
-            
             {/* Espacio flexible para empujar el contenido hacia abajo */}
             <div className="flex-grow-1"></div>
+
+            {/* Botones al fondo */}
+            <div className="mt-auto pt-3">
+              <button 
+                className="btn btn-primary btn-lg w-100 mb-3" 
+                style={{ backgroundColor: colors.primary, borderColor: colors.primary }}
+                onClick={openPaymentModal}
+              >
+                <i className="bi bi-credit-card me-2"></i> Proceder a Pago
+              </button>
+
+              <button 
+                className="btn btn-outline-danger w-100"
+                onClick={enviarNuevaVenta}
+              >
+                <i className="bi bi-plus-circle me-2"></i> Nueva Venta
+              </button>
+            </div>
             
             {/* Información del usuario logueado */}
-            <div className="mt-4 pt-3 border-top text-center">
+            <div className="mt-3 pt-3 border-top text-center">
               <small className="text-muted">
                 Empleado: <strong>{localStorage.getItem('employeeName') || 'No identificado'}</strong>
               </small>
