@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { onAuthChange } from '../services/firebaseAuth';
 
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos
+const SESSION_TIMEOUT = 30 * 60 * 1000;
 
 const ProtectedRoute = ({ children, allowedProfiles = [] }) => {
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
-  const location = useLocation();
 
   useEffect(() => {
-    // Verificar timeout de sesión
     const checkSession = () => {
       const isDesktopApp = sessionStorage.getItem('desktop_isDesktopApp');
       const loginTime = sessionStorage.getItem('desktop_loginTime');
@@ -19,7 +17,6 @@ const ProtectedRoute = ({ children, allowedProfiles = [] }) => {
       if (isDesktopApp === 'true' && loginTime) {
         const elapsed = Date.now() - parseInt(loginTime, 10);
         if (elapsed > SESSION_TIMEOUT) {
-          // Sesión expirada
           sessionStorage.removeItem('desktop_employeeId');
           sessionStorage.removeItem('desktop_employeeName');
           sessionStorage.removeItem('desktop_employeeProfile');
@@ -33,20 +30,16 @@ const ProtectedRoute = ({ children, allowedProfiles = [] }) => {
       return false;
     };
 
-    // Verificar sesión al cargar
     if (!checkSession()) {
       setIsAuthenticated(false);
       setIsChecking(false);
       return;
     }
 
-    // Usar Firebase Auth para verificar el estado
     const unsubscribe = onAuthChange((state) => {
       if (state.isAuthenticated && state.user) {
         setIsAuthenticated(true);
         setUserProfile(state.user.profile);
-        
-        // Actualizar sessionStorage con prefijo escritorio
         sessionStorage.setItem('desktop_employeeId', state.user.id);
         sessionStorage.setItem('desktop_employeeName', state.user.nombre);
         sessionStorage.setItem('desktop_employeeProfile', state.user.profile);
@@ -62,7 +55,6 @@ const ProtectedRoute = ({ children, allowedProfiles = [] }) => {
     return () => unsubscribe();
   }, []);
 
-  // Reset timer on activity
   useEffect(() => {
     const resetTimer = () => {
       const isDesktopApp = sessionStorage.getItem('desktop_isDesktopApp');
@@ -86,19 +78,29 @@ const ProtectedRoute = ({ children, allowedProfiles = [] }) => {
 
   if (isChecking) {
     return (
-      <div className="d-flex justify-content-center align-items-center min-vh-100" style={{ backgroundColor: '#0a0a0f' }}>
-        <div className="spinner-border text-success" role="status">
-          <span className="visually-hidden">Verificando autenticación...</span>
+      <div style={{ 
+        position: 'fixed', inset: 0, 
+        background: 'linear-gradient(135deg, #004d2f, #00843D)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 9999
+      }}>
+        <div style={{ textAlign: 'center', color: 'white' }}>
+          <div style={{
+            width: 40, height: 40, border: '3px solid rgba(255,255,255,0.3)',
+            borderTopColor: 'white', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite', margin: '0 auto 12px'
+          }} />
+          <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8 }}>Verificando sesión...</p>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  // Verificar permisos de perfil si se especifican
   if (allowedProfiles.length > 0 && !allowedProfiles.includes(userProfile)) {
     return <Navigate to="/dashboard" replace />;
   }

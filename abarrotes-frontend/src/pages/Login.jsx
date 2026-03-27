@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { FaUser, FaLock, FaSignInAlt, FaEye, FaEyeSlash, FaShieldAlt, FaCheck } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { FaUser, FaLock, FaSignInAlt, FaEye, FaEyeSlash, FaCheck } from 'react-icons/fa';
 import { loginWithEmail } from '../services/firebaseAuth';
-import './Login.css';
+import logo from '../assets/logo.png';
 
 const Login = () => {
   const [employeeId, setEmployeeId] = useState('');
@@ -13,9 +13,11 @@ const Login = () => {
   const [attempts, setAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const fromProtected = location.state?.from?.pathname;
+  useEffect(() => {
+    document.body.classList.add('login-page-active');
+    return () => document.body.classList.remove('login-page-active');
+  }, []);
 
   useEffect(() => {
     if (error) {
@@ -66,7 +68,7 @@ const Login = () => {
         sessionStorage.setItem('desktop_loginTime', Date.now().toString());
         sessionStorage.setItem('desktop_isDesktopApp', 'true');
         
-        const redirectTo = fromProtected || '/dashboard';
+        const redirectTo = '/';
         navigate(redirectTo, { replace: true });
       } else {
         const newAttempts = attempts + 1;
@@ -87,149 +89,106 @@ const Login = () => {
   };
 
   return (
-    <div className="login-desktop-container">
-      {/* Background Circles */}
-      <div className="login-bg-circles">
-        <div className="login-bg-circle login-bg-circle-1"></div>
-        <div className="login-bg-circle login-bg-circle-2"></div>
-        <div className="login-bg-circle login-bg-circle-3"></div>
-        <div className="login-bg-circle login-bg-circle-4"></div>
-        <div className="login-bg-circle login-bg-circle-5"></div>
-        <div className="login-bg-circle login-bg-circle-6"></div>
+    <div className="login-page">
+      {/* Panel Izquierdo - Branding (Desktop) */}
+      <div className="login-brand-panel" style={{ alignItems: 'center', textAlign: 'center' }}>
+        <img src={logo} alt="Abarrotes Digitales" style={{ maxWidth: '240px', filter: 'brightness(0) invert(1)' }} />
       </div>
-
-      {/* Lado izquierdo - Branding */}
-      <div className="login-branding">
-        <div className="login-branding-content">
-          <div className="login-logo-container">
-            <img 
-              src="/src/assets/logo.png" 
-              alt="Abarrotes Digitales" 
-              className="login-logo-img"
-            />
-          </div>
-          <h1 className="login-brand-title">Abarrotes Digitales</h1>
-          <p className="login-subtitle">Sistema de Punto de Venta</p>
+      
+      {/* Panel Derecho - Formulario */}
+      <div className="login-form-panel">
+        <div className="login-card">
+          <img src={logo} alt="Abarrotes Digitales" className="login-logo-mobile" />
+          <h2>Iniciar sesión</h2>
+          <p>Bienvenido de vuelta</p>
           
-          <div className="login-features">
-            <div className="login-feature-item">
-              <span className="login-feature-check">
-                <FaCheck />
-              </span>
-              <span>Ventas rápidas y eficientes</span>
-            </div>
-            <div className="login-feature-item">
-              <span className="login-feature-check">
-                <FaCheck />
-              </span>
-              <span>Inventario en tiempo real</span>
-            </div>
-            <div className="login-feature-item">
-              <span className="login-feature-check">
-                <FaCheck />
-              </span>
-              <span>Reportes detallados</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Lado derecho - Formulario */}
-      <div className="login-form-side">
-        <div className="login-form-container">
-          <div className="login-form-header">
-            <h2>Iniciar Sesión</h2>
-            <p>Ingresa tus credenciales para continuar</p>
-          </div>
-
           {error && (
-            <div className="login-error-alert">
-              <FaShieldAlt />
-              <span>{error}</span>
+            <div style={{ 
+              background: '#fee2e2', 
+              color: '#dc2626', 
+              padding: '12px 16px', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <i className="bi bi-exclamation-circle"></i>
+              {error}
             </div>
           )}
-
-          <form onSubmit={handleSubmit} className="login-form">
-            {/* Campo de usuario */}
-            <div className="login-field">
-              <label htmlFor="employeeId">Número de Empleado</label>
-              <div className="login-input-group">
-                <span className="login-input-icon">
-                  <FaUser />
-                </span>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Número de Empleado</label>
+              <div className="input-wrapper">
+                <i className="bi bi-person input-icon"></i>
                 <input
                   type="text"
-                  id="employeeId"
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
                   placeholder="Ej: EMP001"
                   required
-                  autoFocus
-                  autoComplete="username"
                   disabled={loading}
                 />
               </div>
             </div>
-
-            {/* Campo de contraseña */}
-            <div className="login-field">
-              <label htmlFor="password">Contraseña</label>
-              <div className="login-input-group">
-                <span className="login-input-icon">
-                  <FaLock />
-                </span>
+            
+            <div className="form-group">
+              <label>Contraseña</label>
+              <div className="input-wrapper">
+                <i className="bi bi-lock input-icon"></i>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  autoComplete="current-password"
                   disabled={loading}
                 />
                 <button
                   type="button"
-                  className="login-input-action"
+                  className="toggle-password"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
             </div>
-
-            {/* Indicador de intentos */}
+            
             {attempts > 0 && attempts < 3 && (
-              <div className="login-attempts">
+              <div style={{ 
+                textAlign: 'center', 
+                color: '#f59e0b', 
+                fontSize: '0.85rem',
+                marginBottom: '16px'
+              }}>
                 Intentos: {attempts}/3
               </div>
             )}
-
-            {/* Botón de login */}
+            
             <button
               type="submit"
-              className="login-submit-btn"
+              className="btn-primary-custom w-100"
               disabled={loading || (lockoutUntil && Date.now() < lockoutUntil)}
+              style={{ height: '50px', marginTop: '8px' }}
             >
               {loading ? (
                 <>
-                  <span className="login-spinner"></span>
+                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                   Verificando...
                 </>
               ) : (
                 <>
                   <FaSignInAlt />
-                  Entrar al Sistema
+                  Iniciar sesión
                 </>
               )}
             </button>
           </form>
-
-          {/* Seguridad */}
-          <div className="login-security">
-            <FaShieldAlt />
-            <span>Conexión segura con Firebase</span>
-          </div>
+          
+          <p className="login-footer">Abarrotes Digitales v1.0</p>
         </div>
       </div>
     </div>

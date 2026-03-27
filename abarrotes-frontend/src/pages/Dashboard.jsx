@@ -15,7 +15,6 @@ import api from '../api/axiosConfig';
 import { getProfileColor } from '../data/employeeProfiles';
 import { useSharedOrders } from '../hooks/useSharedOrders';
 
-// Registrar los componentes de Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -33,17 +32,16 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     totalSales: 0,
     todaySales: 0,
-    goal: 50000, // Meta diaria por defecto
+    goal: 50000,
     ordersCount: 0,
     avgTicket: 0
   });
   const [loading, setLoading] = useState(true);
   const [salesData, setSalesData] = useState({ labels: [], data: [] });
   const [categoryData, setCategoryData] = useState({ labels: [], data: [] });
-  const [profileColor, setProfileColor] = useState('#1e7f5c');
+  const [profileColor, setProfileColor] = useState('#1B5E35');
 
   useEffect(() => {
-    // Obtener color del perfil
     const employeeProfile = localStorage.getItem('employeeProfile') || 'staff';
     setProfileColor(getProfileColor(employeeProfile));
     
@@ -54,16 +52,12 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      // Obtener pedidos del día actual desde el sistema compartido
       const todayOrders = getTodayOrders();
       const todaySalesTotal = getTodaySalesTotal();
       
-      // Calcular estadísticas basadas en pedidos reales
       const ordersCount = todayOrders.length;
       const avgTicket = ordersCount > 0 ? todaySalesTotal / ordersCount : 0;
       
-      // Obtener ventas totales (simuladas para el momento)
-      // En producción, esto debería venir del backend
       const totalSales = 125000.50;
       const goal = 10000;
       
@@ -75,16 +69,14 @@ const Dashboard = () => {
         avgTicket: avgTicket
       });
 
-      // Datos para el gráfico de líneas (Ventas últimos 7 días)
       const lineData = {
-        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+        labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
         data: [4200, 5100, 4800, 6200, 7100, 8900, todaySalesTotal]
       };
       setSalesData(lineData);
 
-      // Datos para el gráfico de dona (Categorías)
       const doughnutData = {
-        labels: ['Abarrotes', 'Lácteos', 'Limpieza', 'Bebidas', 'Otros'],
+        labels: ['Abarrotes', 'Lacteos', 'Limpieza', 'Bebidas', 'Otros'],
         data: [35, 25, 20, 15, 5]
       };
       setCategoryData(doughnutData);
@@ -96,14 +88,16 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) return <div className="p-4">Cargando dashboard...</div>;
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '48px' }}>
+      <div className="spinner" style={{ margin: '0 auto' }}></div>
+    </div>
+  );
 
-  // Configuración del gráfico de líneas
   const lineChartOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'top' },
-      title: { display: true, text: 'Ventas de la Semana' },
+      legend: { display: false },
     },
   };
 
@@ -111,22 +105,21 @@ const Dashboard = () => {
     labels: salesData.labels,
     datasets: [
       {
-        label: 'Ventas ($)',
         data: salesData.data,
         borderColor: profileColor,
-        backgroundColor: profileColor + '33', // 20% opacity
+        backgroundColor: profileColor + '33',
         tension: 0.3,
         fill: true,
+        pointRadius: 4,
+        pointBackgroundColor: profileColor,
       },
     ],
   };
 
-  // Configuración del gráfico de dona
   const doughnutOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'right' },
-      title: { display: true, text: 'Ventas por Categoría' },
+      legend: { position: 'bottom' },
     },
   };
 
@@ -134,95 +127,66 @@ const Dashboard = () => {
     labels: categoryData.labels,
     datasets: [
       {
-        label: ' % Ventas',
         data: categoryData.data,
         backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(255, 206, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)',
+          '#1B5E35',
+          '#2E7D52',
+          '#4CAF50',
+          '#81C784',
+          '#A5D6A7',
         ],
-        borderWidth: 1,
+        borderWidth: 0,
       },
     ],
   };
 
-  // Calcular porcentaje de meta alcanzada
   const goalPercentage = Math.min((stats.todaySales / stats.goal) * 100, 100);
 
   return (
-    <div className="container-fluid p-4">
-      <h2 className="mb-4">Dashboard de Ventas</h2>
-
-      {/* KPIs Cards */}
-      <div className="row mb-4">
-        <div className="col-md-3 mb-3">
-          <div className="card text-white h-100" style={{ backgroundColor: profileColor }}>
-            <div className="card-body">
-              <h5 className="card-title">Ventas del Día</h5>
-              <p className="card-text display-6">
-                ${stats.todaySales.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
+    <div>
+      <div className="metrics-grid">
+        <div className="metric-card primary">
+          <div className="metric-label">Ventas del Dia</div>
+          <div className="metric-value">
+            ${stats.todaySales.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
           </div>
         </div>
-        <div className="col-md-3 mb-3">
-          <div className="card text-white h-100" style={{ backgroundColor: '#28a745' }}>
-            <div className="card-body">
-              <h5 className="card-title">Meta Diaria</h5>
-              <p className="card-text display-6">
-                ${stats.goal.toLocaleString('es-MX')}
-              </p>
-              <div className="progress mt-2" style={{ height: '10px' }}>
-                <div 
-                  className="progress-bar bg-white" 
-                  role="progressbar" 
-                  style={{ width: `${goalPercentage}%` }}
-                  aria-valuenow={goalPercentage} 
-                  aria-valuemin="0" 
-                  aria-valuemax="100"
-                ></div>
-              </div>
-              <small>{goalPercentage.toFixed(1)}% Alcanzado</small>
-            </div>
+        <div className="metric-card">
+          <div className="metric-label">Meta Diaria</div>
+          <div className="metric-value" style={{ color: '#4caf50' }}>
+            ${stats.goal.toLocaleString('es-MX')}
+          </div>
+          <div style={{ marginTop: '8px', height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ width: `${goalPercentage}%`, height: '100%', background: '#4caf50', borderRadius: '3px' }}></div>
+          </div>
+          <div style={{ fontSize: '12px', color: '#6b7c93', marginTop: '4px' }}>{goalPercentage.toFixed(1)}%</div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-label">Pedidos del Dia</div>
+          <div className="metric-value" style={{ color: '#2196f3' }}>
+            {stats.ordersCount}
           </div>
         </div>
-        <div className="col-md-3 mb-3">
-          <div className="card text-white h-100" style={{ backgroundColor: '#17a2b8' }}>
-            <div className="card-body">
-              <h5 className="card-title">Pedidos del Día</h5>
-              <p className="card-text display-6">{stats.ordersCount}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card text-white h-100" style={{ backgroundColor: '#ffc107', color: '#212529' }}>
-            <div className="card-body">
-              <h5 className="card-title">Ticket Promedio</h5>
-              <p className="card-text display-6">
-                ${stats.avgTicket.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
+        <div className="metric-card">
+          <div className="metric-label">Ticket Promedio</div>
+          <div className="metric-value" style={{ color: '#ff9800' }}>
+            ${stats.avgTicket.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
           </div>
         </div>
       </div>
 
-      {/* Gráficos */}
-      <div className="row">
-        <div className="col-md-8 mb-4">
-          <div className="card h-100">
-            <div className="card-body">
-              <Line options={lineChartOptions} data={lineChartData} />
-            </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+        <div className="card" style={{ padding: '20px' }}>
+          <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>Ventas de la Semana</h4>
+          <div style={{ height: '200px' }}>
+            <Line options={lineChartOptions} data={lineChartData} />
           </div>
         </div>
-        <div className="col-md-4 mb-4">
-          <div className="card h-100">
-            <div className="card-body d-flex justify-content-center align-items-center">
-              <div style={{ maxWidth: '300px', width: '100%' }}>
-                <Doughnut options={doughnutOptions} data={doughnutChartData} />
-              </div>
+        <div className="card" style={{ padding: '20px' }}>
+          <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>Ventas por Categoria</h4>
+          <div style={{ height: '200px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ maxWidth: '200px', width: '100%' }}>
+              <Doughnut options={doughnutOptions} data={doughnutChartData} />
             </div>
           </div>
         </div>

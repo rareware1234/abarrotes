@@ -1,0 +1,574 @@
+/* ============================================
+   POS LAYOUT - FLEX ARCHITECTURE FOR iOS
+   ============================================ */
+
+/* Reset total del contenedor raíz */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Contenedor principal POS */
+.pos-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  height: 100vh;
+  height: 100svh;
+  width: 100%;
+  overflow: hidden;
+  background: #F3F4F6;
+}
+
+/* ============================================
+   NAVBAR - flex: 0 0 56px (altura fija)
+   ============================================ */
+.pos-navbar {
+  flex: 0 0 56px;
+  min-height: 56px;
+  max-height: 56px;
+  display: flex;
+  align-items: center;
+  background: #1B5E35;
+  padding: 0 16px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.hamburger-btn {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.hamburger-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.hamburger-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.pos-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.nav-spacer {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   SEARCH BAR - flex: 0 0 auto (altura automática)
+   ============================================ */
+.pos-search-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  min-width: 0;
+  z-index: 9;
+}
+
+.search-input-wrapper {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #F9FAFB;
+}
+
+.search-input-wrapper svg {
+  width: 18px;
+  height: 18px;
+  color: #6B7C93;
+  flex-shrink: 0;
+}
+
+.search-input-wrapper input {
+  flex: 1 1 0;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  padding: 10px 8px;
+  outline: none;
+  color: #1a2b3c;
+}
+
+.search-input-wrapper input::placeholder {
+  color: #9CA3AF;
+}
+
+.pos-agregar-btn {
+  flex: 0 0 auto;
+  background: #1B5E35;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pos-agregar-btn:hover {
+  background: #154a2c;
+}
+
+.pos-agregar-btn:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   CONTENT - flex: 1 1 0 (ocupa resto)
+   ============================================ */
+.pos-content {
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 16px;
+  min-height: 0;
+}
+
+/* ============================================
+   CART ITEMS
+   ============================================ */
+.pos-cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.pos-cart-header h5 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a2b3c;
+}
+
+.pos-cart-count {
+  font-size: 13px;
+  color: #6B7C93;
+  background: #F3F4F6;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.pos-cart-items {
+  background: white;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+.pos-cart-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.pos-cart-item:last-child {
+  border-bottom: none;
+}
+
+.pos-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pos-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a2b3c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pos-item-price {
+  font-size: 12px;
+  color: #6B7C93;
+}
+
+.pos-item-quantity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px;
+}
+
+.pos-qty-btn {
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid #E5E7EB;
+  background: white;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a2b3c;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pos-qty-btn:hover {
+  background: #F3F4F6;
+}
+
+.pos-qty-value {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pos-item-total {
+  min-width: 60px;
+  text-align: right;
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a2b3c;
+}
+
+.pos-item-delete {
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  color: #DC3545;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.pos-item-delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Empty cart */
+.pos-empty-cart {
+  text-align: center;
+  padding: 48px 24px;
+  color: #6B7C93;
+}
+
+.pos-empty-cart svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+/* ============================================
+   SUMMARY SECTION
+   ============================================ */
+.pos-summary {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.pos-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #6B7C93;
+}
+
+.pos-summary-row:last-of-type {
+  border-bottom: 1px solid #E5E7EB;
+  margin-bottom: 8px;
+}
+
+.pos-summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+}
+
+.pos-summary-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a2b3c;
+}
+
+.pos-summary-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1B5E35;
+}
+
+/* ============================================
+   CHECKOUT BUTTON
+   ============================================ */
+.pos-checkout-btn {
+  width: 100%;
+  height: 52px;
+  background: #1B5E35;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.pos-checkout-btn:hover {
+  background: #154a2c;
+}
+
+.pos-checkout-btn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.pos-checkout-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pos-new-sale-btn {
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  color: #1B5E35;
+  border: 1.5px solid #1B5E35;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.pos-new-sale-btn:hover {
+  background: rgba(27,94,53,0.05);
+}
+
+/* ============================================
+   EMPLOYEE INFO
+   ============================================ */
+.pos-employee {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.pos-employee small {
+  font-size: 12px;
+  color: #6B7C93;
+}
+
+.pos-employee strong {
+  color: #1a2b3c;
+}
+
+/* ============================================
+   SUGGESTIONS DROPDOWN
+   ============================================ */
+.pos-suggestions {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 100%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 100;
+  overflow: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.pos-suggestions-header {
+  padding: 10px 16px;
+  background: #F3F4F6;
+  border-bottom: 1px solid #E5E7EB;
+  font-size: 12px;
+  color: #6B7C93;
+  font-weight: 500;
+}
+
+.pos-suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #F5F5F5;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pos-suggestion-item:hover {
+  background: #F9FAFB;
+}
+
+.pos-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.pos-suggestion-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a2b3c;
+}
+
+.pos-suggestion-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1B5E35;
+}
+
+/* ============================================
+   MESSAGES / TOASTS
+   ============================================ */
+.pos-message {
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pos-message.success {
+  background: #E8F5EC;
+  color: #166534;
+}
+
+.pos-message.error {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+/* ============================================
+   GRID PRODUCTS
+   ============================================ */
+.pos-products-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media screen and (min-width: 640px) {
+  .pos-products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pos-product-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pos-product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.pos-product-image {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  background: #F3F4F6;
+}
+
+.pos-product-body {
+  padding: 12px;
+}
+
+.pos-product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2b3c;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pos-product-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1B5E35;
+}
+
+/* ============================================
+   MOBILE SAFE AREA
+   ============================================ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .pos-layout {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .pos-navbar {
+    padding-top: env(safe-area-inset-top);
+    min-height: calc(56px + env(safe-area-inset-top));
+    max-height: none;
+  }
+}
+
+/* ============================================
+   LEGACY / COMPATIBILITY
+   ============================================ */
+.navbar, .search-bar, .main-content {
+  display: none !important;
+}
+
+.content-area.pos-full {
+  padding: 0 !important;
+  background: #F3F4F6 !important;
+}
+
+.content-area.pos-full > * {
+  height: 100%;
+}

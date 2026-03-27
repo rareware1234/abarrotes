@@ -6,18 +6,15 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
-      {
-        "source": "/empleado",
-        "destination": "/empleado/index.html"
-      },
-      {
-        "source": "/empleado/**",
-        "destination": "/empleado/index.html"
-      },
+    "headers": [
       {
         "source": "**",
-        "destination": "/index.html"
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
       }
     ]
   }

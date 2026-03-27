@@ -2,10 +2,37 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebaseDb';
-import { FaBox, FaSearch, FaPlus, FaTh, FaList, FaExclamationTriangle, FaSync, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaBox, FaSearch, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 
-const DEFAULT_CATEGORIES = ["Abarrotes", "Frescos", "Limpieza", "Higiene Personal", "Bebidas", "Golosinas", "Lácteos", "Carnes", "Otros"];
+const DEFAULT_CATEGORIES = ["Abarrotes", "Frescos", "Limpieza", "Higiene Personal", "Bebidas", "Golosinas", "Lacteos", "Carnes", "Otros"];
 const DEFAULT_UNITS = ["Pieza", "Paquete", "Caja", "Litro", "Kilo", "Gramo", "Bolsa", "Lata", "Botella"];
+
+const SearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+);
+
+const GridIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7"></rect>
+    <rect x="14" y="3" width="7" height="7"></rect>
+    <rect x="14" y="14" width="7" height="7"></rect>
+    <rect x="3" y="14" width="7" height="7"></rect>
+  </svg>
+);
+
+const ListIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6"></line>
+    <line x1="8" y1="12" x2="21" y2="12"></line>
+    <line x1="8" y1="18" x2="21" y2="18"></line>
+    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+  </svg>
+);
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -59,7 +86,6 @@ const Products = () => {
     try {
       let data = [];
       
-      // Try Firestore first
       try {
         const snapshot = await getDocs(collection(db, 'productos'));
         if (!snapshot.empty) {
@@ -80,7 +106,6 @@ const Products = () => {
         console.warn("Firestore error, using API:", firestoreErr.message);
       }
       
-      // Fallback to API
       if (data.length === 0) {
         try {
           const response = await api.get('/products');
@@ -119,180 +144,178 @@ const Products = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // ... existing code
   };
 
   return (
     <>
-      {/* Filters Section - sticky below global navbar */}
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: '#f4f7f6',
-        padding: '8px 4px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        {/* Filters Bar */}
-        <div className="card border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-          <div className="card-body p-2">
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-grow-1">
-                <div className="input-group" style={{ borderRadius: '8px', overflow: 'hidden' }}>
-                  <span className="input-group-text bg-white border-end-0" style={{ padding: '8px' }}>
-                    <i className="bi bi-search" style={{ color: '#00843D', fontSize: '0.9rem' }}></i>
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control border-start-0"
-                    placeholder="Buscar..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => { document.body.style.position = 'fixed'; document.body.style.height = '100dvh'; }}
-                    onBlur={() => { document.body.style.position = ''; document.body.style.height = ''; }}
-                    style={{ borderRadius: '0 8px 8px 0', fontSize: '16px', padding: '8px' }}
-                  />
-                </div>
-              </div>
-              <select className="form-select" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} style={{ borderRadius: '8px', fontSize: '0.85rem', padding: '8px', width: 'auto' }}>
-                <option value="all">Categorías</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              <button 
-                className={`btn ${viewMode === 'grid' ? 'btn-success' : 'btn-outline-secondary'}`}
-                onClick={() => setViewMode('grid')}
-                style={{ borderRadius: '8px', padding: '8px' }}
-              >
-                <i className="bi bi-grid-3x3-gap"></i>
-              </button>
-              <button 
-                className={`btn ${viewMode === 'list' ? 'btn-success' : 'btn-outline-secondary'}`}
-                onClick={() => setViewMode('list')}
-                style={{ borderRadius: '8px', padding: '8px' }}
-              >
-                <i className="bi bi-list-ul"></i>
-              </button>
+      <div className="search-bar">
+        <div className="search-bar-inner">
+          <div style={{ position: 'relative', flex: 1 }}>
+            <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#6b7c93' }}>
+              <SearchIcon />
             </div>
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ 
+                width: '100%',
+                height: '44px',
+                paddingLeft: '44px',
+                border: '1.5px solid #e5e7eb',
+                borderRadius: '10px',
+                fontSize: '16px',
+                background: '#F3F4F6'
+              }}
+            />
           </div>
+          <select 
+            value={selectedCategory} 
+            onChange={(e) => setSelectedCategory(e.target.value)} 
+            style={{ 
+              height: '44px',
+              padding: '0 12px',
+              border: '1.5px solid #e5e7eb',
+              borderRadius: '10px',
+              fontSize: '14px',
+              background: 'white',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="all">Categorias</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <button 
+            onClick={() => setViewMode('grid')}
+            style={{ 
+              width: '44px',
+              height: '44px',
+              border: viewMode === 'grid' ? 'none' : '1.5px solid #e5e7eb',
+              background: viewMode === 'grid' ? '#1B5E35' : 'white',
+              color: viewMode === 'grid' ? 'white' : '#6b7c93',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <GridIcon />
+          </button>
+          <button 
+            onClick={() => setViewMode('list')}
+            style={{ 
+              width: '44px',
+              height: '44px',
+              border: viewMode === 'list' ? 'none' : '1.5px solid #e5e7eb',
+              background: viewMode === 'list' ? '#1B5E35' : 'white',
+              color: viewMode === 'list' ? 'white' : '#6b7c93',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <ListIcon />
+          </button>
         </div>
       </div>
 
-      {/* Content - goes into main-content from App.jsx */}
-      <div style={{ 
-        paddingTop: '8px',
-        paddingLeft: '8px', 
-        paddingRight: '8px',
-        paddingBottom: '8px',
-        backgroundColor: '#f4f7f6'
-      }}>
-
-      {/* Products Grid */}
-      {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-success" role="status"></div>
-        </div>
-      ) : viewMode === 'grid' ? (
-        <div className="products-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '20px'
-        }}>
-          {filteredProducts.map((product) => (
-            <div 
-              key={product.id}
-              className="card border-0 shadow-sm"
-              style={{ borderRadius: '16px', overflow: 'hidden', transition: 'all 0.2s ease' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-6px)';
-                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-              }}
-            >
-              <div style={{ height: '160px', backgroundColor: '#f8f8f8', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                {product.imagen ? (
-                  <img src={product.imagen} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <i className="bi bi-box-seam" style={{ fontSize: '4rem', color: '#ddd' }}></i>
-                )}
-              </div>
-              <div className="card-body p-3">
-                <div style={{ fontSize: '0.85rem', color: '#00843D', fontWeight: '600', marginBottom: '4px' }}>
-                  {product.category}
+      <div style={{ padding: '16px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '48px' }}>
+            <div className="spinner" style={{ margin: '0 auto' }}></div>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: '48px' }}>
+            <p style={{ color: '#dc3545', marginBottom: '16px' }}>{error}</p>
+            <button onClick={retryFetch} className="btn-primary-custom">Reintentar</button>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="products-grid">
+            {filteredProducts.map((product) => (
+              <div 
+                key={product.id}
+                className="product-card"
+              >
+                <div style={{ height: '120px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {product.imagen ? (
+                    <img src={product.imagen} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <FaBox style={{ fontSize: '40px', color: '#d1d5db' }} />
+                  )}
                 </div>
-                <div style={{ 
-                  fontSize: '0.95rem', 
-                  color: '#333', 
-                  fontWeight: '500',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  marginBottom: '8px'
-                }}>
-                  {product.name}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px' }}>
-                  SKU: {product.sku || 'N/A'}
-                </div>
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#00843D' }}>
-                      ${(product.price * 1.16).toFixed(2)}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: '#888' }}>IVA incluido</div>
+                <div className="product-card-body">
+                  <div style={{ fontSize: '12px', color: '#1B5E35', fontWeight: 600, marginBottom: '4px' }}>
+                    {product.category}
                   </div>
-                  <button className="btn btn-sm" style={{ backgroundColor: '#00843D', color: 'white', borderRadius: '8px' }}>
-                    <i className="bi bi-pencil"></i>
-                  </button>
+                  <div className="product-card-name">
+                    {product.name}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '8px', fontFamily: 'monospace' }}>
+                    SKU: {product.sku || 'N/A'}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div className="product-card-price">
+                        ${(product.price * 1.16).toFixed(2)}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#9ca3af' }}>IVA incl.</div>
+                    </div>
+                    <button style={{ padding: '8px', background: '#1B5E35', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                      <FaEdit style={{ width: '14px', height: '14px' }} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        /* List View */
-        <div className="card border-0 shadow-sm" style={{ borderRadius: '16px', overflow: 'hidden' }}>
-          <div className="table-responsive">
-            <table className="table table-hover mb-0">
-              <thead style={{ backgroundColor: '#f8f9fa' }}>
-                <tr>
-                  <th className="border-0 ps-4 py-3" style={{ color: '#00843D', fontWeight: '600' }}>Producto</th>
-                  <th className="border-0" style={{ color: '#00843D', fontWeight: '600' }}>Categoría</th>
-                  <th className="border-0" style={{ color: '#00843D', fontWeight: '600' }}>SKU</th>
-                  <th className="border-0 text-end pe-4" style={{ color: '#00843D', fontWeight: '600' }}>Precio</th>
-                  <th className="border-0 text-center" style={{ color: '#00843D', fontWeight: '600' }}>Acciones</th>
+            ))}
+          </div>
+        ) : (
+          <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#F3F4F6' }}>
+                  <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>Producto</th>
+                  <th style={{ textAlign: 'left', padding: '14px 8px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>Categoria</th>
+                  <th style={{ textAlign: 'left', padding: '14px 8px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>SKU</th>
+                  <th style={{ textAlign: 'right', padding: '14px 16px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>Precio</th>
+                  <th style={{ textAlign: 'center', padding: '14px 8px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProducts.map((product) => (
-                  <tr key={product.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td className="ps-4 py-3">
-                      <div className="d-flex align-items-center gap-3">
-                        <div style={{ width: '48px', height: '48px', backgroundColor: '#f8f8f8', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  <tr key={product.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', background: '#F3F4F6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {product.imagen ? (
-                            <img src={product.imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={product.imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
                           ) : (
-                            <i className="bi bi-box-seam" style={{ color: '#ccc' }}></i>
+                            <FaBox style={{ color: '#d1d5db' }} />
                           )}
                         </div>
-                        <span style={{ fontWeight: '500' }}>{product.name}</span>
+                        <span style={{ fontWeight: 500 }}>{product.name}</span>
                       </div>
                     </td>
-                    <td><span className="badge" style={{ backgroundColor: '#e8f5ec', color: '#00843D' }}>{product.category}</span></td>
-                    <td style={{ color: '#666', fontFamily: 'monospace' }}>{product.sku}</td>
-                    <td className="text-end pe-4" style={{ fontWeight: '700', color: '#00843D' }}>${(product.price * 1.16).toFixed(2)}</td>
-                    <td className="text-center">
-                      <button className="btn btn-sm me-1" style={{ backgroundColor: '#00843D', color: 'white', borderRadius: '6px' }}>
-                        <i className="bi bi-pencil"></i>
+                    <td style={{ padding: '14px 8px' }}>
+                      <span style={{ padding: '4px 10px', background: 'rgba(27,94,53,0.1)', color: '#1B5E35', borderRadius: '20px', fontSize: '12px', fontWeight: 500 }}>
+                        {product.category}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 8px', fontFamily: 'monospace', color: '#6b7c93' }}>{product.sku}</td>
+                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, color: '#1B5E35' }}>
+                      ${(product.price * 1.16).toFixed(2)}
+                    </td>
+                    <td style={{ padding: '14px 8px', textAlign: 'center' }}>
+                      <button style={{ padding: '6px', background: '#1B5E35', color: 'white', border: 'none', borderRadius: '6px', marginRight: '4px', cursor: 'pointer' }}>
+                        <FaEdit style={{ width: '14px', height: '14px' }} />
                       </button>
-                      <button className="btn btn-sm" style={{ backgroundColor: '#dc3545', color: 'white', borderRadius: '6px' }}>
-                        <i className="bi bi-trash"></i>
+                      <button style={{ padding: '6px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                        <FaTrash style={{ width: '14px', height: '14px' }} />
                       </button>
                     </td>
                   </tr>
@@ -300,84 +323,62 @@ const Products = () => {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {/* Results Count */}
-      <div className="mt-4 d-flex justify-content-between align-items-center">
-        <span className="text-muted" style={{ fontSize: '0.9rem' }}>
-          {filteredProducts.length} productos encontrados
-        </span>
-        {searchTerm && (
-          <button className="btn btn-link text-success" onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}>
-            Limpiar filtros
-          </button>
         )}
-      </div>
+
+        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#6b7c93', fontSize: '14px' }}>
+            {filteredProducts.length} productos encontrados
+          </span>
+          {searchTerm && (
+            <button 
+              onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
+              style={{ background: 'none', border: 'none', color: '#1B5E35', cursor: 'pointer', fontWeight: 500 }}
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content" style={{ borderRadius: '20px', overflow: 'hidden' }}>
-              <div className="modal-header" style={{ backgroundColor: '#00843D', color: 'white' }}>
-                <h5 className="modal-title">Nuevo Producto</h5>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
-              </div>
-              <form onSubmit={handleSubmit}>
-                <div className="modal-body">
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Nombre del producto</label>
-                      <input type="text" className="form-control" name="name" value={formData.name} onChange={handleInputChange} required style={{ borderRadius: '10px' }} />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">SKU / Código de barras</label>
-                      <input type="text" className="form-control" name="sku" value={formData.sku} onChange={handleInputChange} required style={{ borderRadius: '10px' }} />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">Precio</label>
-                      <div className="input-group">
-                        <span className="input-group-text">$</span>
-                        <input type="number" className="form-control" name="price" value={formData.price} onChange={handleInputChange} required style={{ borderRadius: '10px' }} />
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">Precio Socio</label>
-                      <div className="input-group">
-                        <span className="input-group-text">$</span>
-                        <input type="number" className="form-control" name="memberPrice" value={formData.memberPrice} onChange={handleInputChange} style={{ borderRadius: '10px' }} />
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">Categoría</label>
-                      <select className="form-select" name="category" value={formData.category} onChange={handleInputChange} style={{ borderRadius: '10px' }}>
-                        {categories.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Unidad de medida</label>
-                      <select className="form-select" name="unitMeasure" value={formData.unitMeasure} onChange={handleInputChange} style={{ borderRadius: '10px' }}>
-                        {DEFAULT_UNITS.map(unit => (
-                          <option key={unit} value={unit}>{unit}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Stock mínimo</label>
-                      <input type="number" className="form-control" name="minStock" value={formData.minStock} onChange={handleInputChange} style={{ borderRadius: '10px' }} />
-                    </div>
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Nuevo Producto</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>
+                <FaTrash />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="modal-body">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Nombre del producto</label>
+                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} required className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">SKU / Codigo de barras</label>
+                    <input type="text" name="sku" value={formData.sku} onChange={handleInputChange} required className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Precio</label>
+                    <input type="number" name="price" value={formData.price} onChange={handleInputChange} required className="form-input" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Categoria</label>
+                    <select name="category" value={formData.category} onChange={handleInputChange} className="form-input">
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowModal(false)} style={{ borderRadius: '10px' }}>Cancelar</button>
-                  <button type="submit" className="btn" style={{ backgroundColor: '#00843D', color: 'white', borderRadius: '10px' }}>Guardar Producto</button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-outline-green">Cancelar</button>
+                <button type="submit" className="btn-primary-custom">Guardar</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

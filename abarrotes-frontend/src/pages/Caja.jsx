@@ -2,18 +2,16 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import * as XLSX from 'xlsx';
 import { getProfileColor } from '../data/employeeProfiles';
+import { FaMoneyBill, FaCreditCard, FaUniversity, FaUser, FaClock, FaFileExcel } from 'react-icons/fa';
 
 const Caja = () => {
-  // Estado de la caja
   const [cajaAbierta, setCajaAbierta] = useState(false);
   const [montoApertura, setMontoApertura] = useState('');
   const [montoCierre, setMontoCierre] = useState('');
   const [numeroEmpleado, setNumeroEmpleado] = useState('');
   
-  // Datos de caja actual
   const [sesionCaja, setSesionCaja] = useState(null);
   
-  // Datos de ventas (simulados para ahora)
   const [ventasDelDia, setVentasDelDia] = useState([]);
   const [resumen, setResumen] = useState({
     totalVentas: 0,
@@ -23,29 +21,20 @@ const Caja = () => {
     cantidadTransacciones: 0
   });
   
-  // Estado de carga
   const [loading, setLoading] = useState(true);
   const [loadingAction, setLoadingAction] = useState(false);
   
-  // Fechas
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   
-  // Mensajes
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Colores dinámicos basados en el perfil
   const [colors, setColors] = useState({
-    primary: '#1e7f5c',
-    primaryDark: '#165f45',
-    primaryLight: '#2fbf8c',
-    secondary: '#2c3e50',
-    success: '#28a745',
+    primary: '#1B5E35',
+    primaryDark: '#154a2c',
+    primaryLight: '#2E7D52',
+    success: '#10b981',
     danger: '#dc3545',
     warning: '#ffc107',
-    info: '#17a2b8',
-    light: '#f8f9fa',
-    dark: '#343a40',
-    border: '#dee2e6'
   });
 
   useEffect(() => {
@@ -63,20 +52,13 @@ const Caja = () => {
       primary: profileColor,
       primaryDark: adjustColor(profileColor, -20),
       primaryLight: adjustColor(profileColor, 20),
-      secondary: '#2c3e50',
-      success: '#28a745',
+      success: '#10b981',
       danger: '#dc3545',
       warning: '#ffc107',
-      info: '#17a2b8',
-      light: '#f8f9fa',
-      dark: '#343a40',
-      border: '#dee2e6'
     });
   }, []);
 
-  // Cargar estado de la caja al iniciar
   useEffect(() => {
-    // Obtener empleado desde el localStorage (compatible con versión móvil)
     const employeeId = localStorage.getItem('employeeId');
     if (employeeId) {
       setNumeroEmpleado(employeeId);
@@ -85,16 +67,13 @@ const Caja = () => {
     verificarEstadoCaja();
   }, []);
 
-  // Función para verificar si la caja está abierta
   const verificarEstadoCaja = async () => {
     setLoading(true);
     try {
-      // Obtener empleado guardado en localStorage
       const empleadoGuardado = localStorage.getItem('empleadoNumero');
       if (empleadoGuardado) {
         setNumeroEmpleado(empleadoGuardado);
         
-        // Verificar si tiene una caja abierta
         const response = await api.get(`/api/caja/abierta/${empleadoGuardado}`);
         if (response.data) {
           setCajaAbierta(true);
@@ -104,35 +83,31 @@ const Caja = () => {
       }
     } catch (error) {
       console.error('Error verificando estado de caja:', error);
-      // Si no hay caja abierta, simplemente continuamos
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para abrir caja
   const handleAbrirCaja = async () => {
     if (!numeroEmpleado) {
-      setMessage({ type: 'error', text: 'Ingresa tu número de empleado' });
+      setMessage({ type: 'error', text: 'Ingresa tu numero de empleado' });
       return;
     }
     
     if (!montoApertura || parseFloat(montoApertura) <= 0) {
-      setMessage({ type: 'error', text: 'Ingresa el monto inicial de tu caja' });
+      setMessage({ type: 'error', text: 'Ingresa el monto inicial' });
       return;
     }
 
     setLoadingAction(true);
     try {
-      // Verificar que el empleado existe
       const empleadoResponse = await api.get(`/api/empleados/numero/${numeroEmpleado}`);
       if (!empleadoResponse.data || !empleadoResponse.data.activo) {
-        setMessage({ type: 'error', text: 'Empleado no encontrado o inactivo' });
+        setMessage({ type: 'error', text: 'Empleado no encontrado' });
         setLoadingAction(false);
         return;
       }
 
-      // Abrir caja en el backend
       const response = await api.post('/api/caja/abrir', {
         numeroEmpleado: numeroEmpleado,
         montoApertura: parseFloat(montoApertura)
@@ -142,7 +117,7 @@ const Caja = () => {
       setCajaAbierta(true);
       localStorage.setItem('empleadoNumero', numeroEmpleado);
       
-      setMessage({ type: 'success', text: `¡Caja abierta exitosamente, ${empleadoResponse.data.nombre}! Listo para vender.` });
+      setMessage({ type: 'success', text: `Caja abierta exitosamente, ${empleadoResponse.data.nombre}` });
       cargarVentasDelDia();
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -154,7 +129,6 @@ const Caja = () => {
     }
   };
 
-  // Función para cerrar caja
   const handleCerrarCaja = async () => {
     if (!montoCierre || parseFloat(montoCierre) <= 0) {
       setMessage({ type: 'error', text: 'Ingresa el monto de cierre' });
@@ -174,8 +148,8 @@ const Caja = () => {
       setMessage({ 
         type: response.data.diferencia === 0 ? 'success' : 'warning', 
         text: response.data.diferencia === 0 
-          ? '¡Caja cerrada perfectamente!' 
-          : `Caja cerrada. Diferencia: $${response.data.diferencia.toFixed(2)}` 
+          ? 'Caja cerrada perfectamente' 
+          : `Diferencia: $${response.data.diferencia.toFixed(2)}` 
       });
       
       setTimeout(() => setMessage({ type: '', text: '' }), 5000);
@@ -190,8 +164,6 @@ const Caja = () => {
   const cargarVentasDelDia = async () => {
     setLoading(true);
     try {
-      // En producción, esto sería una llamada a la API de ventas
-      // Por ahora, simulamos datos
       const simulatedData = generarDatosSimulados();
       setVentasDelDia(simulatedData);
       calcularResumen(simulatedData);
@@ -251,65 +223,27 @@ const Caja = () => {
     setResumen(resumen);
   };
 
-  // Función para generar reporte en Excel
   const generarReporteExcel = () => {
     try {
       const reporteData = ventasDelDia.map(venta => ({
         'Fecha': new Date(venta.fecha).toLocaleDateString('es-MX'),
         'Hora': formatTime(venta.fecha),
         'UUID': venta.uuid,
-        'Método de Pago': venta.metodoPagoNombre,
+        'Metodo de Pago': venta.metodoPagoNombre,
         'Total': venta.total
       }));
 
-      // Agregar resumen al final
       reporteData.push({});
-      reporteData.push({
-        'Fecha': 'RESUMEN',
-        'Hora': '',
-        'UUID': '',
-        'Método de Pago': 'Total Ventas',
-        'Total': resumen.totalVentas
-      });
-      reporteData.push({
-        'Fecha': '',
-        'Hora': '',
-        'UUID': '',
-        'Método de Pago': 'Efectivo',
-        'Total': resumen.totalEfectivo
-      });
-      reporteData.push({
-        'Fecha': '',
-        'Hora': '',
-        'UUID': '',
-        'Método de Pago': 'Tarjeta',
-        'Total': resumen.totalTarjeta
-      });
-      reporteData.push({
-        'Fecha': '',
-        'Hora': '',
-        'UUID': '',
-        'Método de Pago': 'Transferencia',
-        'Total': resumen.totalTransferencia
-      });
-      reporteData.push({
-        'Fecha': '',
-        'Hora': '',
-        'UUID': '',
-        'Método de Pago': 'Transacciones',
-        'Total': resumen.cantidadTransacciones
-      });
+      reporteData.push({ 'Fecha': 'RESUMEN', 'Hora': '', 'UUID': '', 'Metodo de Pago': 'Total Ventas', 'Total': resumen.totalVentas });
+      reporteData.push({ 'Fecha': '', 'Hora': '', 'UUID': '', 'Metodo de Pago': 'Efectivo', 'Total': resumen.totalEfectivo });
+      reporteData.push({ 'Fecha': '', 'Hora': '', 'UUID': '', 'Metodo de Pago': 'Tarjeta', 'Total': resumen.totalTarjeta });
+      reporteData.push({ 'Fecha': '', 'Hora': '', 'UUID': '', 'Metodo de Pago': 'Transferencia', 'Total': resumen.totalTransferencia });
+      reporteData.push({ 'Fecha': '', 'Hora': '', 'UUID': '', 'Metodo de Pago': 'Transacciones', 'Total': resumen.cantidadTransacciones });
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(reporteData);
 
-      ws['!cols'] = [
-        { wch: 12 },
-        { wch: 10 },
-        { wch: 25 },
-        { wch: 15 },
-        { wch: 12 }
-      ];
+      ws['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 12 }];
 
       const range = XLSX.utils.decode_range(ws['!ref']);
       for (let R = range.s.r + 1; R <= range.e.r; ++R) {
@@ -319,7 +253,7 @@ const Caja = () => {
         }
       }
 
-      XLSX.utils.book_append_sheet(wb, ws, 'Ventas del Día');
+      XLSX.utils.book_append_sheet(wb, ws, 'Ventas del Dia');
       const nombreArchivo = `Reporte_Caja_${fecha}.xlsx`;
       XLSX.writeFile(wb, nombreArchivo);
 
@@ -348,283 +282,188 @@ const Caja = () => {
 
   if (loading && !cajaAbierta) {
     return (
-      <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-        <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-          <div className="text-center">
-            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-              <span className="visually-hidden">Cargando...</span>
-            </div>
-            <p className="text-muted mt-3">Verificando estado de caja...</p>
-          </div>
-        </div>
+      <div style={{ textAlign: 'center', padding: '48px' }}>
+        <div className="spinner" style={{ margin: '0 auto' }}></div>
       </div>
     );
   }
 
   return (
-    <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center px-4 py-3 bg-white shadow-sm">
-        <div className="d-flex align-items-center">
-          <img src="/logo.png" alt="Logo" style={{ height: '40px', marginRight: '15px' }} />
-          <h4 className="mb-0 fw-bold text-dark">Caja</h4>
-        </div>
-        <div className="d-flex align-items-center gap-3">
-          <span className="badge fs-6 px-3 py-2" style={{ backgroundColor: cajaAbierta ? colors.success : colors.danger }}>
-            {cajaAbierta ? 'CAJA ABIERTA' : 'CAJA CERRADA'}
-          </span>
-          <input 
-            type="date" 
-            className="form-control" 
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            style={{ width: 'auto' }}
-            disabled={cajaAbierta}
-          />
-          {cajaAbierta && (
-            <button 
-              className="btn"
-              style={{ 
-                backgroundColor: 'transparent', 
-                borderColor: colors.success, 
-                color: colors.success 
-              }}
-              onClick={generarReporteExcel}
-            >
-              <i className="bi bi-file-earmark-excel me-2"></i> Reporte Excel
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Mensajes */}
+    <div>
       {message.text && (
-        <div className={`alert alert-${message.type === 'error' ? 'danger' : message.type === 'success' ? 'success' : 'warning'} alert-dismissible fade show m-3`} role="alert">
+        <div style={{
+          margin: '16px',
+          padding: '12px 16px',
+          borderRadius: '10px',
+          background: message.type === 'success' ? '#e8f5ec' : '#fee2e2',
+          color: message.type === 'success' ? '#166534' : '#991b1b',
+          fontSize: '14px',
+          fontWeight: 500
+        }}>
           {message.text}
-          <button type="button" className="btn-close" onClick={() => setMessage({ type: '', text: '' })}></button>
         </div>
       )}
 
-      {/* Contenido Principal */}
-      <div className="flex-grow-1 p-4">
-        {/* Si la caja está cerrada, mostrar panel de apertura */}
-        {!cajaAbierta ? (
-          <div className="row justify-content-center">
-            <div className="col-md-6 col-lg-4">
-              <div className="card shadow-lg border-0">
-                <div className="card-body text-center p-5">
-                   <div className="mb-4">
-                     <i className="bi bi-box-arrow-in-right" style={{ fontSize: '4rem', color: colors.primary }}></i>
-                   </div>
-                  <h3 className="fw-bold text-dark mb-4">Abrir Caja</h3>
-                  <p className="text-muted mb-4">
-                    Ingresa tu número de empleado y el monto inicial en efectivo.
-                  </p>
-                  
-                  <div className="mb-3">
-                    <div className="input-group input-group-lg">
-                      <span className="input-group-text bg-white text-muted">
-                        <i className="bi bi-person"></i>
-                      </span>
-                      <input 
-                        type="text" 
-                        className="form-control form-control-lg"
-                        placeholder="Número de empleado"
-                        value={numeroEmpleado}
-                        onChange={(e) => setNumeroEmpleado(e.target.value.toUpperCase())}
-                        style={{ fontSize: '1.1rem' }}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') document.getElementById('monto-apertura').focus();
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="input-group input-group-lg">
-                      <span className="input-group-text bg-white text-muted">$</span>
-                      <input 
-                        type="number" 
-                        id="monto-apertura"
-                        className="form-control form-control-lg text-center"
-                        placeholder="0.00"
-                        value={montoApertura}
-                        onChange={(e) => setMontoApertura(e.target.value)}
-                        min="0"
-                        step="0.01"
-                        style={{ fontSize: '1.5rem', fontWeight: 'bold' }}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') handleAbrirCaja();
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <button 
-                    className="btn btn-lg w-100 py-3"
-                    style={{ fontSize: '1.1rem', backgroundColor: colors.primary, borderColor: colors.primary }}
-                    onClick={handleAbrirCaja}
-                    disabled={loadingAction}
-                  >
-                    {loadingAction ? (
-                      <><span className="spinner-border spinner-border-sm me-2"></span> Abriendo...</>
-                    ) : (
-                      <><i className="bi bi-check-circle me-2"></i> Confirmar Apertura</>
-                    )}
-                  </button>
-                </div>
+      {!cajaAbierta ? (
+        <div style={{ maxWidth: '400px', margin: '48px auto', padding: '0 16px' }}>
+          <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
+            <div style={{ width: '64px', height: '64px', background: 'rgba(27,94,53,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+              <FaMoneyBill style={{ fontSize: '28px', color: '#1B5E35' }} />
+            </div>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: 600 }}>Abrir Caja</h3>
+            <p style={{ color: '#6b7c93', marginBottom: '24px' }}>
+              Ingresa tu numero de empleado y el monto inicial en efectivo.
+            </p>
+            
+            <div className="form-group" style={{ textAlign: 'left' }}>
+              <label className="form-label">Numero de empleado</label>
+              <input 
+                type="text" 
+                className="form-input"
+                placeholder="EMP001"
+                value={numeroEmpleado}
+                onChange={(e) => setNumeroEmpleado(e.target.value.toUpperCase())}
+              />
+            </div>
+            
+            <div className="form-group" style={{ textAlign: 'left' }}>
+              <label className="form-label">Monto de apertura</label>
+              <input 
+                type="number"
+                className="form-input"
+                placeholder="0.00"
+                value={montoApertura}
+                onChange={(e) => setMontoApertura(e.target.value)}
+                style={{ fontSize: '24px', fontWeight: 600, textAlign: 'center' }}
+              />
+            </div>
+            
+            <button 
+              className="btn-primary-custom"
+              onClick={handleAbrirCaja}
+              disabled={loadingAction}
+              style={{ width: '100%', marginTop: '16px' }}
+            >
+              {loadingAction ? 'Abriendo...' : 'Confirmar Apertura'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="metrics-grid" style={{ marginBottom: '24px' }}>
+            <div className="metric-card">
+              <div className="metric-label">Empleado</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: '#1B5E35', marginTop: '4px' }}>
+                {sesionCaja?.numeroEmpleado}
+              </div>
+            </div>
+            <div className="metric-card primary">
+              <div className="metric-label">Total Ventas</div>
+              <div className="metric-value">
+                {formatCurrency(resumen.totalVentas)}
+              </div>
+              <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>
+                {resumen.cantidadTransacciones} transacciones
+              </div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Efectivo</div>
+              <div style={{ fontSize: '20px', fontWeight: 600, color: '#1B5E35', marginTop: '4px' }}>
+                {formatCurrency(resumen.totalEfectivo)}
+              </div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Monto Apertura</div>
+              <div style={{ fontSize: '20px', fontWeight: 600, color: '#dc3545', marginTop: '4px' }}>
+                {formatCurrency(sesionCaja?.montoApertura || 0)}
               </div>
             </div>
           </div>
-        ) : (
-          <>
-            {/* Panel de caja abierta - Resumen en tarjetas */}
-            <div className="row mb-4">
-              <div className="col-md-3 mb-3">
-                <div className="card shadow-sm h-100 border-0">
-                  <div className="card-body text-center py-4">
-                <div className="mb-2">
-                  <i className="bi bi-person-check" style={{ fontSize: '2rem', color: colors.primary }}></i>
-                </div>
-                <h6 className="text-muted mb-1">Empleado</h6>
-                <h4 className="fw-bold mb-0" style={{ color: colors.primary }}>
-                  {sesionCaja?.numeroEmpleado}
-                </h4>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-3 mb-3">
-                <div className="card shadow-sm h-100 border-0">
-                  <div className="card-body text-center py-4">
-                <div className="mb-2">
-                  <i className="bi bi-cash-stack" style={{ fontSize: '2rem', color: colors.success }}></i>
-                </div>
-                <h6 className="text-muted mb-1">Total Ventas</h6>
-                <h3 className="fw-bold mb-0" style={{ fontSize: '1.8rem', color: colors.success }}>
-                  {formatCurrency(resumen.totalVentas)}
-                </h3>
-                    <small className="text-muted">{resumen.cantidadTransacciones} transacciones</small>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-3 mb-3">
-                <div className="card shadow-sm h-100 border-0">
-                  <div className="card-body text-center py-4">
-                <div className="mb-2">
-                  <i className="bi bi-cash" style={{ fontSize: '2rem', color: colors.primary }}></i>
-                </div>
-                <h6 className="text-muted mb-1">Efectivo</h6>
-                <h3 className="fw-bold mb-0" style={{ fontSize: '1.8rem', color: colors.primary }}>
-                  {formatCurrency(resumen.totalEfectivo)}
-                </h3>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-3 mb-3">
-                <div className="card shadow-sm h-100 border-0">
-                  <div className="card-body text-center py-4">
-                <div className="mb-2">
-                  <i className="bi bi-box-arrow-right" style={{ fontSize: '2rem', color: colors.danger }}></i>
-                </div>
-                <h6 className="text-muted mb-1">Monto Apertura</h6>
-                <h3 className="fw-bold mb-0" style={{ fontSize: '1.8rem', color: colors.danger }}>
-                  {formatCurrency(sesionCaja?.montoApertura || 0)}
-                </h3>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Panel de cierre */}
-            <div className="row justify-content-center mb-4">
-              <div className="col-md-6 col-lg-4">
-                <div className="card shadow-lg border-0">
-                  <div className="card-body text-center p-5">
-                    <div className="mb-4">
-                      <i className="bi bi-box-arrow-right text-danger" style={{ fontSize: '4rem' }}></i>
-                    </div>
-                    <h3 className="fw-bold text-dark mb-2">Cerrar Caja</h3>
-                    <p className="text-muted mb-4">
-                      Total en efectivo esperado: <strong>{formatCurrency(resumen.totalEfectivo + (sesionCaja?.montoApertura || 0))}</strong>
-                    </p>
-                    <div className="mb-4">
-                      <div className="input-group input-group-lg">
-                        <span className="input-group-text bg-white text-muted">$</span>
-                        <input 
-                          type="number" 
-                          className="form-control form-control-lg text-center"
-                          placeholder="0.00"
-                          value={montoCierre}
-                          onChange={(e) => setMontoCierre(e.target.value)}
-                          min="0"
-                          step="0.01"
-                          style={{ fontSize: '1.5rem', fontWeight: 'bold' }}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') handleCerrarCaja();
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <button 
-                      className="btn btn-lg w-100 py-3"
-                      style={{ fontSize: '1.1rem', backgroundColor: colors.danger, borderColor: colors.danger }}
-                      onClick={handleCerrarCaja}
-                      disabled={loadingAction}
-                    >
-                      {loadingAction ? (
-                        <><span className="spinner-border spinner-border-sm me-2"></span> Cerrando...</>
-                      ) : (
-                        <><i className="bi bi-box-arrow-right me-2"></i> Confirmar Cierre</>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="card" style={{ padding: '24px', marginBottom: '24px', textAlign: 'center' }}>
+            <h4 style={{ margin: '0 0 8px 0' }}>Cerrar Caja</h4>
+            <p style={{ color: '#6b7c93', marginBottom: '16px' }}>
+              Total en efectivo esperado: <strong>{formatCurrency(resumen.totalEfectivo + (sesionCaja?.montoApertura || 0))}</strong>
+            </p>
+            <input 
+              type="number"
+              className="form-input"
+              placeholder="0.00"
+              value={montoCierre}
+              onChange={(e) => setMontoCierre(e.target.value)}
+              style={{ fontSize: '24px', fontWeight: 600, textAlign: 'center', marginBottom: '16px' }}
+            />
+            <button 
+              className="btn-primary-custom"
+              onClick={handleCerrarCaja}
+              disabled={loadingAction}
+              style={{ width: '100%', background: '#dc3545' }}
+            >
+              {loadingAction ? 'Cerrando...' : 'Confirmar Cierre'}
+            </button>
+          </div>
 
-            {/* Tabla de ventas */}
-            <div className="card shadow-sm border-0">
-              <div className="card-header bg-white py-3">
-              <h5 className="mb-0">
-                <i className="bi bi-list-ul me-2" style={{ color: colors.primary }}></i>
-                Ventas del Día
-              </h5>
-              </div>
-              <div className="card-body p-0">
-                <div className="table-responsive">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th className="border-0 ps-4">Hora</th>
-                        <th className="border-0">UUID</th>
-                        <th className="border-0">Método de Pago</th>
-                        <th className="border-0 pe-4 text-end">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ventasDelDia.map((venta) => (
-                        <tr key={venta.id}>
-                          <td className="ps-4">{formatTime(venta.fecha)}</td>
-                          <td><small className="text-muted">{venta.uuid}</small></td>
-                          <td>
-                            <span className={`badge ${
-                              venta.metodoPago === '01' ? 'bg-success' :
-                              venta.metodoPago === '03' ? 'bg-info' : 'bg-warning'
-                            }`}>
-                              {venta.metodoPagoNombre}
-                            </span>
-                          </td>
-                          <td className="text-end pe-4 fw-bold">{formatCurrency(venta.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+          <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h5 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Ventas del Dia</h5>
+              <button 
+                onClick={generarReporteExcel}
+                style={{ 
+                  padding: '8px 16px',
+                  background: '#1B5E35',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <FaFileExcel />
+                Excel
+              </button>
             </div>
-          </>
-        )}
-      </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#F3F4F6' }}>
+                    <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>Hora</th>
+                    <th style={{ textAlign: 'left', padding: '12px 8px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>UUID</th>
+                    <th style={{ textAlign: 'left', padding: '12px 8px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>Metodo</th>
+                    <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#1B5E35' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ventasDelDia.map((venta) => (
+                    <tr key={venta.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: '14px' }}>{formatTime(venta.fecha)}</td>
+                      <td style={{ padding: '12px 8px', fontSize: '12px', color: '#6b7c93' }}>{venta.uuid}</td>
+                      <td style={{ padding: '12px 8px' }}>
+                        <span style={{ 
+                          padding: '4px 10px',
+                          background: venta.metodoPago === '01' ? 'rgba(27,94,53,0.1)' : venta.metodoPago === '03' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
+                          color: venta.metodoPago === '01' ? '#1B5E35' : venta.metodoPago === '03' ? '#3b82f6' : '#f59e0b',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: 500
+                        }}>
+                          {venta.metodoPagoNombre}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#1B5E35' }}>
+                        {formatCurrency(venta.total)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
