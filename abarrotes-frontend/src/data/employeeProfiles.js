@@ -2,9 +2,9 @@
 export const EMPLOYEE_PROFILES = {
   STAFF: {
     id: 'staff',
-    name: 'Staff',
-    color: '#1e7f5c', // Verde
-    colorHex: '#1e7f5c',
+    name: 'Staff Verde',
+    color: '#1A7A48',
+    colorHex: '#1A7A48',
     allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja'],
     canAssignTasks: false,
     canViewReports: false,
@@ -13,9 +13,9 @@ export const EMPLOYEE_PROFILES = {
   },
   SUPERVISOR: {
     id: 'supervisor',
-    name: 'Supervisor',
-    color: '#007bff', // Azul
-    colorHex: '#007bff',
+    name: 'Lider Azul',
+    color: '#3B82F6',
+    colorHex: '#3B82F6',
     allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja', 'dashboard'],
     canAssignTasks: true,
     canViewReports: true,
@@ -24,9 +24,9 @@ export const EMPLOYEE_PROFILES = {
   },
   DIRECTOR: {
     id: 'director',
-    name: 'Director',
-    color: '#fd7e14', // Anaranjado
-    colorHex: '#fd7e14',
+    name: 'Manager Plata',
+    color: '#9CA3AF',
+    colorHex: '#9CA3AF',
     allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja', 'dashboard', 'inventory', 'configuracion'],
     canAssignTasks: true,
     canViewReports: true,

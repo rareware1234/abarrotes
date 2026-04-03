@@ -1,81 +1,82 @@
 import { Link, useLocation } from 'react-router-dom';
+import { FiShoppingCart, FiPackage, FiClipboard, FiBarChart2, FiDollarSign, FiTag, FiUser, FiLogOut } from 'react-icons/fi';
 import logo from '../assets/logo.png';
 
 const Navbar = () => {
   const location = useLocation();
 
   const isActive = (path) => {
-    return location.pathname === path ? 'active bg-primary text-white' : '';
+    return location.pathname === path ? 'active' : '';
   };
+
+  const navItem = (to, icon, label) => (
+    <Link to={to} className={`nav-link ${isActive(to)}`}>
+      {icon}
+      {label}
+    </Link>
+  );
+
+  const userInitials = (name) => {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    return parts.slice(0, 2).map(p => p[0]).join('').toUpperCase();
+  };
+
+  const mockUser = { name: 'Juan García', role: 'Lider', roleColor: '#3B82F6' };
 
   return (
     <nav className="nav flex-column sidebar">
-      <div className="mb-4" style={{ display: 'flex', justifyContent: 'center', margin: '0 -20px' }}>
-        <img 
-          src={logo} 
-          alt="Logo" 
-          style={{ 
-            width: '280px', 
-            height: 'auto', 
-            objectFit: 'contain',
-            filter: 'brightness(0) invert(1) drop-shadow(0px 2px 4px rgba(0, 98, 65, 0.5))'
-          }} 
+      <div className="sidebar-brand">
+        <img
+          src={logo}
+          alt="Logo"
+          className="sidebar-logo"
         />
       </div>
-      
+
       <div className="mb-3">
-        <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Menú Principal</small>
+        <small className="nav-section-label">Menú Principal</small>
       </div>
 
-      <Link to="/" className={`nav-link rounded mb-2 ${isActive('/')}`}>
-        <i className="bi bi-speedometer2 me-2"></i> Venta
-      </Link>
-      
+      {navItem('/', <FiShoppingCart size={18} />, 'Venta')}
+
       <div className="mb-3 mt-4">
-        <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Gestión</small>
+        <small className="nav-section-label">Gestión</small>
       </div>
 
-      <Link to="/productos" className={`nav-link rounded mb-2 ${isActive('/productos')}`}>
-        <i className="bi bi-box-seam me-2"></i> Productos
-      </Link>
-      
-      <Link to="/inventario" className={`nav-link rounded mb-2 ${isActive('/inventario')}`}>
-        <i className="bi bi-stack me-2"></i> Inventario
-      </Link>
-      
-      <Link to="/pedidos" className={`nav-link rounded mb-2 ${isActive('/pedidos')}`}>
-        <i className="bi bi-cart-check me-2"></i> Pedidos
-      </Link>
-      
+      {navItem('/productos', <FiPackage size={18} />, 'Productos')}
+      {navItem('/inventario', <FiPackage size={18} />, 'Inventario')}
+      {navItem('/pedidos', <FiClipboard size={18} />, 'Pedidos')}
+
       <div className="mb-3 mt-4">
-        <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Finanzas</small>
+        <small className="nav-section-label">Finanzas</small>
       </div>
 
-      <Link to="/dashboard" className={`nav-link rounded mb-2 ${isActive('/dashboard')}`}>
-        <i className="bi bi-graph-up me-2"></i> Dashboard
-      </Link>
+      {navItem('/dashboard', <FiBarChart2 size={18} />, 'Dashboard')}
+      {navItem('/caja', <FiDollarSign size={18} />, 'Caja')}
 
-      <Link to="/caja" className={`nav-link rounded mb-2 ${isActive('/caja')}`}>
-        <i className="bi bi-cash-stack me-2"></i> Caja
-      </Link>
-      
       <div className="mb-3 mt-4">
-        <small className="text-uppercase opacity-75 text-white" style={{ fontSize: '0.85rem' }}>Sistema</small>
+        <small className="nav-section-label">Sistema</small>
       </div>
 
-      <Link to="/configuracion" className={`nav-link rounded mb-2 ${isActive('/configuracion')}`}>
-        <i className="bi bi-gear me-2"></i> Configuración
-      </Link>
-      
-      <Link to="/perfil" className={`nav-link rounded mb-2 ${isActive('/perfil')}`}>
-        <i className="bi bi-person-circle me-2"></i> Mi Perfil
-      </Link>
+      {navItem('/promociones', <FiTag size={18} />, 'Promociones')}
+      {navItem('/configuracion', <FiUser size={18} />, 'Configuración')}
+      {navItem('/perfil', <FiUser size={18} />, 'Mi Perfil')}
 
-      <div className="mt-auto pt-4">
-        <small className="opacity-60 text-white">
-          Versión 1.0.0<br/>
-          Backend: Activo
-        </small>
+      <div className="sidebar-user">
+        <div
+          className="sidebar-user-avatar"
+          style={{ color: mockUser.roleColor, background: `${mockUser.roleColor}22` }}
+        >
+          {userInitials(mockUser.name)}
+        </div>
+        <div className="sidebar-user-info">
+          <div className="sidebar-user-name">{mockUser.name}</div>
+          <div className="sidebar-user-role" style={{ color: mockUser.roleColor }}>{mockUser.role}</div>
+        </div>
+        <button className="btn btn-link p-0 border-0" style={{ color: '#6B7C93', marginLeft: 'auto' }}>
+          <FiLogOut size={16} />
+        </button>
       </div>
     </nav>
   );

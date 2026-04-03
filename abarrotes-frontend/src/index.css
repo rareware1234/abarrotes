@@ -6,30 +6,44 @@
    CSS CUSTOM PROPERTIES
    ============================================ */
 :root {
-  --primary: #1B5E35;
-  --primary-hover: #154a2c;
-  --primary-light: #2E7D52;
-  --primary-bg: #F3F4F6;
-  --bg: #F3F4F6;
+  /* === Colores PuntoVerde (sincronizados con macOS) === */
+  --primary: #1A7A48;
+  --primary-dark: #0F4D2E;
+  --primary-hover: #166040;
+  --primary-light: #4ADE80;
+  --primary-bg: #F4F5F7;
+  --bg: #F4F5F7;
   --bg-white: #FFFFFF;
-  --text-dark: #1a2b3c;
-  --text-muted: #6b7c93;
-  --border: #e5e7eb;
-  --white: #ffffff;
-  --danger: #dc3545;
-  --warning: #f59e0b;
-  --success: #10b981;
-  
+  --text-dark: #1C1E21;
+  --text-muted: #6B7C93;
+  --border: #E4E6EA;
+  --white: #FFFFFF;
+  --danger: #E63946;
+  --warning: #F0A500;
+  --success: #4ADE80;
+
+  /* === Sombras (sincronizadas con macOS) === */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow: 0 1px 4px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-  
+  --shadow: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.08);
+
+  /* === Radios (sincronizados con macOS) === */
   --radius-sm: 6px;
   --radius: 10px;
   --radius-md: 12px;
-  --radius-lg: 16px;
-  
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* === Spacing === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+
   --transition: all 0.2s ease;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -119,7 +133,7 @@ input:focus, select:focus, textarea:focus {
   position: relative;
   width: 100%;
   min-height: 56px;
-  background: var(--primary);
+  background: var(--primary-dark);
   border-bottom: 1px solid rgba(255,255,255,0.15);
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   display: flex;
@@ -281,7 +295,7 @@ input:focus, select:focus, textarea:focus {
   z-index: 199;
   pointer-events: none;
   visibility: hidden;
-  width: 280px;
+  width: 240px;
 }
 
 .sidebar-wrapper.open {
@@ -315,9 +329,10 @@ input:focus, select:focus, textarea:focus {
   position: absolute;
   top: 0;
   left: 0;
-  width: 280px;
+  width: 240px;
   height: calc(100% + 56px);
-  background: linear-gradient(180deg, #1B5E35 0%, #154a2c 100%);
+  background: #FFFFFF;
+  border-right: 1px solid var(--border);
   overflow-y: auto;
   overflow-x: hidden;
   transform: translateX(-100%);
@@ -331,45 +346,48 @@ input:focus, select:focus, textarea:focus {
 }
 
 .sidebar-brand {
-  padding: 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
+  padding: 16px;
+  padding-bottom: 12px;
   display: flex;
   justify-content: center;
 }
 
 .sidebar-logo {
   max-width: 200px;
+  height: 22px;
   height: auto;
-  filter: brightness(0) invert(1);
-  opacity: 1;
+  object-fit: contain;
 }
 
 .nav-section-label {
-  padding: 16px 16px 8px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 16px 6px;
 }
 
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px;
-  margin: 8px;
-  border-radius: var(--radius);
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.1);
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
 }
 
 .sidebar-user-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  font-size: 13px;
   font-weight: 700;
-  font-size: 0.85rem;
+  color: var(--primary);
+  background: rgba(26, 122, 72, 0.12);
 }
 
 .sidebar-user-info {
@@ -378,59 +396,60 @@ input:focus, select:focus, textarea:focus {
 }
 
 .sidebar-user-name {
-  color: white;
+  color: var(--text-dark);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .sidebar-user-role {
-  color: rgba(255,255,255,0.6);
-  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 10px 16px;
+  color: var(--text-dark);
+  font-size: 14px;
+  font-weight: 400;
+  border-radius: var(--radius-sm);
   margin: 2px 8px;
-  border-radius: var(--radius);
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: rgba(255,255,255,0.75);
+  transition: all 0.15s ease;
   text-decoration: none;
-  transition: var(--transition);
 }
 
 .nav-link:hover {
-  background: rgba(255,255,255,0.1);
-  color: white;
+  background: rgba(26, 122, 72, 0.06);
+  color: var(--primary);
 }
 
 .nav-link.active {
-  background: var(--primary);
-  color: white;
+  background: rgba(26, 122, 72, 0.1);
+  color: var(--primary);
   font-weight: 600;
 }
 
-.nav-link i {
-  font-size: 1.1rem;
+.nav-link i, .nav-link svg {
+  font-size: 18px;
   width: 24px;
   text-align: center;
-  margin-right: 10px;
+  color: inherit;
 }
 
 .sidebar-footer {
   margin-top: auto;
   padding: 16px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid var(--border);
   text-align: center;
 }
 
 .sidebar-footer small {
-  color: rgba(255,255,255,0.4);
+  color: var(--text-muted);
   font-size: 0.75rem;
 }
 
@@ -438,10 +457,10 @@ input:focus, select:focus, textarea:focus {
    CARDS
    ============================================ */
 .card {
-  background: var(--white);
+  background: white;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   padding: 20px;
 }
 
@@ -458,13 +477,14 @@ input:focus, select:focus, textarea:focus {
   height: 48px;
   padding: 0 24px;
   background: var(--primary);
-  color: var(--white);
+  color: white;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(26, 122, 72, 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -473,14 +493,19 @@ input:focus, select:focus, textarea:focus {
 
 .btn-primary-custom:hover {
   background: var(--primary-hover);
+  box-shadow: 0 6px 12px rgba(26, 122, 72, 0.35);
+  transform: translateY(-1px);
 }
 
 .btn-primary-custom:active {
   transform: scale(0.98);
+  box-shadow: 0 2px 4px rgba(26, 122, 72, 0.2);
 }
 
 .btn-primary-custom:disabled {
   opacity: 0.6;
+  background: var(--text-muted);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -502,7 +527,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-outline-green:hover {
-  background: rgba(27,94,53,0.05);
+  background: rgba(26, 122, 72, 0.06);
 }
 
 .btn-outline-danger-custom {
@@ -515,7 +540,11 @@ input:focus, select:focus, textarea:focus {
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
+}
+
+.btn-outline-danger-custom:hover {
+  background: rgba(230, 57, 70, 0.05);
 }
 
 .btn-sm-custom {
@@ -719,10 +748,10 @@ input:focus, select:focus, textarea:focus {
 }
 
 .metric-card {
-  background: var(--white);
+  background: white;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 16px;
+  padding: var(--space-base);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .metric-card.primary {
@@ -912,7 +941,7 @@ input:focus, select:focus, textarea:focus {
   
   .sidebar-wrapper {
     position: relative !important;
-    width: 280px !important;
+    width: 240px !important;
     flex-shrink: 0 !important;
     height: 100vh !important;
     visibility: visible !important;
@@ -927,7 +956,7 @@ input:focus, select:focus, textarea:focus {
     transform: translateX(0) !important;
     position: relative !important;
     height: 100vh !important;
-    width: 280px !important;
+    width: 240px !important;
   }
   
   .content-area {

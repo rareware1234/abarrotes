@@ -11,6 +11,8 @@ const PantallaCliente = () => {
   const [currentPath, setCurrentPath] = useState('/');
   
   const BANNER_URL = '/banner.png';
+  const BRAND_COLOR = '#0F4D2E';
+  const BRAND_LIGHT = '#1A7A48';
   const lastProcessedTimestamp = useRef('');
   const currentPathRef = useRef('/');
   
@@ -314,7 +316,7 @@ const PantallaCliente = () => {
 
   return (
     <div className="container-fluid p-0" style={{ 
-      backgroundColor: showThankYou ? '#ffffff' : (isWaiting ? '#006241' : '#ffffff'), 
+      backgroundColor: showThankYou ? '#ffffff' : (isWaiting ? BRAND_COLOR : '#ffffff'), 
       minHeight: '100vh',
       color: showThankYou ? '#333' : (isWaiting ? 'white' : '#333'),
       overflow: 'hidden',
@@ -334,7 +336,7 @@ const PantallaCliente = () => {
               objectFit: 'contain'
             }}
           />
-          <h1 className="fw-bold" style={{ fontSize: '4rem', marginTop: '20px', color: '#006241' }}>¡Gracias por tu compra!</h1>
+          <h1 className="fw-bold" style={{ fontSize: '4rem', marginTop: '20px', color: BRAND_LIGHT }}>¡Gracias por tu compra!</h1>
           <p className="mt-2" style={{ fontSize: '1.5rem', opacity: 0.8 }}>Esperamos verte pronto nuevamente.</p>
         </div>
       )}
@@ -350,7 +352,7 @@ const PantallaCliente = () => {
               maxWidth: '700px', 
               height: 'auto', 
               marginBottom: '30px', 
-              filter: 'brightness(0) invert(1)',
+              filter: 'brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
               objectFit: 'contain'
             }}
           />
@@ -363,25 +365,27 @@ const PantallaCliente = () => {
       {!showThankYou && !isWaiting && (
         <>
           {/* Header */}
-          <div className="d-flex justify-content-between align-items-center px-5 py-3 shadow-sm" style={{ backgroundColor: '#ffffff' }}>
+          <div className="d-flex justify-content-between align-items-center px-5 py-3 shadow-sm" style={{ backgroundColor: BRAND_COLOR }}>
             <div className="text-start">
-              <h2 className="mb-0 fw-bold" style={{ color: '#006241' }}>
-                Bienvenido a Abarrotes Digitales
-              </h2>
-              <p className="mb-0 fw-bold" style={{ fontSize: '1.3rem', color: '#333' }}>
-                estas en la sucursal de Tulipanes
-              </p>
+              <img
+                src="/logo-blanco.png"
+                alt="Logo"
+                style={{
+                  height: '28px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
             </div>
             <div className="text-end">
-              <div className="h5 mb-0" style={{ color: '#666' }}>
+              <div className="h5 mb-0" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>
                 {fechaHora.toLocaleDateString('es-MX', { 
                   weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                  day: 'numeric', 
+                  month: 'long' 
                 })}
               </div>
-              <div className="h4 mb-0 fw-bold" style={{ color: '#006241' }}>
+              <div className="h4 mb-0 fw-bold" style={{ color: 'white', fontFamily: 'monospace' }}>
                 {formatTime(fechaHora)}
               </div>
             </div>
@@ -394,7 +398,7 @@ const PantallaCliente = () => {
               {transferenciaInfo ? (
                 // Mostrar código QR para transferencia
                 <div className="text-center">
-                  <h4 className="mb-4" style={{ color: '#006241' }}>Escanea para transferir</h4>
+                  <h4 className="mb-4" style={{ color: BRAND_LIGHT }}>Escanea para transferir</h4>
                   <div className="p-3 bg-white rounded shadow-sm d-inline-block">
                     <QRCodeCanvas 
                       value={`https://pay.conekta.io/link/${transferenciaInfo.clabe}`} 
@@ -418,7 +422,7 @@ const PantallaCliente = () => {
                   borderRadius: '20px',
                   overflow: 'hidden',
                   boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                  backgroundColor: '#006241',
+                  backgroundColor: BRAND_COLOR,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -439,7 +443,7 @@ const PantallaCliente = () => {
             {/* Columna Derecha: Resumen */}
             <div className="col-md-6 p-4" style={{ backgroundColor: '#f8f9fa' }}>
               <div className="card mb-4 shadow-sm" style={{ borderRadius: '15px', border: 'none' }}>
-                <div className="card-header" style={{ backgroundColor: '#006241', color: 'white', borderTopLeftRadius: '15px', borderTopRightRadius: '15px' }}>
+                <div className="card-header" style={{ backgroundColor: BRAND_COLOR, color: 'white', borderTopLeftRadius: '14px', borderTopRightRadius: '14px' }}>
                   <h5 className="mb-0">
                     <i className="bi bi-receipt me-2"></i> Resumen de Compra
                   </h5>
@@ -453,7 +457,7 @@ const PantallaCliente = () => {
                           <br />
                           <small className="text-muted">x {item.cantidad}</small>
                         </div>
-                        <span className="fw-bold" style={{ color: '#006241' }}>
+                        <span className="fw-bold" style={{ color: BRAND_LIGHT }}>
                           {formatCurrency(item.subtotal)}
                         </span>
                       </li>
@@ -463,7 +467,7 @@ const PantallaCliente = () => {
                 <div className="card-footer bg-light" style={{ borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px' }}>
                   <div className="d-flex justify-content-between align-items-center">
                     <span className="fs-5">Total:</span>
-                    <span className="fs-2 fw-bold" style={{ color: '#006241' }}>
+                    <span className="fs-2 fw-bold" style={{ color: BRAND_LIGHT }}>
                       {formatCurrency(total)}
                     </span>
                   </div>

@@ -32,7 +32,7 @@ html, body, #root {
   max-height: 56px;
   display: flex;
   align-items: center;
-  background: #1B5E35;
+  background: #0F4D2E;
   padding: 0 16px;
   z-index: 10;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -126,7 +126,7 @@ html, body, #root {
 
 .pos-agregar-btn {
   flex: 0 0 auto;
-  background: #1B5E35;
+  background: #1A7A48;
   color: white;
   border: none;
   border-radius: 10px;
@@ -139,7 +139,7 @@ html, body, #root {
 }
 
 .pos-agregar-btn:hover {
-  background: #154a2c;
+  background: #166040;
 }
 
 .pos-agregar-btn:active {
@@ -196,8 +196,9 @@ html, body, #root {
 .pos-cart-item {
   display: flex;
   align-items: center;
+  gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px solid #F4F5F7;
 }
 
 .pos-cart-item:last-child {
@@ -233,20 +234,21 @@ html, body, #root {
 .pos-qty-btn {
   width: 32px;
   height: 32px;
-  border: 1.5px solid #E5E7EB;
-  background: white;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a2b3c;
-  cursor: pointer;
+  background: #F4F5F7;
+  border: 1px solid #E4E6EA;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.15s ease;
+  color: #1C1E21;
 }
 
 .pos-qty-btn:hover {
-  background: #F3F4F6;
+  background: #E4E6EA;
 }
 
 .pos-qty-value {
@@ -334,7 +336,7 @@ html, body, #root {
 .pos-summary-amount {
   font-size: 24px;
   font-weight: 700;
-  color: #1B5E35;
+  color: #1A7A48;
 }
 
 /* ============================================
@@ -342,28 +344,31 @@ html, body, #root {
    ============================================ */
 .pos-checkout-btn {
   width: 100%;
-  height: 52px;
-  background: #1B5E35;
+  height: 54px;
+  background: #1A7A48;
   color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 14px;
+  font-size: 17px;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(26, 122, 72, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.2s, opacity 0.2s;
+  margin-top: 16px;
 }
 
 .pos-checkout-btn:hover {
-  background: #154a2c;
+  background: #166040;
+  box-shadow: 0 6px 12px rgba(26, 122, 72, 0.35);
 }
 
 .pos-checkout-btn:disabled {
   background: #9CA3AF;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -376,9 +381,9 @@ html, body, #root {
   width: 100%;
   height: 44px;
   background: transparent;
-  color: #1B5E35;
-  border: 1.5px solid #1B5E35;
-  border-radius: 12px;
+  color: #1A7A48;
+  border: 1.5px solid #1A7A48;
+  border-radius: 14px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -386,7 +391,7 @@ html, body, #root {
 }
 
 .pos-new-sale-btn:hover {
-  background: rgba(27,94,53,0.05);
+  background: rgba(26, 122, 72, 0.06);
 }
 
 /* ============================================
@@ -461,7 +466,7 @@ html, body, #root {
 .pos-suggestion-price {
   font-size: 14px;
   font-weight: 600;
-  color: #1B5E35;
+  color: #1A7A48;
 }
 
 /* ============================================
@@ -539,7 +544,7 @@ html, body, #root {
 .pos-product-price {
   font-size: 15px;
   font-weight: 700;
-  color: #1B5E35;
+  color: #1A7A48;
 }
 
 /* ============================================
