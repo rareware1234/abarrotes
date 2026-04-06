@@ -156,24 +156,31 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       signingInRef.current = true;
-      
-      const email = `${numEmpleado}@puntosverde.com`;
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
+
+      // 1. Buscar empleado en Firestore PRIMERO para obtener el email real
       const empleadosRef = collection(db, 'empleados');
       const q = query(empleadosRef, where('numEmpleado', '==', numEmpleado));
       const snapshot = await getDocs(q);
-      
+
       if (snapshot.empty) {
-        await firebaseSignOut(auth);
         return { success: false, error: 'Empleado no encontrado en el sistema' };
       }
-      
+
       const empleadoDoc = snapshot.docs[0];
       const empleadoData = empleadoDoc.data();
+
+      // 2. Usar el email REAL del empleado para autenticar en Firebase
+      const email = empleadoData.email;
+      if (!email) {
+        return { success: false, error: 'El empleado no tiene email configurado' };
+      }
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 3. Construir objeto empleado completo
       const rol = ROL_MAP[empleadoData.rol?.toUpperCase()] || 'staff';
-      
+
       const empleadoCompleto = {
         uid: user.uid,
         nombre: empleadoData.nombre,
@@ -185,26 +192,24 @@ export const AuthProvider = ({ children }) => {
         requiereCambioPassword: empleadoData.requiereCambioPassword || false,
         activo: empleadoData.activo !== false
       };
-      
+
       if (!empleadoCompleto.activo) {
         await firebaseSignOut(auth);
         return { success: false, error: 'Tu cuenta está desactivada' };
       }
-      
-      // Guardar en sessionStorage
+
+      // 4. Guardar en sessionStorage
       sessionStorage.setItem('desktop_empleado', JSON.stringify(empleadoCompleto));
-      
-      // Guardar campos legacy para compatibilidad
       sessionStorage.setItem('desktop_employeeName', empleadoCompleto.nombre);
       sessionStorage.setItem('desktop_employeeProfile', empleadoCompleto.rol);
       sessionStorage.setItem('desktop_employeeProfileColor', ROLE_THEME[empleadoCompleto.rol].color);
       sessionStorage.setItem('desktop_employeeProfileColorDark', ROLE_THEME[empleadoCompleto.rol].dark);
       sessionStorage.setItem('desktop_loginTime', Date.now().toString());
       sessionStorage.setItem('desktop_isDesktopApp', 'true');
-      
+
       setEmpleado(empleadoCompleto);
       aplicarTemaRol(rol);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error en signIn:', error);
