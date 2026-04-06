@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.png';
+import logoBlanco from '../assets/logo-blanco.png';
+import logoColor from '../assets/logo-color.png';
+import './Login.css';
 
 const Login = () => {
   const [numEmpleado, setNumEmpleado] = useState('');
@@ -84,54 +86,107 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-brand-panel" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <img src={logo} alt="PuntoVerde" style={{ maxWidth: '240px', filter: 'brightness(0) invert(1)' }} />
+    <div className="login-desktop-container">
+      <div className="login-bg-circles">
+        <div className="login-bg-circle login-bg-circle-1"></div>
+        <div className="login-bg-circle login-bg-circle-2"></div>
+        <div className="login-bg-circle login-bg-circle-3"></div>
+        <div className="login-bg-circle login-bg-circle-4"></div>
+        <div className="login-bg-circle login-bg-circle-5"></div>
+        <div className="login-bg-circle login-bg-circle-6"></div>
       </div>
-      
-      <div className="login-form-panel">
-        <div className="login-card">
-          <img src={logo} alt="PuntoVerde" className="login-logo-mobile" />
-          <h2>Iniciar sesión</h2>
-          <p>Bienvenido a PuntoVerde</p>
+
+      <div className="login-branding">
+        <div className="login-branding-content">
+          <div className="login-logo-container">
+            <img src={logoBlanco} alt="PuntoVerde" className="login-logo-img" />
+          </div>
           
+          <h1 className="login-brand-title">Punto Verde POS</h1>
+          <p className="login-subtitle">Tu tienda inteligente</p>
+          
+          <div className="login-features">
+            <div className="login-feature-item">
+              <div className="login-feature-check">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <span>Punto de venta rápido y eficiente</span>
+            </div>
+            <div className="login-feature-item">
+              <div className="login-feature-check">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <span>Control de inventario en tiempo real</span>
+            </div>
+            <div className="login-feature-item">
+              <div className="login-feature-check">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <span>Reportes y analytics inteligentes</span>
+            </div>
+          </div>
+          
+          <p style={{ marginTop: '48px', color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem' }}>
+            v2.0 · 2025
+          </p>
+        </div>
+      </div>
+
+      <div className="login-form-side">
+        <div className="login-form-container">
+          <div className="login-form-header">
+            <img src={logoColor} alt="PuntoVerde" style={{ width: '80px', marginBottom: '24px', display: 'none' }} className="mobile-logo" />
+            <h2>Bienvenido</h2>
+            <p>Ingresa tus credenciales para continuar</p>
+          </div>
+
           {error && (
-            <div style={{ 
-              background: '#fee2e2', 
-              color: '#dc2626', 
-              padding: '12px 16px', 
-              borderRadius: '8px', 
-              marginBottom: '20px',
-              fontSize: '0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <i className="bi bi-exclamation-circle"></i>
+            <div className="login-error-alert">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
               {error}
             </div>
           )}
-          
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
+
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="login-field">
               <label>Número de Empleado</label>
-              <div className="input-wrapper">
-                <i className="bi bi-person input-icon"></i>
+              <div className="login-input-group">
+                <span className="login-input-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </span>
                 <input
                   type="text"
                   value={numEmpleado}
                   onChange={(e) => setNumEmpleado(e.target.value.toUpperCase())}
-                  placeholder="Ej: 001"
+                  placeholder="EMP001"
                   required
                   disabled={loading}
                 />
               </div>
             </div>
-            
-            <div className="form-group">
+
+            <div className="login-field">
               <label>Contraseña</label>
-              <div className="input-wrapper">
-                <i className="bi bi-lock input-icon"></i>
+              <div className="login-input-group">
+                <span className="login-input-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -142,46 +197,46 @@ const Login = () => {
                 />
                 <button
                   type="button"
-                  className="toggle-password"
+                  className="login-input-action"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
             </div>
-            
+
             {attempts > 0 && attempts < 3 && (
-              <div style={{ 
-                textAlign: 'center', 
-                color: '#f59e0b', 
-                fontSize: '0.85rem',
-                marginBottom: '16px'
-              }}>
+              <div className="login-attempts">
                 Intentos: {attempts}/3
               </div>
             )}
-            
+
             <button
               type="submit"
-              className="btn-primary-custom w-100"
+              className="login-submit-btn"
               disabled={loading || (lockoutUntil && Date.now() < lockoutUntil)}
-              style={{ height: '50px', marginTop: '8px' }}
             >
               {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                  Verificando...
-                </>
+                <div className="login-spinner"></div>
               ) : (
                 <>
-                  <i className="bi bi-box-arrow-in-right me-2"></i>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                    <polyline points="10 17 15 12 10 7"></polyline>
+                    <line x1="15" y1="12" x2="3" y2="12"></line>
+                  </svg>
                   Iniciar sesión
                 </>
               )}
             </button>
           </form>
-          
-          <p className="login-footer">PuntoVerde v2.0</p>
+
+          <div className="login-security">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Conexión segura · Punto Verde
+          </div>
         </div>
       </div>
     </div>
