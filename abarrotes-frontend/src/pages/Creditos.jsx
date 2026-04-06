@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import creditoService from '../services/creditoService';
 import { getNivelColor, getNivelTasa, getMontoMaximo, calcularPago } from '../services/creditScoreEngine';
@@ -12,6 +13,7 @@ const formatCurrency = (amount) => {
 
 const Creditos = () => {
   const { hasPermission } = useAuth();
+  const navigate = useNavigate();
   const [creditos, setCreditos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState('todos');
@@ -115,9 +117,14 @@ const Creditos = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <h1 style={{ margin: 0, fontSize: '24px' }}>Créditos</h1>
         {puedeAprobar && (
-          <button onClick={() => { setEvalResult(null); setClienteId(''); setShowEvaluarModal(true); }} style={{ padding: '10px 20px', background: 'var(--role-primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-            <i className="bi bi-plus-lg me-2"></i>Evaluar Cliente
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={() => navigate('/creditos/dashboard')} style={{ padding: '10px 16px', background: 'white', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <i className="bi bi-heart-pulse"></i> Ver Dashboard
+            </button>
+            <button onClick={() => { setEvalResult(null); setClienteId(''); setShowEvaluarModal(true); }} style={{ padding: '10px 20px', background: 'var(--role-primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+              <i className="bi bi-plus-lg me-2"></i>Evaluar Cliente
+            </button>
+          </div>
         )}
       </div>
 

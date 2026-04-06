@@ -1,9 +1,9 @@
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect, useState, useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import { RoleProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, RoleProtectedRoute, PublicRoute } from './components/ProtectedRoute';
 import Venta from './pages/Venta';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
@@ -40,53 +40,33 @@ const MENU_TITLES = {
 
 const SIDEBAR_CONFIG = {
   VENTA: [
-    { path: '/', label: 'Punto de Venta', icon: 'bi-cart4', roles: ['staff', 'manager', 'admin'] },
-    { path: '/pedidos', label: 'Pedidos', icon: 'bi-cart-check', roles: ['staff', 'manager', 'admin'] }
+    { path: '/', label: 'Punto de Venta', icon: 'bi-cart4', permiso: 'ventas' },
+    { path: '/pedidos', label: 'Pedidos', icon: 'bi-cart-check', permiso: 'ventas' }
   ],
   GESTION: [
-    { path: '/productos', label: 'Productos', icon: 'bi-box-seam', roles: ['manager', 'admin'] },
-    { path: '/empleados', label: 'Empleados', icon: 'bi-people', roles: ['manager', 'admin'] },
-    { path: '/tiendas', label: 'Tiendas', icon: 'bi-shop', roles: ['admin'] }
+    { path: '/productos', label: 'Productos', icon: 'bi-box-seam', permiso: 'productos_ver' },
+    { path: '/empleados', label: 'Empleados', icon: 'bi-people', permiso: 'empleados_ver' },
+    { path: '/tiendas', label: 'Tiendas', icon: 'bi-shop', permiso: 'tiendas_ver' }
   ],
   FINANZAS: [
-    { path: '/dashboard', label: 'Dashboard', icon: 'bi-graph-up', roles: ['manager', 'admin'] },
-    { path: '/caja', label: 'Caja', icon: 'bi-cash-stack', roles: ['staff', 'manager', 'admin'] },
-    { path: '/creditos', label: 'Créditos', icon: 'bi-credit-card', roles: ['manager', 'admin'] }
+    { path: '/dashboard', label: 'Dashboard', icon: 'bi-graph-up', permiso: 'reportes' },
+    { path: '/caja', label: 'Caja', icon: 'bi-cash-stack', permiso: 'caja_consulta' },
+    { path: '/creditos', label: 'Créditos', icon: 'bi-credit-card', permiso: 'creditos_aprobar' }
   ],
   OPERACION: [
-    { path: '/turnos', label: 'Turnos', icon: 'bi-clock', roles: ['manager', 'admin'] },
-    { path: '/tareas', label: 'Tareas', icon: 'bi-check2-square', roles: ['staff', 'manager', 'admin'] },
-    { path: '/promociones', label: 'Promociones', icon: 'bi-gift', roles: ['manager', 'admin'] }
+    { path: '/turnos', label: 'Turnos', icon: 'bi-clock', permiso: 'turnos_ver' },
+    { path: '/tareas', label: 'Tareas', icon: 'bi-check2-square', permiso: 'tareas_ver' },
+    { path: '/promociones', label: 'Promociones', icon: 'bi-gift', permiso: 'promociones_ver' }
   ],
   SISTEMA: [
-    { path: '/perfil', label: 'Mi Perfil', icon: 'bi-person-circle', roles: ['staff', 'manager', 'admin'] },
-    { path: '/configuracion', label: 'Configuración', icon: 'bi-gear', roles: ['admin'] }
+    { path: '/perfil', label: 'Mi Perfil', icon: 'bi-person-circle', permiso: 'ventas' },
+    { path: '/configuracion', label: 'Configuración', icon: 'bi-gear', permiso: 'configuracion' }
   ]
 };
 
-function SidebarItem({ path, label, icon, isActive, onClick, rolActual }) {
+function SidebarItem({ path, label, icon, permiso, isActive, onClick }) {
   const { hasPermission } = useAuth();
-  
-  const permisosPath = {
-    '/': 'ventas',
-    '/pedidos': 'ventas',
-    '/productos': 'productos_ver',
-    '/empleados': 'empleados_ver',
-    '/tiendas': 'tiendas_ver',
-    '/dashboard': 'reportes',
-    '/caja': 'caja_consulta',
-    '/creditos': 'creditos_ver',
-    '/turnos': 'turnos_ver',
-    '/tareas': 'tareas_ver',
-    '/promociones': 'promociones_ver',
-    '/perfil': 'ventas',
-    '/configuracion': 'admin'
-  };
-  
-  const permiso = permisosPath[path];
-  if (permiso && !hasPermission(permiso)) {
-    return null;
-  }
+  if (permiso && !hasPermission(permiso)) return null;
   
   return (
     <Link to={path} className={`nav-link ${isActive}`} onClick={onClick}>
@@ -95,7 +75,7 @@ function SidebarItem({ path, label, icon, isActive, onClick, rolActual }) {
   );
 }
 
-function AppContent() {
+function AppLayout() {
   const location = useLocation();
   const { empleado, signOut, roleTheme } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -104,9 +84,7 @@ function AppContent() {
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 992);
-      if (window.innerWidth >= 1024) {
-        setMenuOpen(false);
-      }
+      if (window.innerWidth >= 1024) setMenuOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -131,13 +109,9 @@ function AppContent() {
     return labels[rol] || 'Empleado';
   };
 
-  const getPageTitle = () => {
-    return MENU_TITLES[location.pathname] || 'Abarrotes Digitales';
-  };
+  const getPageTitle = () => MENU_TITLES[location.pathname] || 'Abarrotes Digitales';
 
-  const getProfileColor = () => {
-    return roleTheme?.primary || '#1A7A48';
-  };
+  const profileColor = roleTheme?.primary || '#1A7A48';
 
   const MenuIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
@@ -155,9 +129,6 @@ function AppContent() {
     </svg>
   );
 
-  const isPOSPage = location.pathname === '/';
-  const profileColor = getProfileColor();
-
   const renderSidebarSection = (title, items) => (
     items.length > 0 && (
       <>
@@ -165,13 +136,7 @@ function AppContent() {
           <small style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem', letterSpacing: '1px' }}>{title}</small>
         </div>
         {items.map(item => (
-          <SidebarItem
-            key={item.path}
-            {...item}
-            isActive={isActive(item.path)}
-            onClick={closeMenu}
-            rolActual={empleado?.rol}
-          />
+          <SidebarItem key={item.path} {...item} isActive={isActive(item.path)} onClick={closeMenu} />
         ))}
       </>
     )
@@ -184,12 +149,12 @@ function AppContent() {
       </div>
       
       <div className="sidebar-user">
-        <div className="sidebar-user-avatar">
+        <div className="sidebar-user-avatar" style={{ color: profileColor, background: `${profileColor}22` }}>
           {getInitials(empleado?.nombre)}
         </div>
         <div className="sidebar-user-info">
           <div className="sidebar-user-name">{empleado?.nombre || 'Usuario'}</div>
-          <div className="sidebar-user-role">{getRoleLabel(empleado?.rol)}</div>
+          <div className="sidebar-user-role" style={{ color: profileColor }}>{getRoleLabel(empleado?.rol)}</div>
         </div>
       </div>
 
@@ -200,11 +165,7 @@ function AppContent() {
       {renderSidebarSection('SISTEMA', SIDEBAR_CONFIG.SISTEMA)}
 
       <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-        <button 
-          className="nav-link" 
-          onClick={signOut}
-          style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
-        >
+        <button className="nav-link" onClick={signOut} style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
           <LogoutIcon /> <span>Cerrar Sesión</span>
         </button>
         <small style={{ color: 'rgba(255,255,255,0.4)', display: 'block', textAlign: 'center', marginTop: 8 }}>v2.0.0</small>
@@ -214,43 +175,36 @@ function AppContent() {
 
   return (
     <div className="app">
-      {!isPOSPage && (
-        <nav className="navbar">
-          <button className="navbar-hamburger" onClick={toggleMenu}>
-            <MenuIcon />
-          </button>
-          <h1 className="navbar-title">{getPageTitle()}</h1>
-        </nav>
-      )}
+      <nav className="navbar">
+        <button className="navbar-hamburger" onClick={toggleMenu}>
+          <MenuIcon />
+        </button>
+        <h1 className="navbar-title">{getPageTitle()}</h1>
+      </nav>
 
-      {(isMobile || !isPOSPage) && (
-        <div className={`sidebar-wrapper ${menuOpen ? 'open' : ''}`}>
-          <div className="overlay" onClick={closeMenu}></div>
-          <aside className="sidebar">
-            {sidebarContent}
-          </aside>
-        </div>
-      )}
+      <div className={`sidebar-wrapper ${menuOpen ? 'open' : ''}`}>
+        <div className="overlay" onClick={closeMenu}></div>
+        <aside className="sidebar">
+          {sidebarContent}
+        </aside>
+      </div>
 
-      <main className={isPOSPage && isMobile ? "content-area pos-full" : "content-area"}>
+      <main className="content-area">
         <Routes>
           <Route path="/" element={<Venta />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/productos" element={<Products />} />
+          <Route path="/dashboard" element={<RoleProtectedRoute requiredPermission="reportes"><Dashboard /></RoleProtectedRoute>} />
+          <Route path="/productos" element={<RoleProtectedRoute requiredPermission="productos_ver"><Products /></RoleProtectedRoute>} />
           <Route path="/pedidos" element={<Orders />} />
           <Route path="/caja" element={<Caja />} />
-          <Route path="/empleados" element={<Empleados />} />
-          <Route path="/tiendas" element={<Tiendas />} />
-          <Route path="/turnos" element={<Turnos />} />
+          <Route path="/empleados" element={<RoleProtectedRoute requiredPermission="empleados_ver"><Empleados /></RoleProtectedRoute>} />
+          <Route path="/tiendas" element={<RoleProtectedRoute requiredPermission="tiendas_ver"><Tiendas /></RoleProtectedRoute>} />
+          <Route path="/turnos" element={<RoleProtectedRoute requiredPermission="turnos_ver"><Turnos /></RoleProtectedRoute>} />
           <Route path="/tareas" element={<Tareas />} />
-          <Route path="/promociones" element={<Promociones />} />
-          <Route path="/creditos" element={
-            <RoleProtectedRoute requiredPermission="creditos_aprobar">
-              <Creditos />
-            </RoleProtectedRoute>
-          } />
+          <Route path="/promociones" element={<RoleProtectedRoute requiredPermission="promociones_ver"><Promociones /></RoleProtectedRoute>} />
+          <Route path="/creditos" element={<RoleProtectedRoute requiredPermission="creditos_aprobar"><Creditos /></RoleProtectedRoute>} />
           <Route path="/perfil" element={<PerfilEmpleado />} />
-          <Route path="/configuracion" element={<Configuracion />} />
+          <Route path="/configuracion" element={<RoleProtectedRoute requiredPermission="configuracion"><Configuracion /></RoleProtectedRoute>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
@@ -263,9 +217,9 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/pantalla-cliente" element={<PantallaCliente />} />
-            <Route path="/*" element={<AppContent />} />
+            <Route path="/*" element={<ProtectedRoute><AppLayout /></ProtectedRoute>} />
           </Routes>
         </CartProvider>
       </AuthProvider>
