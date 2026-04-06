@@ -1,13 +1,26 @@
 import { Link, useLocation } from 'react-router-dom';
 import { FiShoppingCart, FiPackage, FiClipboard, FiBarChart2, FiDollarSign, FiTag, FiUser, FiLogOut } from 'react-icons/fi';
+import { useProfileColor } from '../hooks/useProfileColor';
 import logo from '../assets/logo.png';
+
+const getRoleLabel = (role) => {
+  const labels = {
+    staff: 'Staff',
+    manager: 'Manager',
+    admin: 'Administrador',
+    // Compatibilidad con roles anteriores
+    supervisor: 'Manager',
+    lider: 'Manager',
+    director: 'Administrador'
+  };
+  return labels[role] || 'Empleado';
+};
 
 const Navbar = () => {
   const location = useLocation();
+  const profile = useProfileColor();
 
-  const isActive = (path) => {
-    return location.pathname === path ? 'active' : '';
-  };
+  const isActive = (path) => location.pathname === path ? 'active' : '';
 
   const navItem = (to, icon, label) => (
     <Link to={to} className={`nav-link ${isActive(to)}`}>
@@ -22,7 +35,8 @@ const Navbar = () => {
     return parts.slice(0, 2).map(p => p[0]).join('').toUpperCase();
   };
 
-  const mockUser = { name: 'Juan García', role: 'Lider', roleColor: '#3B82F6' };
+  const storedName = sessionStorage.getItem('desktop_employeeName') || 'Usuario';
+  const storedRole = sessionStorage.getItem('desktop_employeeProfile') || 'staff';
 
   return (
     <nav className="nav flex-column sidebar">
@@ -66,13 +80,13 @@ const Navbar = () => {
       <div className="sidebar-user">
         <div
           className="sidebar-user-avatar"
-          style={{ color: mockUser.roleColor, background: `${mockUser.roleColor}22` }}
+          style={{ color: profile.color, background: `${profile.color}22` }}
         >
-          {userInitials(mockUser.name)}
+          {profile.icon}
         </div>
         <div className="sidebar-user-info">
-          <div className="sidebar-user-name">{mockUser.name}</div>
-          <div className="sidebar-user-role" style={{ color: mockUser.roleColor }}>{mockUser.role}</div>
+          <div className="sidebar-user-name">{storedName}</div>
+          <div className="sidebar-user-role" style={{ color: profile.color }}>{getRoleLabel(storedRole)}</div>
         </div>
         <button className="btn btn-link p-0 border-0" style={{ color: '#6B7C93', marginLeft: 'auto' }}>
           <FiLogOut size={16} />

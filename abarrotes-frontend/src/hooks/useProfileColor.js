@@ -1,52 +1,40 @@
-import { useState, useEffect } from 'react';
-import { getProfileColor } from '../data/employeeProfiles';
+import { useAuth } from '../context/AuthContext';
+import { ROLE_THEME } from '../context/AuthContext';
 
-export const useProfileColor = () => {
-  const [profileColor, setProfileColor] = useState('#1e7f5c'); // Default staff color
+// Hook simplificado que lee de AuthContext
+export function useProfileColor() {
+  const { roleTheme, empleado } = useAuth();
+  
+  // Si hay theme del contexto, lo usamos
+  if (roleTheme) {
+    return roleTheme;
+  }
+  
+  // Fallback: intentar leer del storage
+  const stored = sessionStorage.getItem('desktop_empleado');
+  if (stored) {
+    try {
+      const emp = JSON.parse(stored);
+      return ROLE_THEME[emp.rol] || ROLE_THEME.staff;
+    } catch {
+      // Ignore parse errors
+    }
+  }
+  
+  return ROLE_THEME.staff;
+}
 
-  useEffect(() => {
-    const updateColor = () => {
-      const employeeProfile = localStorage.getItem('employeeProfile') || 'staff';
-      const color = getProfileColor(employeeProfile);
-      setProfileColor(color);
-    };
+export function useRoleColor() {
+  const profile = useProfileColor();
+  return profile.primary;
+}
 
-    updateColor();
-    
-    // Escuchar cambios en el localStorage
-    window.addEventListener('storage', updateColor);
-    
-    return () => {
-      window.removeEventListener('storage', updateColor);
-    };
-  }, []);
-
-  return profileColor;
-};
-
-// Función para ajustar brillo de color
-export const adjustColor = (color, amount) => {
-  const hex = color.replace('#', '');
-  const num = parseInt(hex, 16);
+// Mantenemos adjustColor para compatibilidad
+export function adjustColor(hex, amount) {
+  const clean = hex.replace('#', '');
+  const num = parseInt(clean, 16);
   const r = Math.min(255, Math.max(0, (num >> 16) + amount));
   const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
   const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
   return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
-};
-
-export const getProfileColors = () => {
-  const profileColor = getProfileColor(localStorage.getItem('employeeProfile') || 'staff');
-  return {
-    primary: profileColor,
-    primaryDark: adjustColor(profileColor, -20),
-    primaryLight: adjustColor(profileColor, 20),
-    secondary: '#2c3e50',
-    success: '#28a745',
-    danger: '#dc3545',
-    warning: '#ffc107',
-    info: '#17a2b8',
-    light: '#f8f9fa',
-    dark: '#343a40',
-    border: '#dee2e6'
-  };
-};
+}

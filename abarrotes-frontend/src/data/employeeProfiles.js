@@ -1,37 +1,49 @@
-// Definición de perfiles de empleado para la versión de escritorio
+// Definición de perfiles de empleado — sincronizado con macOS
 export const EMPLOYEE_PROFILES = {
-  STAFF: {
+  staff: {
     id: 'staff',
-    name: 'Staff Verde',
+    name: 'Staff',
     color: '#1A7A48',
+    colorDark: '#0F4D2E',
+    colorHover: '#166040',
+    colorAccent: '#4ADE80',
     colorHex: '#1A7A48',
+    icon: '👤',
     allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja'],
     canAssignTasks: false,
     canViewReports: false,
     canManageCash: true,
-    description: 'Personal de operaciones'
+    description: 'Empleado operativo con acceso a punto de venta'
   },
-  SUPERVISOR: {
-    id: 'supervisor',
-    name: 'Lider Azul',
-    color: '#3B82F6',
-    colorHex: '#3B82F6',
-    allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja', 'dashboard'],
+  manager: {
+    id: 'manager',
+    name: 'Manager',
+    color: '#2563EB',
+    colorDark: '#1E3A5F',
+    colorHover: '#1D4ED8',
+    colorAccent: '#60A5FA',
+    colorHex: '#2563EB',
+    icon: '💼',
+    allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja', 'dashboard', 'promociones', 'creditos'],
     canAssignTasks: true,
     canViewReports: true,
     canManageCash: true,
-    description: 'Supervisión de operaciones'
+    description: 'Gerente con acceso a reportes y promociones'
   },
-  DIRECTOR: {
-    id: 'director',
-    name: 'Manager Plata',
-    color: '#9CA3AF',
-    colorHex: '#9CA3AF',
-    allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja', 'dashboard', 'inventory', 'configuracion'],
+  admin: {
+    id: 'admin',
+    name: 'Administrador',
+    color: '#64748B',
+    colorDark: '#1E293B',
+    colorHover: '#475569',
+    colorAccent: '#F59E0B',
+    colorHex: '#64748B',
+    icon: '👑',
+    allowedRoutes: ['pos', 'scanner', 'perfil', 'asistencia', 'tasks', 'caja', 'dashboard', 'inventory', 'configuracion', 'promociones', 'creditos'],
     canAssignTasks: true,
     canViewReports: true,
     canManageCash: true,
-    description: 'Dirección general'
+    description: 'Administrador con acceso total al sistema'
   }
 };
 
@@ -39,16 +51,23 @@ export const EMPLOYEE_PROFILES = {
 export const EMPLOYEES = [
   { id: 'EMP001', name: 'Juan García', profile: 'staff', password: '1234' },
   { id: 'EMP002', name: 'María López', profile: 'staff', password: '1234' },
-  { id: 'EMP003', name: 'Carlos Rodríguez', profile: 'supervisor', password: '1234' },
-  { id: 'EMP004', name: 'Ana Martínez', profile: 'supervisor', password: '1234' },
-  { id: 'EMP005', name: 'Pedro Sánchez', profile: 'director', password: '1234' },
-  { id: 'EMP006', name: 'Laura Fernández', profile: 'director', password: '1234' },
-  { id: 'ADMIN001', name: 'Juan Perez', profile: 'director', password: 'admin123' }
+  { id: 'EMP003', name: 'Carlos Rodríguez', profile: 'manager', password: '1234' },
+  { id: 'EMP004', name: 'Ana Martínez', profile: 'manager', password: '1234' },
+  { id: 'EMP005', name: 'Pedro Sánchez', profile: 'admin', password: '1234' },
+  { id: 'EMP006', name: 'Laura Fernández', profile: 'admin', password: '1234' },
+  { id: 'ADMIN001', name: 'Juan Perez', profile: 'admin', password: 'admin123' }
 ];
 
-// Función para obtener el perfil por ID
+// Función para obtener el perfil por ID (con compatibilidad legacy)
 export const getProfileById = (profileId) => {
-  return Object.values(EMPLOYEE_PROFILES).find(p => p.id === profileId) || EMPLOYEE_PROFILES.STAFF;
+  const mapped = {
+    'supervisor': 'manager',
+    'lider': 'manager',
+    'director': 'admin',
+    'administrador': 'admin'
+  };
+  const id = mapped[profileId?.toLowerCase()] || profileId?.toLowerCase() || 'staff';
+  return EMPLOYEE_PROFILES[id] || EMPLOYEE_PROFILES.staff;
 };
 
 // Función para obtener empleado por ID
@@ -71,11 +90,15 @@ export const getProfileColor = (profileId) => {
 // Función para validar credenciales
 export const validateCredentials = (numeroEmpleado, password) => {
   const employee = EMPLOYEES.find(e => e.id === numeroEmpleado && e.password === password);
-  return employee ? {
+  if (!employee) return null;
+  const profile = getProfileById(employee.profile);
+  return {
     id: employee.id,
     name: employee.name,
     profile: employee.profile,
-    profileName: getProfileById(employee.profile).name,
-    profileColor: getProfileColor(employee.profile)
-  } : null;
+    profileName: profile.name,
+    profileColor: profile.colorHex,
+    profileColorDark: profile.colorDark,
+    profileIcon: profile.icon
+  };
 };

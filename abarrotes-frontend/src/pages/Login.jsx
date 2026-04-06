@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaLock, FaSignInAlt, FaEye, FaEyeSlash, FaCheck } from 'react-icons/fa';
-import { loginWithEmail } from '../services/firebaseAuth';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 
 const Login = () => {
-  const [employeeId, setEmployeeId] = useState('');
+  const [numEmpleado, setNumEmpleado] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -13,6 +13,14 @@ const Login = () => {
   const [attempts, setAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState(null);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
+
+  useEffect(() => {
+    const savedNumEmpleado = localStorage.getItem('recordar_usuario');
+    if (savedNumEmpleado) {
+      setNumEmpleado(savedNumEmpleado);
+    }
+  }, []);
 
   useEffect(() => {
     document.body.classList.add('login-page-active');
@@ -42,13 +50,8 @@ const Login = () => {
       return;
     }
 
-    if (!employeeId.trim() || !password.trim()) {
-      setError('Por favor ingresa tu usuario y contraseña');
-      return;
-    }
-
-    if (employeeId.length > 20 || password.length > 50) {
-      setError('Datos inválidos');
+    if (!numEmpleado.trim() || !password.trim()) {
+      setError('Por favor ingresa tu número de empleado y contraseña');
       return;
     }
 
@@ -56,20 +59,12 @@ const Login = () => {
     setError('');
 
     try {
-      const result = await loginWithEmail(employeeId.trim(), password);
+      const result = await signIn(numEmpleado.trim(), password);
 
       if (result.success) {
         setAttempts(0);
-        
-        sessionStorage.setItem('desktop_employeeId', result.user.id);
-        sessionStorage.setItem('desktop_employeeName', result.user.nombre);
-        sessionStorage.setItem('desktop_employeeProfile', result.user.profile);
-        sessionStorage.setItem('desktop_employeeProfileColor', result.user.color);
-        sessionStorage.setItem('desktop_loginTime', Date.now().toString());
-        sessionStorage.setItem('desktop_isDesktopApp', 'true');
-        
-        const redirectTo = '/';
-        navigate(redirectTo, { replace: true });
+        localStorage.setItem('recordar_usuario', numEmpleado.trim());
+        navigate('/', { replace: true });
       } else {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
@@ -78,7 +73,7 @@ const Login = () => {
           setLockoutUntil(Date.now() + 30000);
           setError('Demasiados intentos fallidos. Espera 30 segundos.');
         } else {
-          setError('Usuario o contraseña incorrectos');
+          setError(result.error || 'Número de empleado o contraseña incorrectos');
         }
       }
     } catch (err) {
@@ -90,17 +85,15 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      {/* Panel Izquierdo - Branding (Desktop) */}
       <div className="login-brand-panel" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <img src={logo} alt="Abarrotes Digitales" style={{ maxWidth: '240px', filter: 'brightness(0) invert(1)' }} />
+        <img src={logo} alt="PuntoVerde" style={{ maxWidth: '240px', filter: 'brightness(0) invert(1)' }} />
       </div>
       
-      {/* Panel Derecho - Formulario */}
       <div className="login-form-panel">
         <div className="login-card">
-          <img src={logo} alt="Abarrotes Digitales" className="login-logo-mobile" />
+          <img src={logo} alt="PuntoVerde" className="login-logo-mobile" />
           <h2>Iniciar sesión</h2>
-          <p>Bienvenido de vuelta</p>
+          <p>Bienvenido a PuntoVerde</p>
           
           {error && (
             <div style={{ 
@@ -126,9 +119,9 @@ const Login = () => {
                 <i className="bi bi-person input-icon"></i>
                 <input
                   type="text"
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
-                  placeholder="Ej: EMP001"
+                  value={numEmpleado}
+                  onChange={(e) => setNumEmpleado(e.target.value.toUpperCase())}
+                  placeholder="Ej: 001"
                   required
                   disabled={loading}
                 />
@@ -181,14 +174,14 @@ const Login = () => {
                 </>
               ) : (
                 <>
-                  <FaSignInAlt />
+                  <i className="bi bi-box-arrow-in-right me-2"></i>
                   Iniciar sesión
                 </>
               )}
             </button>
           </form>
           
-          <p className="login-footer">Abarrotes Digitales v1.0</p>
+          <p className="login-footer">PuntoVerde v2.0</p>
         </div>
       </div>
     </div>

@@ -281,7 +281,7 @@ const PantallaCliente = () => {
     // Iniciar Polling de localStorage (cada 500ms) si no existe ya
     if (!window.pantallaClienteInterval) {
       console.log('[PANTALLA-DEBUG] Iniciando polling de localStorage...');
-      window.pantallaClienteInterval = setInterval(leerDeLocalStorage, 500);
+      window.pantallaClienteInterval = setInterval(leerDeLocalStorage, 300);
     }
 
     // Leer inmediatamente al montar

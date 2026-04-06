@@ -1,664 +1,340 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../api/axiosConfig';
-import axios from 'axios';
-import { QRCodeCanvas } from 'qrcode.react';
-import { useSharedOrders } from '../hooks/useSharedOrders';
-import { getProfileColor } from '../data/employeeProfiles';
-import { FaCreditCard, FaTimes, FaCheck, FaMoneyBillWave, FaMobileAlt, FaPrint, FaUniversity, FaReceipt, FaCheckCircle, FaCopy } from 'react-icons/fa';
-import POSLayout, { BarcodeIcon, PlusIcon, MinusIcon, TrashIcon, CartIcon, CreditCardIcon } from '../components/POSLayout';
-import '../styles/pos-layout.css';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import productService from '../services/productService';
+import PaymentModal from '../components/PaymentModal';
+import BarcodeScanner from '../components/BarcodeScanner';
+
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+};
 
 const Venta = () => {
-  const inputRef = useRef(null);
-  const { addOrder } = useSharedOrders();
+  const navigate = useNavigate();
+  const { items, add, updateQuantity, remove, clear, subtotal, iva, total, itemCount, isEmpty, sincronizarPantallaCliente } = useCart();
+  const { hasPermission } = useAuth();
   
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [colors, setColors] = useState({
-    primary: '#1B5E35',
-    primaryDark: '#154a2c',
-    primaryLight: '#2E7D52',
-  });
-
-  if (!window.ventaCart) {
-    window.ventaCart = [];
-  }
-  
-  const updateCart = (update) => {
-    let nextCart;
-    if (typeof update === 'function') {
-      const currentCart = window.ventaCart || cart;
-      nextCart = update(currentCart);
-    } else {
-      nextCart = update;
-    }
-    setCart(nextCart);
-    window.ventaCart = nextCart;
-  };
-  
-  const [cart, setCart] = useState(window.ventaCart || []);
-  const [scanCode, setScanCode] = useState('');
-  const [message, setMessage] = useState({ type: '', text: '' });
-  
+  const [searchTerm, setSearchTerm] = useState('');
   const [productsList, setProductsList] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
+  const [loading, setLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('01');
-  const [montoPagado, setMontoPagado] = useState('');
-  const [paymentStep, setPaymentStep] = useState('select');
-  const [qrData, setQrData] = useState(null);
-  const [ticketMethod, setTicketMethod] = useState('digital');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
   
-  const [config, setConfig] = useState({
-    clabeInterbancaria: '044185002754631919',
-    nombreEmpresa: 'Abarrotes Digitales',
-    banco: 'BBVA',
-    regimenFiscal: '612',
-    lugarExpedicion: '06000',
-    rfcEmpresa: 'AAD980314XXX',
-    direccionEmpresa: 'Av. Principal #123, Col. Centro, CDMX'
-  });
+  const searchRef = useRef(null);
 
   useEffect(() => {
-    const savedConfig = localStorage.getItem('sistemaConfig');
-    if (savedConfig) {
-      setConfig(JSON.parse(savedConfig));
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    sincronizarPantallaCliente();
+  }, [items]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const result = await productService.fetchAll();
+    if (result.success) {
+      setProductsList(result.data);
     }
-  }, []);
-
-  useEffect(() => {
-    const profileColor = getProfileColor(localStorage.getItem('employeeProfile') || 'staff');
-    const adjustColor = (color, amount) => {
-      const hex = color.replace('#', '');
-      const num = parseInt(hex, 16);
-      const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-      const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
-      const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
-      return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
-    };
-
-    setColors({
-      primary: profileColor,
-      primaryDark: adjustColor(profileColor, -20),
-      primaryLight: adjustColor(profileColor, 20),
-    });
-  }, []);
-
-  useEffect(() => {
-    window.ventaCart = cart;
-  }, [cart]);
-
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
-
-  useEffect(() => {
-    const loadProducts = async () => {
-      const productosPrueba = [
-        { id: 1, name: 'Leche Entera Lala 1L', price: 22.50, sku: '7501055301011' },
-        { id: 2, name: 'Yogurt Natural 1L', price: 25.00, sku: '7501055301101' },
-        { id: 3, name: 'Queso Fresco 500g', price: 35.00, sku: '7501055301111' },
-        { id: 4, name: 'Crema Acida 200ml', price: 18.50, sku: '7501055301121' },
-        { id: 5, name: 'Mantequilla 200g', price: 22.00, sku: '7501055301131' },
-        { id: 6, name: 'Huevos Jumbo Dozen', price: 45.00, sku: '7501055301031' },
-        { id: 7, name: 'Pan Bimbo Blanco 680g', price: 32.90, sku: '7501055301021' },
-        { id: 8, name: 'Arroz White 1kg', price: 18.00, sku: '7501055301051' },
-        { id: 9, name: 'Frijoles Negros 1kg', price: 24.00, sku: '7501055301061' },
-        { id: 10, name: 'Azucar Blanca 1kg', price: 16.50, sku: '7501055301161' },
-        { id: 11, name: 'Sal de Mesa 1kg', price: 8.00, sku: '7501055301171' },
-        { id: 12, name: 'Pasta San Marcos 500g', price: 14.00, sku: '7501055301181' },
-        { id: 13, name: 'Aceite Capullo 1L', price: 28.50, sku: '7501055301041' },
-        { id: 14, name: 'Refresco Cola 2L', price: 18.00, sku: '7501055301221' },
-        { id: 15, name: 'Agua Purificada 1.5L', price: 10.00, sku: '7501055301211' },
-        { id: 16, name: 'Sabritas Original 150g', price: 18.50, sku: '7501055301231' },
-      ];
-      
-      setProductsList(productosPrueba);
-      try {
-        await api.get('/products');
-      } catch (error) {
-        console.log('Using local products');
-      }
-    };
-    loadProducts();
-  }, []);
-
-  const getTopSellingProducts = () => {
-    return productsList.slice(0, 8);
+    setLoading(false);
   };
 
-  const handleInputChange = (value) => {
-    setScanCode(value);
-    
-    if (value.length > 0) {
-      const filtered = productsList.filter(product => 
-        product.name.toLowerCase().includes(value.toLowerCase()) ||
-        (product.sku && product.sku.toLowerCase().includes(value.toLowerCase()))
-      );
-      setSuggestions(filtered.slice(0, 8));
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    if (value.length >= 2) {
+      const filtered = productsList.filter(p => 
+        p.nombre?.toLowerCase().includes(value.toLowerCase()) ||
+        p.codigo?.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 6);
+      setSuggestions(filtered);
       setShowSuggestions(true);
     } else {
-      const topSelling = getTopSellingProducts();
-      setSuggestions(topSelling);
-      setShowSuggestions(true);
-    }
-  };
-
-  const selectSuggestion = (product) => {
-    setScanCode('');
-    setShowSuggestions(false);
-    addToCart(product);
-  };
-
-  const handleScan = () => {
-    const code = scanCode.trim();
-    if (!code) return;
-
-    const product = productsList.find(p => 
-      p.name.toLowerCase() === code.toLowerCase() || 
-      p.name.toLowerCase().includes(code.toLowerCase()) ||
-      (p.sku && p.sku.toLowerCase() === code.toLowerCase())
-    );
-
-    if (product) {
-      addToCart(product);
-      setScanCode('');
       setShowSuggestions(false);
-      setMessage({ type: 'success', text: product.name + ' agregado' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-    } else {
-      setMessage({ type: 'error', text: 'Producto no encontrado' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     }
   };
 
-  const addToCart = (product) => {
-    updateCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, subtotal: item.price * (item.quantity + 1) }
-            : item
-        );
-      } else {
-        return [...prevCart, { ...product, quantity: 1, subtotal: product.price }];
-      }
-    });
-  };
-
-  const updateQuantity = (id, delta) => {
-    updateCart(prevCart => {
-      const newCart = prevCart.map(item => {
-        if (item.id === id) {
-          const newQty = item.quantity + delta;
-          if (newQty <= 0) return null;
-          return { ...item, quantity: newQty, subtotal: item.price * newQty };
-        }
-        return item;
-      }).filter(Boolean);
-      
-      window.ventaCart = newCart;
-      return newCart;
-    });
-  };
-
-  const removeItem = (id) => {
-    updateCart(prevCart => {
-      const newCart = prevCart.filter(item => item.id !== id);
-      window.ventaCart = newCart;
-      return newCart;
-    });
-  };
-
-  const calculateTotalsWithIVA = () => {
-    const subtotalBase = cart.reduce((sum, item) => sum + item.subtotal, 0);
-    const totalConIVA = subtotalBase * 1.16;
-    const iva = subtotalBase * 0.16;
-    return { subtotalBase, totalConIVA, iva };
-  };
-
-  const { subtotalBase, totalConIVA, iva } = calculateTotalsWithIVA();
-
-  const openPaymentModal = () => {
-    if (cart.length === 0) {
-      setMessage({ type: 'error', text: 'El carrito esta vacio' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-      return;
-    }
-    setSelectedPaymentMethod('01');
-    setShowPaymentModal(true);
-  };
-
-  const confirmPayment = () => {
-    if (selectedPaymentMethod === '01' && (!montoPagado || parseFloat(montoPagado) < totalConIVA)) {
-      setMessage({ type: 'error', text: 'Monto insuficiente' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 2000);
-      return;
-    }
-
-    updateCart([]);
-    setScanCode('');
+  const handleSelectProduct = async (product) => {
+    setSearchTerm('');
     setShowSuggestions(false);
-    setMontoPagado('');
-    setSelectedPaymentMethod('01');
-    setShowPaymentModal(false);
-    setMessage({ type: 'success', text: 'Venta completada' });
-    setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     
-    window.ventaCart = [];
-  };
-
-  const generateQRPayment = (type) => {
-    setPaymentStep('processing');
+    const result = await add(product);
     
-    setTimeout(() => {
-      const reference = Math.floor(1000000 + Math.random() * 9000000);
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-        type === 'mercadopago' 
-          ? `mercadopago://pay?amount=${totalConIVA}&ref=${reference}` 
-          : `codi://pay?amount=${totalConIVA}&ref=${reference}`
-      )}`;
-      
-      setQrData({
-        qrCode: qrCodeUrl,
-        referencia: reference.toString(),
-        tipo: type === 'mercadopago' ? 'MercadoPago QR' : 'CoDi'
-      });
-      setPaymentStep('qr');
-    }, 1500);
+    if (result.resultado === 'added') {
+      setToast({ show: true, message: `${product.nombre} agregado`, type: 'success' });
+    } else if (result.resultado === 'stockBajo') {
+      setToast({ show: true, message: `Stock bajo: ${product.nombre}`, type: 'warning' });
+    } else {
+      setToast({ show: true, message: `Sin stock: ${product.nombre}`, type: 'error' });
+    }
+    
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 2000);
   };
 
-  const cancelPayment = () => {
-    setShowPaymentModal(false);
-    setMontoPagado('');
-    setSelectedPaymentMethod('01');
-    setPaymentStep('select');
-    setQrData(null);
+  const handleBarcodeScan = async (code) => {
+    setShowScanner(false);
+    const result = await productService.fetchByBarcode(code);
+    
+    if (result.success && result.data) {
+      await handleSelectProduct(result.data);
+    } else {
+      setToast({ show: true, message: 'Producto no encontrado', type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: '' }), 2000);
+    }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(amount);
+  const handleQuantityChange = (id, delta) => {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      updateQuantity(id, item.cantidad + delta);
+    }
   };
 
-  const toggleMenu = () => setMenuOpen(!menuOpen);
+  const handleNewSale = () => {
+    clear();
+    sincronizarPantallaCliente();
+  };
+
+  const isMobile = window.innerWidth < 768;
 
   return (
-    <POSLayout
-      title="Punto de Venta"
-      onToggleSidebar={toggleMenu}
-      searchValue={scanCode}
-      onSearchChange={handleInputChange}
-      onSearchSubmit={handleScan}
-      showSuggestions={showSuggestions && suggestions.length > 0}
-      suggestions={suggestions}
-      onSelectSuggestion={selectSuggestion}
-    >
-      {message.text && (
-        <div className={`pos-message ${message.type}`}>
-          {message.text}
-        </div>
-      )}
-
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="pos-suggestions">
-          <div className="pos-suggestions-header">
-            {scanCode ? `${suggestions.length} resultados` : `${suggestions.length} opciones populares`}
-          </div>
-          {suggestions.map((product) => (
-            <div 
-              key={product.id} 
-              className="pos-suggestion-item"
-              onClick={() => selectSuggestion(product)}
-            >
-              <span className="pos-suggestion-name">{product.name}</span>
-              <span className="pos-suggestion-price">${(product.price * 1.16).toFixed(2)}</span>
+    <div className="venta-container" style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <div style={{ flex: isMobile ? 1 : '60%', display: 'flex', flexDirection: 'column', padding: '16px', overflow: 'hidden' }}>
+        <div style={{ marginBottom: '16px', position: 'relative' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <input
+                ref={searchRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Buscar producto o escanear código..."
+                style={{
+                  width: '100%',
+                  padding: '14px 14px 14px 44px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  fontSize: '16px'
+                }}
+              />
+              <i className="bi bi-search" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}></i>
             </div>
-          ))}
+            <button
+              onClick={() => setShowScanner(true)}
+              style={{
+                padding: '14px',
+                border: '1px solid var(--border)',
+                borderRadius: '10px',
+                background: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              <i className="bi bi-upc" style={{ fontSize: '20px' }}></i>
+            </button>
+          </div>
+          
+          {showSuggestions && suggestions.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              background: 'white',
+              border: '1px solid var(--border)',
+              borderRadius: '10px',
+              boxShadow: 'var(--shadow-lg)',
+              zIndex: 100,
+              maxHeight: '300px',
+              overflow: 'auto'
+            }}>
+              {suggestions.map(product => (
+                <div
+                  key={product.id}
+                  onClick={() => handleSelectProduct(product)}
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 500 }}>{product.nombre}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{product.codigo}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--role-primary)' }}>{formatCurrency(product.precioVenta)}</div>
+                    <div style={{ fontSize: '12px', color: product.stock > 5 ? '#1A7A48' : product.stock > 0 ? '#F59E0B' : '#EF4444' }}>
+                      Stock: {product.stock}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* CARRITO */}
-      <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
-        <div className="pos-cart-header">
-          <h5>Articulos ({cart.length})</h5>
-          <span className="pos-cart-count">{cart.reduce((sum, i) => sum + i.quantity, 0)} items</span>
-        </div>
-        
-        <div className="pos-cart-items">
-          {cart.length === 0 ? (
-            <div className="pos-empty-cart">
-              <CartIcon />
-              <div>Carrito vacio</div>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {isEmpty ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+              <i className="bi bi-cart" style={{ fontSize: '64px', opacity: 0.3 }}></i>
+              <p style={{ marginTop: '16px' }}>Agrega productos para comenzar</p>
             </div>
           ) : (
-            cart.map((item) => (
-              <div key={item.id} className="pos-cart-item">
-                <div className="pos-item-info">
-                  <div className="pos-item-name">{item.name}</div>
-                  <div className="pos-item-price">${(item.price * 1.16).toFixed(2)} c/u</div>
-                </div>
-                
-                <div className="pos-item-quantity">
-                  <button className="pos-qty-btn" onClick={() => updateQuantity(item.id, -1)}>
-                    <MinusIcon />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {items.map(item => (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: 'white',
+                    borderRadius: '10px',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 500 }}>{item.nombre}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                      {formatCurrency(item.precioFinal || item.precio)} c/u
+                      {item.precioOriginal > (item.precioFinal || item.precio) && (
+                        <span style={{ textDecoration: 'line-through', marginLeft: '8px', color: '#EF4444' }}>
+                          {formatCurrency(item.precioOriginal)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      onClick={() => handleQuantityChange(item.id, -1)}
+                      style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}
+                    >
+                      <i className="bi bi-dash"></i>
+                    </button>
+                    <span style={{ minWidth: '30px', textAlign: 'center', fontWeight: 600 }}>{item.cantidad}</span>
+                    <button
+                      onClick={() => handleQuantityChange(item.id, 1)}
+                      style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}
+                    >
+                      <i className="bi bi-plus"></i>
+                    </button>
+                  </div>
+                  <div style={{ minWidth: '80px', textAlign: 'right', fontWeight: 600, marginLeft: '16px' }}>
+                    {formatCurrency((item.precioFinal || item.precio) * item.cantidad)}
+                  </div>
+                  <button
+                    onClick={() => remove(item.id)}
+                    style={{ marginLeft: '8px', width: '32px', height: '32px', borderRadius: '6px', border: 'none', background: '#fee2e2', color: '#EF4444', cursor: 'pointer' }}
+                  >
+                    <i className="bi bi-x"></i>
                   </button>
-                  <span className="pos-qty-value">{item.quantity}</span>
-                  <button className="pos-qty-btn" onClick={() => updateQuantity(item.id, 1)}>
-                    <PlusIcon />
-                  </button>
                 </div>
-                
-                <div className="pos-item-total">
-                  ${(item.subtotal * 1.16).toFixed(2)}
-                </div>
-                
-                <button className="pos-item-delete" onClick={() => removeItem(item.id)}>
-                  <TrashIcon />
-                </button>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </div>
 
-      {/* RESUMEN */}
-      <div className="pos-summary">
-        <div className="pos-summary-row">
-          <span>Subtotal</span>
-          <span>${subtotalBase.toFixed(2)}</span>
-        </div>
-        <div className="pos-summary-row">
-          <span>IVA (16%)</span>
-          <span>${iva.toFixed(2)}</span>
-        </div>
-        <div className="pos-summary-total">
-          <span className="pos-summary-label">Total</span>
-          <span className="pos-summary-amount">${totalConIVA.toFixed(2)}</span>
+      <div style={{ 
+        width: isMobile ? '100%' : '40%', 
+        background: 'white', 
+        borderLeft: '1px solid var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '16px'
+      }}>
+        <h2 style={{ margin: '0 0 16px 0', fontSize: '20px' }}>Resumen</h2>
+        
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>Subtotal ({itemCount} items)</span>
+            <span>{formatCurrency(subtotal)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>IVA (16%)</span>
+            <span>{formatCurrency(iva)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', marginBottom: '16px' }}>
+            <span style={{ fontSize: '18px', fontWeight: 600 }}>Total</span>
+            <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--role-primary)' }}>{formatCurrency(total)}</span>
+          </div>
         </div>
 
-        <button 
-          className="pos-checkout-btn"
-          onClick={openPaymentModal}
-          disabled={cart.length === 0}
-        >
-          <CreditCardIcon />
-          Proceder a Pago
-        </button>
-
-        {cart.length > 0 && (
-          <button 
-            className="pos-new-sale-btn"
-            onClick={() => { updateCart([]); window.ventaCart = []; }}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button
+            onClick={() => setShowPaymentModal(true)}
+            disabled={isEmpty}
+            style={{
+              width: '100%',
+              padding: '16px',
+              background: isEmpty ? '#ccc' : 'var(--role-primary)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '18px',
+              fontWeight: 600,
+              cursor: isEmpty ? 'not-allowed' : 'pointer'
+            }}
+          >
+            <i className="bi bi-cash-stack me-2"></i>
+            Cobrar
+          </button>
+          <button
+            onClick={handleNewSale}
+            disabled={isEmpty}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: 'white',
+              color: 'var(--role-primary)',
+              border: '1px solid var(--role-primary)',
+              borderRadius: '10px',
+              fontSize: '16px',
+              cursor: isEmpty ? 'not-allowed' : 'pointer'
+            }}
           >
             Nueva Venta
           </button>
-        )}
-
-        <div className="pos-employee">
-          <small>
-            Empleado: <strong>{localStorage.getItem('employeeName') || 'No identificado'}</strong>
-          </small>
         </div>
       </div>
 
-      {/* MODAL DE PAGO */}
+      {showScanner && (
+        <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />
+      )}
+
       {showPaymentModal && (
+        <PaymentModal 
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={(id, cambio) => {
+            setShowPaymentModal(false);
+            setToast({ show: true, message: `Venta ${id.slice(-8)} completada`, type: 'success' });
+            setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+          }}
+        />
+      )}
+
+      {toast.show && (
         <div style={{
           position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '16px'
+          top: '20px',
+          right: '20px',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          background: toast.type === 'success' ? '#1A7A48' : toast.type === 'warning' ? '#F59E0B' : '#EF4444',
+          color: 'white',
+          zIndex: 9999,
+          animation: 'slideIn 0.3s ease'
         }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '500px',
-            maxHeight: '90vh',
-            overflow: 'auto'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '20px',
-              borderBottom: '1px solid #E5E7EB'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '48px', height: '48px',
-                  background: 'rgba(27,94,53,0.1)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <FaReceipt style={{ color: '#1B5E35' }} />
-                </div>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Metodo de Pago</h2>
-                  <p style={{ margin: 0, fontSize: '14px', color: '#6B7C93' }}>Total a pagar</p>
-                </div>
-              </div>
-              <button 
-                onClick={cancelPayment}
-                style={{
-                  width: '40px', height: '40px',
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '20px',
-                  cursor: 'pointer'
-                }}
-              >
-                <FaTimes />
-              </button>
-            </div>
-
-            <div style={{ padding: '24px', background: 'rgba(27,94,53,0.05)', textAlign: 'center' }}>
-              <span style={{ fontSize: '14px', color: '#6B7C93' }}>Total</span>
-              <div style={{ fontSize: '32px', fontWeight: 700, color: '#1B5E35' }}>
-                ${totalConIVA.toFixed(2)}
-              </div>
-            </div>
-
-            <div style={{ padding: '16px' }}>
-              {paymentStep === 'select' && (
-                <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                    <button 
-                      onClick={() => setSelectedPaymentMethod('01')}
-                      style={{
-                        padding: '16px',
-                        border: selectedPaymentMethod === '01' ? '2px solid #1B5E35' : '1.5px solid #E5E7EB',
-                        background: selectedPaymentMethod === '01' ? 'rgba(27,94,53,0.05)' : 'white',
-                        borderRadius: '12px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <FaMoneyBillWave style={{ fontSize: '24px', color: '#22c55e', marginBottom: '8px' }} />
-                      <div style={{ fontWeight: 600 }}>Efectivo</div>
-                    </button>
-
-                    <button 
-                      onClick={() => { setSelectedPaymentMethod('06'); generateQRPayment('mercadopago'); }}
-                      style={{
-                        padding: '16px',
-                        border: selectedPaymentMethod === '06' ? '2px solid #1B5E35' : '1.5px solid #E5E7EB',
-                        background: selectedPaymentMethod === '06' ? 'rgba(27,94,53,0.05)' : 'white',
-                        borderRadius: '12px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <FaMobileAlt style={{ fontSize: '24px', color: '#00b1ea', marginBottom: '8px' }} />
-                      <div style={{ fontWeight: 600 }}>MercadoPago</div>
-                    </button>
-
-                    <button 
-                      onClick={() => setSelectedPaymentMethod('03')}
-                      style={{
-                        padding: '16px',
-                        border: selectedPaymentMethod === '03' ? '2px solid #1B5E35' : '1.5px solid #E5E7EB',
-                        background: selectedPaymentMethod === '03' ? 'rgba(27,94,53,0.05)' : 'white',
-                        borderRadius: '12px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <FaCreditCard style={{ fontSize: '24px', color: '#3b82f6', marginBottom: '8px' }} />
-                      <div style={{ fontWeight: 600 }}>Tarjeta</div>
-                    </button>
-
-                    <button 
-                      onClick={() => setSelectedPaymentMethod('04')}
-                      style={{
-                        padding: '16px',
-                        border: selectedPaymentMethod === '04' ? '2px solid #1B5E35' : '1.5px solid #E5E7EB',
-                        background: selectedPaymentMethod === '04' ? 'rgba(27,94,53,0.05)' : 'white',
-                        borderRadius: '12px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <FaUniversity style={{ fontSize: '24px', color: '#10b981', marginBottom: '8px' }} />
-                      <div style={{ fontWeight: 600 }}>Transferencia</div>
-                    </button>
-                  </div>
-
-                  {selectedPaymentMethod === '01' && (
-                    <div style={{ marginBottom: '16px' }}>
-                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '14px' }}>
-                        Monto recibido
-                      </label>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                        {[50, 100, 200, 500].map(amount => (
-                          <button 
-                            key={amount}
-                            onClick={() => setMontoPagado(amount.toString())}
-                            style={{
-                              padding: '8px 16px',
-                              border: '1.5px solid #E5E7EB',
-                              background: 'white',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              fontWeight: 500
-                            }}
-                          >
-                            ${amount}
-                          </button>
-                        ))}
-                        <button 
-                          onClick={() => setMontoPagado(Math.ceil(totalConIVA).toString())}
-                          style={{
-                            padding: '8px 16px',
-                            border: '1.5px solid #1B5E35',
-                            background: 'rgba(27,94,53,0.05)',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: 500,
-                            color: '#1B5E35'
-                          }}
-                        >
-                          Exacta: ${totalConIVA.toFixed(2)}
-                        </button>
-                      </div>
-                      <input 
-                        type="number"
-                        value={montoPagado}
-                        onChange={(e) => setMontoPagado(e.target.value)}
-                        placeholder="0.00"
-                        style={{
-                          width: '100%',
-                          height: '48px',
-                          padding: '0 16px',
-                          border: '1.5px solid #E5E7EB',
-                          borderRadius: '10px',
-                          fontSize: '16px'
-                        }}
-                      />
-                      {montoPagado && parseFloat(montoPagado) >= totalConIVA && (
-                        <div style={{
-                          marginTop: '12px',
-                          padding: '12px',
-                          background: '#E8F5EC',
-                          borderRadius: '8px',
-                          display: 'flex',
-                          justifyContent: 'space-between'
-                        }}>
-                          <span>Cambio:</span>
-                          <span style={{ fontWeight: 600, color: '#166534' }}>
-                            ${(parseFloat(montoPagado) - totalConIVA).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={confirmPayment}
-                    disabled={selectedPaymentMethod === '01' && (!montoPagado || parseFloat(montoPagado) < totalConIVA)}
-                    className="pos-checkout-btn"
-                  >
-                    <FaCheck /> Confirmar Pago
-                  </button>
-                </>
-              )}
-
-              {paymentStep === 'processing' && (
-                <div style={{ textAlign: 'center', padding: '48px' }}>
-                  <div className="spinner" style={{ margin: '0 auto 16px' }}></div>
-                  <p>Generando codigo QR...</p>
-                </div>
-              )}
-
-              {paymentStep === 'qr' && qrData && (
-                <div style={{ textAlign: 'center', padding: '24px' }}>
-                  <p style={{ marginBottom: '24px', color: '#6B7C93' }}>
-                    Muestra el QR al cliente para cobrar
-                  </p>
-                  <img 
-                    src={qrData.qrCode} 
-                    alt="QR Code" 
-                    style={{ width: '200px', height: '200px', margin: '0 auto', display: 'block' }} 
-                  />
-                  <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#6B7C93' }}>Referencia:</span>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{qrData.referencia}</span>
-                    <button 
-                      onClick={() => navigator.clipboard.writeText(qrData.referencia)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1B5E35' }}
-                    >
-                      <FaCopy />
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => { confirmPayment(); setPaymentStep('success'); }}
-                    className="pos-checkout-btn"
-                    style={{ marginTop: '24px', background: '#22c55e' }}
-                  >
-                    <FaCheck /> Pago Recibido
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          {toast.message}
         </div>
       )}
-    </POSLayout>
+    </div>
   );
 };
 

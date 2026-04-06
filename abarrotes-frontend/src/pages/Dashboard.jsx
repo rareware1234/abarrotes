@@ -1,50 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { Line, Doughnut } from 'react-chartjs-2';
+import { useNavigate } from 'react-router-dom';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
-  ArcElement,
 } from 'chart.js';
-import api from '../api/axiosConfig';
-import { getProfileColor } from '../data/employeeProfiles';
-import { useSharedOrders } from '../hooks/useSharedOrders';
+import { useAuth } from '../context/AuthContext';
+import StatCard from '../components/StatCard';
+import BadgeEstado from '../components/BadgeEstado';
+import orderService from '../services/orderService';
+import productService from '../services/productService';
+import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
+import { firebaseConfig } from '../firebase-config/firebase-config';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+};
+
+const formatDate = (date) => {
+  if (!date) return '';
+  const d = date.toDate ? date.toDate() : new Date(date);
+  return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(d);
+};
 
 const Dashboard = () => {
-  const { getTodayOrders, getTodaySalesTotal } = useSharedOrders();
+  const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   
-  const [stats, setStats] = useState({
-    totalSales: 0,
-    todaySales: 0,
-    goal: 50000,
-    ordersCount: 0,
-    avgTicket: 0
-  });
   const [loading, setLoading] = useState(true);
-  const [salesData, setSalesData] = useState({ labels: [], data: [] });
-  const [categoryData, setCategoryData] = useState({ labels: [], data: [] });
-  const [profileColor, setProfileColor] = useState('#1B5E35');
+  const [ventasHoy, setVentasHoy] = useState(0);
+  const [ordenesHoy, setOrdenesHoy] = useState(0);
+  const [totalProductos, setTotalProductos] = useState(0);
+  const [totalClientes, setTotalClientes] = useState(0);
+  const [ordenesRecientes, setOrdenesRecientes] = useState([]);
+  const [ventasSemana, setVentasSemana] = useState({});
+  const [creditosStats, setCreditosStats] = useState({ total: 0, porVencer: 0, tasaPromedio: 0 });
 
   useEffect(() => {
-    const employeeProfile = localStorage.getItem('employeeProfile') || 'staff';
-    setProfileColor(getProfileColor(employeeProfile));
-    
     fetchDashboardData();
   }, []);
 
@@ -52,144 +55,270 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      const todayOrders = getTodayOrders();
-      const todaySalesTotal = getTodaySalesTotal();
-      
-      const ordersCount = todayOrders.length;
-      const avgTicket = ordersCount > 0 ? todaySalesTotal / ordersCount : 0;
-      
-      const totalSales = 125000.50;
-      const goal = 10000;
-      
-      setStats({
-        totalSales: totalSales,
-        todaySales: todaySalesTotal,
-        goal: goal,
-        ordersCount: ordersCount,
-        avgTicket: avgTicket
-      });
+      const hoy = new Date();
+      const ventasResult = await orderService.getVentasHoy();
+      if (ventasResult.success) {
+        setVentasHoy(ventasResult.data.total);
+        setOrdenesHoy(ventasResult.data.count);
+      }
 
-      const lineData = {
-        labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
-        data: [4200, 5100, 4800, 6200, 7100, 8900, todaySalesTotal]
-      };
-      setSalesData(lineData);
+      const productosResult = await productService.fetchAll();
+      if (productosResult.success) {
+        setTotalProductos(productosResult.data.length);
+      }
 
-      const doughnutData = {
-        labels: ['Abarrotes', 'Lacteos', 'Limpieza', 'Bebidas', 'Otros'],
-        data: [35, 25, 20, 15, 5]
-      };
-      setCategoryData(doughnutData);
+      const clientesRef = collection(db, 'clientes');
+      const clientesSnapshot = await getDocs(clientesRef);
+      setTotalClientes(clientesSnapshot.size);
 
-      setLoading(false);
+      const semanaResult = await orderService.getVentasSemana();
+      if (semanaResult.success) {
+        setVentasSemana(semanaResult.data);
+      }
+
+      const ordenesResult = await orderService.getOrdenes('hoy');
+      if (ordenesResult.success) {
+        setOrdenesRecientes(ordenesResult.data.slice(0, 5));
+      }
+
+      if (hasPermission('creditos_ver')) {
+        const creditosRef = collection(db, 'creditos');
+        const creditosQ = query(creditosRef, where('estado', '==', 'activo'));
+        const creditosSnapshot = await getDocs(creditosQ);
+        
+        let totalCredito = 0;
+        let porVencer = 0;
+        let sumaTasa = 0;
+        let countTasa = 0;
+        const now = new Date();
+        
+        creditosSnapshot.forEach(doc => {
+          const data = doc.data();
+          totalCredito += data.montoUsado || 0;
+          
+          if (data.fechaVencimiento) {
+            const vencimiento = data.fechaVencimiento.toDate ? data.fechaVencimiento.toDate() : new Date(data.fechaVencimiento);
+            const diasRestantes = Math.ceil((vencimiento - now) / (1000 * 60 * 60 * 24));
+            if (diasRestantes <= 7 && diasRestantes > 0) {
+              porVencer++;
+            }
+          }
+          
+          if (data.tasaMensual) {
+            sumaTasa += data.tasaMensual;
+            countTasa++;
+          }
+        });
+        
+        setCreditosStats({
+          total: totalCredito,
+          porVencer,
+          tasaPromedio: countTasa > 0 ? Math.round(sumaTasa / countTasa) : 0
+        });
+      }
     } catch (error) {
-      console.error("Error al cargar datos del dashboard:", error);
+      console.error('Error fetching dashboard data:', error);
+    } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return (
-    <div style={{ textAlign: 'center', padding: '48px' }}>
-      <div className="spinner" style={{ margin: '0 auto' }}></div>
-    </div>
-  );
+  const chartData = {
+    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+    datasets: [
+      {
+        label: 'Ventas',
+        data: [
+          ventasSemana['Lunes'] || 0,
+          ventasSemana['Martes'] || 0,
+          ventasSemana['Miércoles'] || 0,
+          ventasSemana['Jueves'] || 0,
+          ventasSemana['Viernes'] || 0,
+          ventasSemana['Sábado'] || 0,
+          ventasSemana['Domingo'] || 0
+        ],
+        backgroundColor: 'rgba(26, 122, 72, 0.6)',
+        borderRadius: 6,
+      },
+    ],
+  };
 
-  const lineChartOptions = {
+  const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => formatCurrency(context.raw)
+        }
+      }
     },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => formatCurrency(value)
+        }
+      }
+    }
   };
 
-  const lineChartData = {
-    labels: salesData.labels,
-    datasets: [
-      {
-        data: salesData.data,
-        borderColor: profileColor,
-        backgroundColor: profileColor + '33',
-        tension: 0.3,
-        fill: true,
-        pointRadius: 4,
-        pointBackgroundColor: profileColor,
-      },
-    ],
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 18) return 'Buenas tardes';
+    return 'Buenas noches';
   };
 
-  const doughnutOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom' },
-    },
+  const getTodayDate = () => {
+    return new Intl.DateTimeFormat('es-MX', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }).format(new Date());
   };
-
-  const doughnutChartData = {
-    labels: categoryData.labels,
-    datasets: [
-      {
-        data: categoryData.data,
-        backgroundColor: [
-          '#1B5E35',
-          '#2E7D52',
-          '#4CAF50',
-          '#81C784',
-          '#A5D6A7',
-        ],
-        borderWidth: 0,
-      },
-    ],
-  };
-
-  const goalPercentage = Math.min((stats.todaySales / stats.goal) * 100, 100);
 
   return (
-    <div>
-      <div className="metrics-grid">
-        <div className="metric-card primary">
-          <div className="metric-label">Ventas del Dia</div>
-          <div className="metric-value">
-            ${stats.todaySales.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-          </div>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <div>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, margin: 0 }}>
+            {getGreeting()} 👋
+          </h1>
+          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+            {getTodayDate()}
+          </p>
         </div>
-        <div className="metric-card">
-          <div className="metric-label">Meta Diaria</div>
-          <div className="metric-value" style={{ color: '#4caf50' }}>
-            ${stats.goal.toLocaleString('es-MX')}
-          </div>
-          <div style={{ marginTop: '8px', height: '6px', background: '#e5e7eb', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${goalPercentage}%`, height: '100%', background: '#4caf50', borderRadius: '3px' }}></div>
-          </div>
-          <div style={{ fontSize: '12px', color: '#6b7c93', marginTop: '4px' }}>{goalPercentage.toFixed(1)}%</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label">Pedidos del Dia</div>
-          <div className="metric-value" style={{ color: '#2196f3' }}>
-            {stats.ordersCount}
-          </div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label">Ticket Promedio</div>
-          <div className="metric-value" style={{ color: '#ff9800' }}>
-            ${stats.avgTicket.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+      </div>
+
+      <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <StatCard 
+          titulo="Ventas Hoy" 
+          valor={formatCurrency(ventasHoy)} 
+          icono={<i className="bi bi-cash-stack"></i>}
+          color="#1A7A48"
+          loading={loading}
+        />
+        <StatCard 
+          titulo="Órdenes Hoy" 
+          valor={ordenesHoy} 
+          icono={<i className="bi bi-cart-check"></i>}
+          color="#2563EB"
+          loading={loading}
+        />
+        <StatCard 
+          titulo="Productos" 
+          valor={totalProductos} 
+          icono={<i className="bi bi-box-seam"></i>}
+          color="#F97316"
+          loading={loading}
+        />
+        <StatCard 
+          titulo="Clientes" 
+          valor={totalClientes} 
+          icono={<i className="bi bi-people"></i>}
+          color="#7C3AED"
+          loading={loading}
+        />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '24px' }}>
+        <div className="card" style={{ padding: '20px' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>Ventas de la Semana</h3>
+          <div style={{ height: '250px' }}>
+            <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-        <div className="card" style={{ padding: '20px' }}>
-          <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>Ventas de la Semana</h4>
-          <div style={{ height: '200px' }}>
-            <Line options={lineChartOptions} data={lineChartData} />
-          </div>
-        </div>
-        <div className="card" style={{ padding: '20px' }}>
-          <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 600 }}>Ventas por Categoria</h4>
-          <div style={{ height: '200px', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ maxWidth: '200px', width: '100%' }}>
-              <Doughnut options={doughnutOptions} data={doughnutChartData} />
+      {hasPermission('creditos_ver') && (
+        <div style={{ marginBottom: '24px' }}>
+          <div className="card" style={{ padding: '20px' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>Créditos</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#1A7A48' }}>
+                  {formatCurrency(creditosStats.total)}
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Total Activo</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#F59E0B' }}>
+                  {creditosStats.porVencer}
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Por Vencer (&lt;7 días)</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#2563EB' }}>
+                  {creditosStats.tasaPromedio}%
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Tasa Promedio</div>
+              </div>
             </div>
           </div>
         </div>
+      )}
+
+      <div className="card" style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Órdenes Recientes</h3>
+          <button 
+            onClick={() => navigate('/pedidos')}
+            style={{ background: 'none', border: 'none', color: 'var(--role-primary)', cursor: 'pointer', fontSize: '14px' }}
+          >
+            Ver todas →
+          </button>
+        </div>
+        
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+            <span className="spinner-border spinner-border-sm me-2"></span>
+            Cargando...
+          </div>
+        ) : ordenesRecientes.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+            <i className="bi bi-inbox" style={{ fontSize: '48px', opacity: 0.5 }}></i>
+            <p>No hay órdenes hoy</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>ID</th>
+                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Método</th>
+                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Productos</th>
+                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Total</th>
+                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>
+                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ordenesRecientes.map((orden) => (
+                  <tr 
+                    key={orden.id} 
+                    onClick={() => navigate('/pedidos')}
+                    style={{ cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+                  >
+                    <td style={{ padding: '12px', fontSize: '13px' }}>{orden.id.slice(-8)}</td>
+                    <td style={{ padding: '12px', fontSize: '13px' }}>
+                      <i className={`bi ${orden.metodoPago === 'efectivo' ? 'bi-cash' : orden.metodoPago === 'tarjeta' ? 'bi-credit-card' : 'bi-wallet2'}`}></i>{' '}
+                      {orden.metodoPago}
+                    </td>
+                    <td style={{ padding: '12px', fontSize: '13px' }}>{orden.productos?.length || 0}</td>
+                    <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>{formatCurrency(orden.total)}</td>
+                    <td style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>{formatDate(orden.createdAt)}</td>
+                    <td style={{ padding: '12px' }}>
+                      <BadgeEstado estado={orden.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
