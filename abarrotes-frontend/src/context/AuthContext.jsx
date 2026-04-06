@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -108,6 +108,7 @@ const limpiarTemaRol = () => {
 export const AuthProvider = ({ children }) => {
   const [empleado, setEmpleado] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const signingInRef = useRef(false);
 
   // Escuchar Firebase Auth state
   useEffect(() => {
@@ -116,6 +117,11 @@ export const AuthProvider = ({ children }) => {
         // Firebase tiene sesión, verificar que también existe en sessionStorage
         const stored = sessionStorage.getItem('desktop_empleado');
         if (!stored) {
+          if (signingInRef.current) {
+            // signIn está en progreso, no forzar logout — signIn se encargará de setear todo
+            setIsLoading(false);
+            return;
+          }
           // Firebase tiene sesión pero no tenemos datos del empleado → forzar logout
           await firebaseSignOut(auth);
           sessionStorage.clear();
@@ -149,6 +155,7 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (numEmpleado, password) => {
     try {
       setIsLoading(true);
+      signingInRef.current = true;
       
       const email = `${numEmpleado}@puntosverde.com`;
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -209,6 +216,7 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, error: mensaje };
     } finally {
+      signingInRef.current = false;
       setIsLoading(false);
     }
   };
