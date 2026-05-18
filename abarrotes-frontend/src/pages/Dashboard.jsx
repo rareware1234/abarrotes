@@ -15,14 +15,10 @@ import StatCard from '../components/StatCard';
 import BadgeEstado from '../components/BadgeEstado';
 import orderService from '../services/orderService';
 import productService from '../services/productService';
-import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from '../firebase-config/firebase-config';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../firebase.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
@@ -198,7 +194,7 @@ const Dashboard = () => {
           titulo="Ventas Hoy" 
           valor={formatCurrency(ventasHoy)} 
           icono={<i className="bi bi-cash-stack"></i>}
-          color="#1A7A48"
+          color="var(--role-primary)"
           loading={loading}
         />
         <StatCard 
@@ -239,7 +235,7 @@ const Dashboard = () => {
             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>Créditos</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: '#1A7A48' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--role-primary)' }}>
                   {formatCurrency(creditosStats.total)}
                 </div>
                 <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Total Activo</div>

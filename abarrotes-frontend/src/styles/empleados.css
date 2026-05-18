@@ -1,0 +1,203 @@
+/* ============================================
+   EMPLEADOS — Split view nativo
+   Patrón idéntico a Tiendas/Products (que sí funcionan en iPad).
+   ============================================ */
+
+/* content-area se convierte en flex column para que el container
+   pueda resolver height:100% correctamente en Safari iOS. */
+.content-area:has(.empleados-container) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Grids de estadísticas — base global */
+.emp-stats-grid,
+.emp-mini-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* ============================================
+   DESKTOP ≥ 1024px
+   ============================================ */
+@media (min-width: 1024px) {
+  /* Split view — mismo patrón que .tiendas-page en Tiendas.css */
+  .empleados-container {
+    display: flex;
+    flex-direction: row;
+    height: 100%;       /* igual que tiendas-page */
+    overflow: hidden;
+    background: white;
+  }
+
+  /* Sidebar lista — columna flex fija de 360px */
+  .empleados-sidebar {
+    width: 360px;
+    flex-shrink: 0;
+    border-right: 1px solid #E4E6EA;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Título + botón: fijos, nunca hacen scroll */
+  .empleados-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 16px 12px;
+    border-bottom: 1px solid #E4E6EA;
+    flex-shrink: 0;
+  }
+
+  /* Search + chips: fijos, sin sticky */
+  .mobile-sticky-header.empleados-sticky {
+    position: static !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+    background: white;
+    border-bottom: 1px solid #E4E6EA;
+    padding: 0;
+  }
+
+  /* Lista: ÚNICO elemento que hace scroll.
+     overscroll-behavior:contain evita que el scroll se propague
+     al body cuando llega al final (bug crítico en iOS/iPad). */
+  .empleados-list-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    background: white;
+  }
+
+  /* Panel de detalle: scroll independiente */
+  .empleados-detalle {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    background: #F4F5F7;
+  }
+
+  /* Estado vacío: visible en desktop */
+  .empleados-detalle-empty {
+    display: flex;
+  }
+
+  /* Botón volver: oculto en desktop */
+  .empleados-detalle-back {
+    display: none !important;
+  }
+
+  /* Stats: 4 columnas */
+  .emp-stats-grid,
+  .emp-mini-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ============================================
+   MOBILE ≤ 1023px
+   ============================================ */
+@media (max-width: 1023px) {
+  .empleados-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: white;
+  }
+
+  .empleados-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+    border-right: none;
+    background: white;
+  }
+
+  /* Con empleado seleccionado: ocultar lista */
+  .empleados-sidebar.has-selection {
+    display: none !important;
+  }
+
+  /* Estado vacío: oculto en móvil */
+  .empleados-detalle-empty {
+    display: none !important;
+  }
+
+  /* Título + botón: en la navbar superior */
+  .empleados-list-header {
+    display: none !important;
+  }
+
+  /* Sticky header: anula position:sticky global (index.css) y el margin:-16px
+     que jalaba el contenido a la izquierda. */
+  .mobile-sticky-header.empleados-sticky {
+    position: relative !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+    background: white;
+    border-bottom: 1px solid #E4E6EA;
+    overflow: visible;
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Ocultar scrollbar de chips */
+  .mobile-sticky-header.empleados-sticky > div:last-child {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .mobile-sticky-header.empleados-sticky > div:last-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Lista scrollable */
+  .empleados-list-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: white;
+  }
+
+  /* Botón volver: visible en móvil */
+  .empleados-detalle-back {
+    display: flex !important;
+  }
+
+  /* Detalle: llena todo, scroll suave */
+  .empleados-detalle {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    background: #F4F5F7;
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  }
+
+  .emp-stats-grid,
+  .emp-mini-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

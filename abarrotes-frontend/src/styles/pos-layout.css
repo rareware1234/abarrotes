@@ -1,95 +1,135 @@
 /* ============================================
-   POS LAYOUT - FLEX ARCHITECTURE FOR iOS
-   ============================================ */
-
-/* Reset total del contenedor raíz */
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-}
-
-/* Contenedor principal POS */
-.pos-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  height: 100vh;
-  height: 100svh;
-  width: 100%;
-  overflow: hidden;
-  background: #F3F4F6;
-}
-
-/* ============================================
-   NAVBAR - flex: 0 0 56px (altura fija)
-   ============================================ */
-.pos-navbar {
-  flex: 0 0 56px;
-  min-height: 56px;
-  max-height: 56px;
-  display: flex;
-  align-items: center;
-  background: #0F4D2E;
-  padding: 0 16px;
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.hamburger-btn {
-  width: 44px;
-  height: 44px;
-  background: transparent;
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.hamburger-btn:hover {
-  background: rgba(255,255,255,0.1);
-}
-
-.hamburger-btn svg {
-  width: 24px;
-  height: 24px;
-}
-
-.pos-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: white;
-  margin: 0;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.nav-spacer {
-  width: 44px;
-  flex-shrink: 0;
-}
-
-/* ============================================
    SEARCH BAR - flex: 0 0 auto (altura automática)
    ============================================ */
 .pos-search-bar {
-  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 12px 16px;
   background: #FFFFFF;
-  border-bottom: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+  position: relative;
   min-width: 0;
   z-index: 9;
 }
+
+/* Wrapper oculto cuando la caja no está abierta */
+.venta-page-wrapper { display: none; }
+
+/* Desktop: bloque normal, layout original */
+.venta-page-wrapper.caja-abierta { display: block; }
+
+@media (max-width: 1023px) {
+
+  /* Barra de búsqueda: en flujo flex, con contexto de posición para el dropdown */
+  .pos-search-bar {
+    position: relative;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 0;
+    z-index: 300;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  /* Ocultar encabezado redundante */
+  .venta-page-wrapper .tiendas-header {
+    display: none;
+  }
+
+  /* Wrapper: fixed, ocupa todo el espacio bajo la navbar */
+  .venta-page-wrapper.caja-abierta {
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior: none;
+    padding: 0;
+    z-index: 10;
+  }
+
+  /* Container: columna flex — overflow visible para que el dropdown no sea clipado */
+  .venta-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: visible;
+  }
+
+  /* Left: overflow visible para que las sugerencias del buscador no sean clipadas */
+  .venta-left {
+    flex: 1;
+    min-height: 0;
+    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  /* Cart card: márgenes y scroll interno */
+  .venta-left .pos-cart-card {
+    margin: 8px 12px 0;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Cart card genérico */
+  .pos-cart-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pos-cart-card .pos-cart-header {
+    flex-shrink: 0;
+  }
+
+  /* Items del carrito: único elemento con scroll */
+  .pos-cart-card .pos-cart-items {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: none;
+  }
+
+  .pos-cart-card .pos-empty-cart {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    padding: 24px;
+  }
+
+  /* Resumen de venta */
+  .venta-right {
+    flex-shrink: 0;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.07);
+    background: white;
+  }
+
+  .venta-right .pos-summary-panel {
+    height: auto;
+    border-radius: 14px 14px 0 0;
+    box-shadow: none;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+  }
+}
+
 
 .search-input-wrapper {
   flex: 1 1 0;
@@ -126,7 +166,7 @@ html, body, #root {
 
 .pos-agregar-btn {
   flex: 0 0 auto;
-  background: #1A7A48;
+  background: var(--role-primary);
   color: white;
   border: none;
   border-radius: 10px;
@@ -139,11 +179,22 @@ html, body, #root {
 }
 
 .pos-agregar-btn:hover {
-  background: #166040;
+  background: var(--role-hover);
 }
 
 .pos-agregar-btn:active {
   transform: scale(0.98);
+}
+
+/* Botón caja en search bar: solo visible en mobile */
+.pos-caja-mobile-btn {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .pos-caja-mobile-btn {
+    display: flex;
+  }
 }
 
 /* ============================================
@@ -189,8 +240,8 @@ html, body, #root {
 
 .pos-cart-items {
   background: white;
-  border-radius: 0 0 12px 12px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .pos-cart-item {
@@ -297,55 +348,109 @@ html, body, #root {
 }
 
 /* ============================================
-   SUMMARY SECTION
+   SUMMARY PANEL (macOS style)
    ============================================ */
-.pos-summary {
+.pos-summary-panel {
   background: white;
-  border-radius: 12px;
-  padding: 16px;
-  margin-top: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pos-summary-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pos-summary-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-dark);
+}
+
+.pos-summary-body {
+  padding: 0 20px;
+  flex: 1;
 }
 
 .pos-summary-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  align-items: center;
+  padding: 10px 0;
   font-size: 14px;
   color: #6B7C93;
 }
 
-.pos-summary-row:last-of-type {
-  border-bottom: 1px solid #E5E7EB;
-  margin-bottom: 8px;
+.pos-summary-divider {
+  height: 1px;
+  background: #E5E7EB;
+  margin: 0;
 }
 
 .pos-summary-total {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-top: 12px;
+  align-items: baseline;
+  padding: 12px 0;
 }
 
-.pos-summary-label {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a2b3c;
-}
-
-.pos-summary-amount {
-  font-size: 24px;
+.pos-summary-total-label {
+  font-size: 20px;
   font-weight: 700;
-  color: #1A7A48;
+  color: var(--text-dark);
 }
 
-/* ============================================
-   CHECKOUT BUTTON
-   ============================================ */
+.pos-summary-total-amount {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--role-primary);
+}
+
+.pos-summary-actions {
+  padding: 0 20px 20px;
+  margin-top: auto;
+}
+
+.pos-caja-btn {
+  height: 40px;
+  background: var(--role-light, #F0FDF4);
+  color: var(--role-primary);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.pos-caja-btn:hover {
+  background: var(--role-light-hover, #DCFCE7);
+}
+
+.pos-caja-btn-danger {
+  background: rgba(230,57,70,0.08);
+  color: #E63946;
+}
+
+.pos-caja-btn-danger:hover {
+  background: rgba(230,57,70,0.15);
+}
+
 .pos-checkout-btn {
   width: 100%;
   height: 54px;
-  background: #1A7A48;
+  background: var(--role-primary);
   color: white;
   border: none;
   border-radius: 14px;
@@ -353,17 +458,16 @@ html, body, #root {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 8px rgba(26, 122, 72, 0.3);
+  box-shadow: 0 4px 8px var(--role-shadow, rgba(26,122,72,0.3));
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 16px;
 }
 
 .pos-checkout-btn:hover {
-  background: #166040;
-  box-shadow: 0 6px 12px rgba(26, 122, 72, 0.35);
+  background: var(--role-hover);
+  box-shadow: 0 6px 12px var(--role-shadow, rgba(26,122,72,0.35));
 }
 
 .pos-checkout-btn:disabled {
@@ -380,18 +484,27 @@ html, body, #root {
 .pos-new-sale-btn {
   width: 100%;
   height: 44px;
-  background: transparent;
-  color: #1A7A48;
-  border: 1.5px solid #1A7A48;
-  border-radius: 14px;
-  font-size: 14px;
+  background: rgba(230,57,70,0.06);
+  color: #E63946;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s;
 }
 
 .pos-new-sale-btn:hover {
-  background: rgba(26, 122, 72, 0.06);
+  background: rgba(230,57,70,0.12);
+}
+
+.pos-new-sale-btn:disabled {
+  display: none;
 }
 
 /* ============================================
@@ -418,55 +531,70 @@ html, body, #root {
    ============================================ */
 .pos-suggestions {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  top: 100%;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
   z-index: 100;
   overflow: hidden;
-  max-height: 300px;
+  max-height: 340px;
   overflow-y: auto;
+  border: 1px solid rgba(0,0,0,0.06);
 }
 
 .pos-suggestions-header {
   padding: 10px 16px;
-  background: #F3F4F6;
-  border-bottom: 1px solid #E5E7EB;
-  font-size: 12px;
-  color: #6B7C93;
-  font-weight: 500;
+  background: transparent;
+  border-bottom: 1px solid #F0F0F0;
+  font-size: 11px;
+  color: #9CA3AF;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .pos-suggestion-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #F5F5F5;
+  padding: 10px 16px;
   cursor: pointer;
   transition: background 0.15s;
+  margin: 2px 6px;
+  border-radius: 8px;
 }
 
 .pos-suggestion-item:hover {
-  background: #F9FAFB;
+  background: var(--role-tinted-bg, rgba(26,122,72,0.06));
 }
 
 .pos-suggestion-item:last-child {
-  border-bottom: none;
+  margin-bottom: 6px;
 }
 
 .pos-suggestion-name {
   font-size: 14px;
-  font-weight: 500;
-  color: #1a2b3c;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.pos-suggestion-code {
+  font-size: 11px;
+  color: #9CA3AF;
+  margin-top: 1px;
 }
 
 .pos-suggestion-price {
   font-size: 14px;
-  font-weight: 600;
-  color: #1A7A48;
+  font-weight: 700;
+  color: var(--role-primary);
+}
+
+.pos-suggestion-stock {
+  font-size: 10px;
+  margin-top: 1px;
 }
 
 /* ============================================
@@ -544,17 +672,17 @@ html, body, #root {
 .pos-product-price {
   font-size: 15px;
   font-weight: 700;
-  color: #1A7A48;
+  color: var(--role-primary);
 }
 
 /* ============================================
-   MOBILE SAFE AREA
+   GRID PRODUCTS
    ============================================ */
 @supports (padding-top: env(safe-area-inset-top)) {
   .pos-layout {
     padding-top: env(safe-area-inset-top);
   }
-  
+
   .pos-navbar {
     padding-top: env(safe-area-inset-top);
     min-height: calc(56px + env(safe-area-inset-top));
@@ -563,17 +691,237 @@ html, body, #root {
 }
 
 /* ============================================
-   LEGACY / COMPATIBILITY
+   CART CARD — contenedor siempre visible
    ============================================ */
-.navbar, .search-bar, .main-content {
-  display: none !important;
+.pos-cart-card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  overflow: hidden;
 }
 
-.content-area.pos-full {
-  padding: 0 !important;
-  background: #F3F4F6 !important;
+
+/* ============================================
+   IPHONE: resumen compacto (≤ 480px portrait)
+   ============================================ */
+@media (max-width: 480px) and (max-height: 900px) {
+  /* Ocultar el título "Resumen de Venta" */
+  .venta-right .pos-summary-header {
+    display: none;
+  }
+
+  /* Reducir padding del body */
+  .venta-right .pos-summary-body {
+    padding: 0 16px;
+  }
+
+  /* Filas de subtotal/IVA más compactas */
+  .venta-right .pos-summary-row {
+    padding: 5px 0;
+    font-size: 13px;
+  }
+
+  /* Total más compacto */
+  .venta-right .pos-summary-total {
+    padding: 6px 0;
+  }
+
+  .venta-right .pos-summary-total-label {
+    font-size: 16px;
+  }
+
+  .venta-right .pos-summary-total-amount {
+    font-size: 22px;
+  }
+
+  /* Botón cobrar más pequeño */
+  .venta-right .pos-checkout-btn {
+    height: 46px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+
+  /* Botón Nueva Venta más compacto */
+  .venta-right .pos-new-sale-btn {
+    height: 36px;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  /* Menos padding en las acciones */
+  .venta-right .pos-summary-actions {
+    padding: 0 16px 12px;
+  }
 }
 
-.content-area.pos-full > * {
-  height: 100%;
+/* ============================================
+   BARRA DE ACCIONES DESKTOP (Caja + Nueva Venta)
+   ============================================ */
+
+/* Solo visible en desktop */
+.venta-desktop-actions {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  /* Botones en el tiendas-header a la altura del título Venta */
+  .venta-desktop-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .venta-desktop-btn-caja,
+  .venta-desktop-btn-nueva {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  /* Caja — blanco con sombra */
+  .venta-desktop-btn-caja {
+    background: white;
+    color: var(--role-primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .venta-desktop-btn-caja:hover {
+    background: var(--role-tinted-bg, #F0FDF4);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+  }
+
+  /* Nueva Venta — tinted */
+  .venta-desktop-btn-nueva {
+    background: var(--role-tinted-bg, #F0FDF4);
+    color: var(--role-primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(var(--role-primary-rgb, 26,122,72), 0.14);
+  }
+  .venta-desktop-btn-nueva:hover {
+    background: var(--role-light-hover, #DCFCE7);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+
+  .venta-desktop-btn-caja:active,
+  .venta-desktop-btn-nueva:active {
+    transform: scale(0.93);
+  }
+  .venta-desktop-btn-nueva:disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* Ocultar el botón Nueva Venta del panel en desktop */
+  .pos-new-sale-mobile {
+    display: none !important;
+  }
+}
+
+/* ── Toast de Venta — siempre fixed, nunca afecta el layout ── */
+.venta-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  animation: toastIn 0.2s ease;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.venta-toast-warning {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+
+.venta-toast-error {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+/* ============================================
+   DESKTOP ≥ 1024px — Layout fijo (iPad landscape + macOS)
+   Mismo patrón que Tiendas/Empleados: flex chain hasta el scroll.
+   ============================================ */
+@media (min-width: 1024px) {
+
+  /* 1. content-area pasa a flex column */
+  .content-area:has(.venta-page-wrapper) {
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 2. Wrapper llena el content-area con flex */
+  .venta-page-wrapper.caja-abierta {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  /* 3. Título fijo arriba */
+  .venta-page-wrapper .tiendas-header {
+    flex-shrink: 0;
+  }
+
+  /* 4. Grid ocupa el espacio restante — sin altura fija */
+  .venta-container {
+    flex: 1 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden;
+  }
+
+  /* 5. Columna izquierda: min-height:0 para que el flex interno funcione */
+  .venta-left {
+    min-height: 0;
+  }
+
+  /* 6. Cart card llena venta-left */
+  .venta-left .pos-cart-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* 7. Cart header fijo */
+  .venta-left .pos-cart-header {
+    flex-shrink: 0;
+  }
+
+  /* 8. Cart items: único scroll en la columna izquierda */
+  .venta-left .pos-cart-items {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* 9. Columna derecha: min-height:0 para que su flex interno funcione */
+  .venta-right-col {
+    min-height: 0;
+  }
 }

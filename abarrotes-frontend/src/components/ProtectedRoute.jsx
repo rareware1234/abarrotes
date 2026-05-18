@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 const AuthLoading = () => (
   <div style={{
     position: 'fixed', inset: 0,
-    background: 'linear-gradient(135deg, #0F4D2E, #1A7A48)',
+    background: 'linear-gradient(135deg, var(--role-dark), var(--role-primary))',
     display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'center', zIndex: 9999
   }}>

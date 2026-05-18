@@ -139,13 +139,15 @@ const Orders = () => {
 
   return (
     <div className="orders-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <h1 style={{ margin: 0, fontSize: '24px' }}>Pedidos</h1>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ background: '#F4F5F7', padding: '8px 16px', borderRadius: '8px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>{stats.count} órdenes</span>
-            <span style={{ marginLeft: '12px', fontWeight: 600 }}>{formatCurrency(stats.total)}</span>
-          </div>
+      <div className="tiendas-header">
+        <div>
+          <h1>Pedidos</h1>
+          <div className="tiendas-subtitle">Historial de ventas</div>
+        </div>
+        <div className="tiendas-header-actions">
+          <span className="tiendas-filter-chip">
+            {stats.count} órdenes · {formatCurrency(stats.total)}
+          </span>
         </div>
       </div>
 

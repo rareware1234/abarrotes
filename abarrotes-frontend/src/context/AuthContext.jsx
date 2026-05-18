@@ -1,47 +1,40 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
+import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
-  onAuthStateChanged 
+  onAuthStateChanged
 } from 'firebase/auth';
-import { 
-  getFirestore,
+import {
   collection,
   getDocs,
   query,
   where
 } from 'firebase/firestore';
-import { firebaseConfig } from '../firebase-config/firebase-config';
+import { db, auth } from '../firebase.js';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
 // Temas completos por rol
 const ROLE_THEME = {
   staff: {
     primary: '#1A7A48', dark: '#0F4D2E', hover: '#166040', accent: '#4ADE80',
-    tintedBg: 'rgba(26,122,72,0.08)', shadow: 'rgba(26,122,72,0.20)',
+    tintedBg: 'rgba(26,122,72,0.12)', shadow: 'rgba(26,122,72,0.25)',
     gradient: 'linear-gradient(135deg, #0F4D2E 0%, #1A7A48 100%)',
     navBg: '#0F4D2E', color: '#1A7A48', colorDark: '#0F4D2E'
   },
   manager: {
-    primary: '#2563EB', dark: '#1E3A5F', hover: '#1D4ED8', accent: '#60A5FA',
-    tintedBg: 'rgba(37,99,235,0.08)', shadow: 'rgba(37,99,235,0.20)',
-    gradient: 'linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)',
-    navBg: '#1E3A5F', color: '#2563EB', colorDark: '#1E3A5F'
+    primary: '#2E6BC4', dark: '#1E4F8F', hover: '#245DAA', accent: '#5A9AE0',
+    tintedBg: 'rgba(46,107,196,0.14)', shadow: 'rgba(46,107,196,0.28)',
+    gradient: 'linear-gradient(135deg, #1E4F8F 0%, #2E6BC4 100%)',
+    navBg: '#1E4F8F', color: '#2E6BC4', colorDark: '#1E4F8F'
   },
   admin: {
-    primary: '#64748B', dark: '#1E293B', hover: '#475569', accent: '#F59E0B',
-    tintedBg: 'rgba(100,116,139,0.08)', shadow: 'rgba(100,116,139,0.20)',
-    gradient: 'linear-gradient(135deg, #1E293B 0%, #475569 100%)',
-    navBg: '#1E293B', color: '#64748B', colorDark: '#1E293B'
+    primary: '#64748B', dark: '#475569', hover: '#334155', accent: '#F59E0B',
+    tintedBg: 'rgba(100,116,139,0.12)', shadow: 'rgba(100,116,139,0.25)',
+    gradient: 'linear-gradient(135deg, #475569 0%, #64748B 100%)',
+    navBg: '#475569', color: '#64748B', colorDark: '#475569'
   }
 };
 
@@ -55,11 +48,12 @@ const PERMISOS = {
     'ventas', 'productos_ver', 'productos_editar', 'productos_agregar',
     'caja_consulta', 'caja_operar', 'reportes', 'empleados_ver',
     'empleados_editar', 'empleados_crear',
-    'tiendas_ver',
+    'tiendas_ver', 'tiendas_editar', 'tiendas_crear',
     'turnos_ver', 'turnos_editar', 'turnos_crear',
     'tareas_ver', 'tareas_editar', 'tareas_crear',
     'promociones_ver', 'promociones_editar', 'promociones_crear',
-    'creditos_ver', 'creditos_aprobar'
+    'creditos_ver', 'creditos_aprobar',
+    'configuracion'
   ],
   admin: [
     'ventas', 'productos_ver', 'productos_editar', 'productos_agregar', 'productos_eliminar',
@@ -90,6 +84,7 @@ const aplicarTemaRol = (rol) => {
   root.style.setProperty('--role-shadow', t.shadow);
   root.style.setProperty('--role-gradient', t.gradient);
   root.style.setProperty('--role-nav-bg', t.navBg);
+  root.style.setProperty('--role-active-tab', t.accent);
   root.style.setProperty('--primary', t.color);
   root.style.setProperty('--primary-dark', t.colorDark);
   root.style.setProperty('--primary-color', t.color);
@@ -100,6 +95,7 @@ const limpiarTemaRol = () => {
   const props = [
     '--role-primary', '--role-dark', '--role-hover', '--role-accent',
     '--role-tinted-bg', '--role-shadow', '--role-gradient', '--role-nav-bg',
+    '--role-active-tab',
     '--primary', '--primary-dark', '--primary-hover', '--primary-light', '--primary-color'
   ];
   props.forEach(p => root.style.removeProperty(p));
@@ -190,7 +186,8 @@ export const AuthProvider = ({ children }) => {
         tiendaId: empleadoData.tiendaId || null,
         tiendasAsignadas: empleadoData.tiendasAsignadas || [],
         requiereCambioPassword: empleadoData.requiereCambioPassword || false,
-        activo: empleadoData.activo !== false
+        activo: empleadoData.activo !== false,
+        fotoUrl: empleadoData.fotoUrl || null
       };
 
       if (!empleadoCompleto.activo) {
@@ -245,6 +242,13 @@ export const AuthProvider = ({ children }) => {
     return permisosRol.includes(permiso);
   };
 
+  const updateEmpleadoFoto = (fotoUrl) => {
+    if (!empleado) return;
+    const updated = { ...empleado, fotoUrl };
+    setEmpleado(updated);
+    sessionStorage.setItem('desktop_empleado', JSON.stringify(updated));
+  };
+
   const roleTheme = ROLE_THEME[empleado?.rol] || ROLE_THEME.staff;
 
   const value = {
@@ -254,6 +258,7 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signOut,
     hasPermission,
+    updateEmpleadoFoto,
     permisos: PERMISOS,
     roleTheme
   };

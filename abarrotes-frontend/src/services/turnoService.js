@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
+import { db } from '../firebase.js';
 import {
-  getFirestore,
+
   collection,
   doc,
   setDoc,
@@ -12,10 +12,7 @@ import {
   orderBy,
   serverTimestamp
 } from 'firebase/firestore';
-import { firebaseConfig } from '../firebase-config/firebase-config';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 const TIPOS_TURNO = {
   matutino: { inicio: '07:00', fin: '15:00', horas: 8, color: '#2563EB' },
@@ -71,15 +68,17 @@ export const fetchTodos = async () => {
 
 export const crear = async (turno) => {
   try {
-    const tipoInfo = getTipoTurno(turno.tipo);
     const turnoRef = doc(collection(db, 'turnos'));
-    await setDoc(turnoRef, {
-      ...turno,
-      inicio: tipoInfo.inicio,
-      fin: tipoInfo.fin,
-      horas: tipoInfo.horas,
-      createdAt: serverTimestamp()
-    });
+    // Respetar inicio/fin/horas custom (asignación por horas).
+    // Solo usar TIPOS_TURNO como fallback si no vienen en el objeto.
+    const data = { ...turno };
+    if (!data.inicio && !data.fin && data.tipo && data.tipo !== 'descanso') {
+      const tipoInfo = getTipoTurno(data.tipo);
+      data.inicio = tipoInfo.inicio;
+      data.fin    = tipoInfo.fin;
+      data.horas  = tipoInfo.horas;
+    }
+    await setDoc(turnoRef, { ...data, createdAt: serverTimestamp() });
     return { success: true, id: turnoRef.id };
   } catch (error) {
     console.error('Error creating shift:', error);

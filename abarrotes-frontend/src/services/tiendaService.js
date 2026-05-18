@@ -1,8 +1,8 @@
-import { initializeApp } from 'firebase/app';
+import { db } from '../firebase.js';
 import {
-  getFirestore,
   collection,
   doc,
+  getDoc,
   setDoc,
   getDocs,
   updateDoc,
@@ -12,10 +12,7 @@ import {
   orderBy,
   serverTimestamp
 } from 'firebase/firestore';
-import { firebaseConfig } from '../firebase-config/firebase-config';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 export const fetchTodas = async () => {
   try {
@@ -35,12 +32,12 @@ export const fetchTodas = async () => {
 export const getById = async (id) => {
   try {
     const tiendaRef = doc(db, 'tiendas', id);
-    const docSnap = await getDocs(tiendaRef);
-    
+    const docSnap = await getDoc(tiendaRef);
+
     if (!docSnap.exists()) {
       return { success: true, data: null };
     }
-    
+
     return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
   } catch (error) {
     console.error('Error fetching store:', error);
@@ -80,12 +77,12 @@ export const update = async (id, data) => {
 export const toggleActiva = async (id) => {
   try {
     const tiendaRef = doc(db, 'tiendas', id);
-    const docSnap = await getDocs(tiendaRef);
-    
+    const docSnap = await getDoc(tiendaRef);
+
     if (!docSnap.exists()) {
       return { success: false, error: 'Tienda no encontrada' };
     }
-    
+
     const currentActiva = docSnap.data().activa;
     await updateDoc(tiendaRef, {
       activa: !currentActiva,

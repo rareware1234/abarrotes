@@ -1,14 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { firebaseConfig } from '../firebase-config/firebase-config';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '../firebase.js';
 
 const CartContext = createContext();
 
 export const useCart = () => useContext(CartContext);
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-MX', { 

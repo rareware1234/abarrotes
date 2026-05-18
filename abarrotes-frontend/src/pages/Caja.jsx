@@ -97,7 +97,7 @@ const CierreCajaModal = ({ caja, ventas, onClose, onConfirm }) => {
 
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={onClose} className="btn btn-outline-secondary" style={{ flex: 1 }} disabled={loading}>Cancelar</button>
-          <button onClick={handleConfirm} className="btn btn-primary" style={{ flex: 1, background: '#1A7A48' }} disabled={loading || !montoReal}>
+          <button onClick={handleConfirm} className="btn btn-primary" style={{ flex: 1, background: 'var(--role-primary)' }} disabled={loading || !montoReal}>
             {loading ? <span className="spinner-border spinner-border-sm"></span> : 'Confirmar Cierre'}
           </button>
         </div>
@@ -180,41 +180,63 @@ const Caja = () => {
   if (!caja) {
     return (
       <div className="caja-container">
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <i className="bi bi-cash-stack" style={{ fontSize: '64px', color: 'var(--text-muted)', opacity: 0.3 }}></i>
-          <h2 style={{ marginTop: '20px' }}>Caja Cerrada</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '30px' }}>Abre la caja para comenzar a operar</p>
-          {puedeOperar && (
-            <button onClick={() => setShowOpenModal(true)} className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '16px', background: 'var(--role-primary)' }}>
-              <i className="bi bi-lock-open me-2"></i>Abrir Caja
-            </button>
-          )}
+        <div className="tiendas-header">
+          <div>
+            <h1>Caja</h1>
+            <div className="tiendas-subtitle">Sin caja abierta</div>
+          </div>
+          <div className="tiendas-header-actions">
+            {puedeOperar && (
+              <button className="tiendas-add-btn" onClick={() => setShowOpenModal(true)} style={{ borderRadius: '12px', width: 'auto', padding: '0 16px', gap: '6px', display: 'flex', alignItems: 'center' }}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Abrir
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: '12px', color: '#6B7C93' }}>
+            <rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+          <p style={{ color: '#6B7C93', margin: 0 }}>Abre la caja para comenzar a operar</p>
         </div>
 
         {historial.length > 0 && (
           <div style={{ marginTop: '40px' }}>
-            <h3 style={{ marginBottom: '16px' }}>Historial de Cierres</h3>
-            <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#F4F5F7' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px' }}>Fecha</th>
-                    <th style={{ padding: '12px', textAlign: 'right', fontSize: '13px' }}>Ventas</th>
-                    <th style={{ padding: '12px', textAlign: 'right', fontSize: '13px' }}>Diferencia</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historial.slice(0, 5).map(cierre => (
-                    <tr key={cierre.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '12px' }}>{formatDate(cierre.closedAt)}</td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>{formatCurrency(cierre.ventasTotales || 0)}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', color: cierre.diferencia >= 0 ? '#1A7A48' : '#EF4444', fontWeight: 600 }}>
-                        {formatCurrency(cierre.diferencia || 0)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '10px', color: 'var(--text-dark)' }}>Historial de cierres</h4>
+            <div style={{ background: 'white', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+              {historial.slice(0, 5).map((cierre, i) => (
+                <div key={cierre.id} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '12px 16px',
+                  borderBottom: i < Math.min(historial.length, 5) - 1 ? '1px solid var(--border)' : 'none'
+                }}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '10px',
+                    background: (cierre.diferencia || 0) >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                  }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke={(cierre.diferencia || 0) >= 0 ? '#10B981' : '#EF4444'} strokeWidth="2">
+                      <polyline points={(cierre.diferencia || 0) >= 0 ? '20 6 9 17 4 12' : '18 6 6 18'}/>
+                      {(cierre.diferencia || 0) < 0 && <line x1="6" y1="6" x2="18" y2="18"/>}
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600 }}>{formatDate(cierre.closedAt)}</div>
+                    <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
+                      {cierre.numTransacciones || 0} transacciones · {cierre.empleadoNombre || 'Cajero'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600 }}>{formatCurrency(cierre.ventasTotales || 0)}</div>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: (cierre.diferencia || 0) >= 0 ? '#10B981' : '#EF4444' }}>
+                      {(cierre.diferencia || 0) >= 0 ? '+' : ''}{formatCurrency(cierre.diferencia || 0)}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -246,49 +268,136 @@ const Caja = () => {
 
   return (
     <div className="caja-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div className="tiendas-header">
         <div>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>Caja</h1>
-          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-            Abierta por {caja.empleadoNombre} desde {formatDate(caja.createdAt)}
-          </p>
+          <h1>Caja</h1>
+          <div className="tiendas-subtitle">
+            {caja ? `Abierta por ${caja.empleadoNombre} desde ${formatDate(caja.createdAt)}` : 'Sin caja abierta'}
+          </div>
         </div>
-        {puedeOperar && (
-          <button onClick={() => setShowCloseModal(true)} className="btn btn-outline-danger" style={{ borderColor: '#EF4444', color: '#EF4444' }}>
-            <i className="bi bi-lock me-2"></i>Cerrar Caja
-          </button>
-        )}
+        <div className="tiendas-header-actions">
+          {puedeOperar && caja && (
+            <button className="tiendas-filter-chip danger" onClick={() => setShowCloseModal(true)}>
+              <i className="bi bi-lock"></i>
+              Cerrar Caja
+            </button>
+          )}
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <StatCard titulo="Ventas del Turno" valor={formatCurrency(ventasTotales)} icono={<i className="bi bi-cash-stack"></i>} color="#1A7A48" />
-        <StatCard titulo="Efectivo" valor={formatCurrency(ventasEfectivo)} icono={<i className="bi bi-cash"></i>} color="#2563EB" />
-        <StatCard titulo="Tarjeta" valor={formatCurrency(ventasTarjeta)} icono={<i className="bi bi-credit-card"></i>} color="#7C3AED" />
-        <StatCard titulo="Transacciones" valor={ventas.length} icono={<i className="bi bi-receipt"></i>} color="#F97316" />
-      </div>
+      {caja && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+            <div className="tienda-dash-widget">
+              <div className="tienda-dash-icon" style={{ background: 'var(--role-tinted-bg)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--role-primary)" strokeWidth="2"><rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              </div>
+              <div className="tienda-dash-value">{formatCurrency(caja.montoInicial || 0)}</div>
+              <div className="tienda-dash-labels"><span>Apertura</span></div>
+            </div>
+            <div className="tienda-dash-widget">
+              <div className="tienda-dash-icon" style={{ background: 'var(--role-tinted-bg)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--role-primary)" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div className="tienda-dash-value">{formatCurrency(ventasTotales)}</div>
+              <div className="tienda-dash-labels"><span>Ventas del turno</span></div>
+            </div>
+            <div className="tienda-dash-widget">
+              <div className="tienda-dash-icon" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div className="tienda-dash-value">{formatCurrency(ventasEfectivo)}</div>
+              <div className="tienda-dash-labels"><span>Efectivo</span></div>
+            </div>
+            <div className="tienda-dash-widget">
+              <div className="tienda-dash-icon" style={{ background: 'rgba(124,58,237,0.1)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              </div>
+              <div className="tienda-dash-value">{formatCurrency(ventasTarjeta)}</div>
+              <div className="tienda-dash-labels"><span>Tarjeta</span></div>
+            </div>
+            <div className="tienda-dash-widget">
+              <div className="tienda-dash-icon" style={{ background: 'rgba(249,115,22,0.1)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div className="tienda-dash-value">{ventas.length}</div>
+              <div className="tienda-dash-labels"><span>Transacciones</span></div>
+            </div>
+            <div className="tienda-dash-widget">
+              <div className="tienda-dash-icon" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4"/></svg>
+              </div>
+              <div className="tienda-dash-value">{ventas.length > 0 ? formatCurrency(ventasTotales / ventas.length) : '$0'}</div>
+              <div className="tienda-dash-labels"><span>Ticket promedio</span></div>
+            </div>
+          </div>
 
-      <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#F4F5F7' }}>
-              <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px' }}>ID</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px' }}>Hora</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px' }}>Método</th>
-              <th style={{ padding: '12px', textAlign: 'right', fontSize: '13px' }}>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ventas.map(venta => (
-              <tr key={venta.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '12px', fontFamily: 'monospace' }}>{venta.id.slice(-8)}</td>
-                <td style={{ padding: '12px', fontSize: '13px' }}>{formatDate(venta.createdAt)}</td>
-                <td style={{ padding: '12px' }}><i className={`bi ${venta.metodoPago === 'efectivo' ? 'bi-cash' : 'bi-credit-card'}`}></i> {venta.metodoPago}</td>
-                <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(venta.total)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          <div style={{ background: 'white', borderRadius: '14px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '13px', color: '#6B7C93', marginBottom: '4px' }}>Monto esperado en caja</div>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--role-primary)' }}>
+                  {formatCurrency((caja.montoInicial || 0) + ventasEfectivo)}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '12px', color: '#6B7C93' }}>Apertura + Efectivo</div>
+                <div style={{ fontSize: '13px', color: '#6B7C93', marginTop: '2px' }}>
+                  {formatCurrency(caja.montoInicial || 0)} + {formatCurrency(ventasEfectivo)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '10px', color: 'var(--text-dark)' }}>Movimientos del turno</h4>
+            {ventas.length === 0 ? (
+              <div style={{ background: 'white', borderRadius: '14px', padding: '40px', textAlign: 'center', color: '#6B7C93', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: '8px' }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <p style={{ margin: 0 }}>Sin ventas en este turno</p>
+              </div>
+            ) : (
+              <div style={{ background: 'white', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                {ventas.map((venta, i) => (
+                  <div key={venta.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px 16px',
+                    borderBottom: i < ventas.length - 1 ? '1px solid var(--border)' : 'none'
+                  }}>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '10px',
+                      background: venta.metodoPago === 'efectivo' ? 'rgba(37,99,235,0.08)' : 'rgba(124,58,237,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                        stroke={venta.metodoPago === 'efectivo' ? '#2563EB' : '#7C3AED'} strokeWidth="2">
+                        {venta.metodoPago === 'efectivo'
+                          ? <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>
+                          : <><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></>
+                        }
+                      </svg>
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                        Venta #{venta.id.slice(-6).toUpperCase()}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '1px' }}>
+                        {formatDate(venta.createdAt)} · {venta.metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}
+                        {venta.items ? ` · ${venta.items.length} artículo${venta.items.length !== 1 ? 's' : ''}` : ''}
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', flexShrink: 0 }}>
+                      {formatCurrency(venta.total)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {showCloseModal && (
         <CierreCajaModal caja={caja} ventas={ventas} onClose={() => setShowCloseModal(false)} onConfirm={cerrarCaja} />

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { FiShoppingCart, FiPackage, FiClipboard, FiBarChart2, FiDollarSign, FiTag, FiUser, FiLogOut } from 'react-icons/fi';
 import { useProfileColor } from '../hooks/useProfileColor';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo-blanco.png';
 
 const getRoleLabel = (role) => {
   const labels = {

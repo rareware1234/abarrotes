@@ -1,7 +1,5 @@
 // Servicio de Firestore para Abarrotes Digitales - Escritorio
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore,
+import {
   collection,
   doc,
   setDoc,
@@ -14,11 +12,7 @@ import {
   orderBy,
   serverTimestamp
 } from 'firebase/firestore';
-import { firebaseConfig } from '../firebase-config/firebase-config';
-
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { db } from '../firebase.js';
 
 // ==================== EMPLEADOS ====================
 

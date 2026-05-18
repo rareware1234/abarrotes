@@ -1,19 +1,13 @@
 // Servicio de autenticación con Firebase para Abarrotes Digitales - Escritorio
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
+import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { firebaseConfig } from '../firebase-config/firebase-config';
+import { auth } from '../firebase.js';
 
 // Prefijo para evitar conflictos con la app móvil
 const STORAGE_PREFIX = 'desktop_';
-
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
 // Datos de los empleados (mapeo de UID a perfil) — sincronizado con macOS
 const employeeProfiles = {

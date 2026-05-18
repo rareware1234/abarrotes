@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
+import { db } from '../firebase.js';
 import {
-  getFirestore,
+
   collection,
   doc,
   setDoc,
@@ -14,12 +14,9 @@ import {
   limit,
   serverTimestamp
 } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { firebaseConfig } from '../firebase-config/firebase-config';
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, storage } from '../firebase.js';
 
 const generatePassword = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -186,6 +183,29 @@ export const fetchByTienda = async (tiendaId) => {
   }
 };
 
+export const uploadAvatar = async (uid, file) => {
+  try {
+    const storageRef = ref(storage, `avatars/${uid}.jpg`);
+    await uploadBytes(storageRef, file);
+    const fotoUrl = await getDownloadURL(storageRef);
+
+    // Guardar URL en Firestore buscando por uid
+    const empleadosRef = collection(db, 'empleados');
+    const q = query(empleadosRef, where('uid', '==', uid));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return { success: false, error: 'Empleado no encontrado' };
+    }
+
+    await updateDoc(snapshot.docs[0].ref, { fotoUrl, updatedAt: serverTimestamp() });
+    return { success: true, fotoUrl };
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   fetchAll,
   getById,
@@ -193,5 +213,6 @@ export default {
   update,
   toggleActivo,
   fetchByNumEmpleado,
-  fetchByTienda
+  fetchByTienda,
+  uploadAvatar
 };

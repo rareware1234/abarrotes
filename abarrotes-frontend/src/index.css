@@ -73,6 +73,12 @@ html, body, #root {
   overflow-x: hidden;
 }
 
+/* Prevenir scroll del viewport en iOS/iPadOS */
+html, body {
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   font-family: var(--font-family);
@@ -84,7 +90,8 @@ body {
 }
 
 #root {
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* ============================================
@@ -116,47 +123,36 @@ input:focus, select:focus, textarea:focus {
    MAIN APP LAYOUT - FLEXBOX
    ============================================ */
 .app {
+  /* position:fixed + inset:0 ancla el contenedor directamente al viewport
+     en iOS/iPadOS — la única forma confiable de evitar el gap blanco
+     en la zona del home indicator cuando se usa como app standalone. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  height: 100vh;
-  height: 100svh;
   overflow: hidden;
-  width: 100%;
-  max-width: 100vw;
-  position: relative;
-  padding-top: env(safe-area-inset-top);
-}
-
-/* iOS Safari safe area */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .app {
-    padding-top: env(safe-area-inset-top);
-  }
-  .navbar {
-    padding-top: env(safe-area-inset-top);
-  }
 }
 
 /* ============================================
    PREMIUM NAVBAR - FLEX LAYOUT
    ============================================ */
 .navbar {
-  position: relative;
-  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   min-height: 56px;
-  background: var(--primary-dark);
-  border-bottom: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  background: var(--role-nav-bg, #0F4D2E);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  z-index: 201;
-  flex-shrink: 0;
-  -webkit-box-flex: 0;
-  flex-grow: 0;
+  padding: env(safe-area-inset-top, 0px) 16px 0 16px;
+  z-index: 1050;
 }
+
 
 .navbar-hamburger {
   background: none;
@@ -180,6 +176,7 @@ input:focus, select:focus, textarea:focus {
   width: 24px;
   height: 24px;
 }
+
 
 .navbar-title {
   font-size: 17px;
@@ -288,69 +285,66 @@ input:focus, select:focus, textarea:focus {
    CONTENT AREA - Scrollable
    ============================================ */
 .content-area {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  padding: 16px;
+  overflow-x: clip;
+  overscroll-behavior: none;
+  padding: calc(56px + env(safe-area-inset-top, 0px) + 12px) 16px 16px 16px;
   background: var(--bg);
 }
 
+@media (min-width: 1024px) {
+  .content-area {
+    padding: 24px;
+  }
+}
+
 /* ============================================
-   SIDEBAR WRAPPER
+   SIDEBAR - Mobile
    ============================================ */
 .sidebar-wrapper {
   position: fixed;
-  top: 56px;
-  left: 0;
-  bottom: 0;
-  z-index: 199;
-  pointer-events: none;
-  visibility: hidden;
-  width: 240px;
-}
-
-.sidebar-wrapper.open {
-  pointer-events: all;
-  visibility: visible;
-}
-
-.overlay {
-  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  height: 56px;
+  bottom: 0;
+  width: 0;
+  z-index: 1100;
+  overflow: visible;
+}
+
+.sidebar-wrapper .overlay {
+  position: fixed;
+  inset: 0;
   background: rgba(0,0,0,0);
-  z-index: 198;
   pointer-events: none;
+  transition: background 0.3s ease;
+  z-index: 1100;
 }
 
 .sidebar-wrapper.open .overlay {
-  top: 56px;
-  height: auto;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.4);
   pointer-events: all;
+  touch-action: none;
 }
 
-/* ============================================
-   SIDEBAR
-   ============================================ */
 .sidebar {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 240px;
-  height: calc(100% + 56px);
-  background: var(--role-gradient, linear-gradient(135deg, #0F4D2E 0%, #1A7A48 100%));
+  bottom: 0;
+  width: 260px;
+  max-width: 80vw;
+  background: var(--role-nav-bg, #0F4D2E);
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
+  z-index: 1101;
 }
 
 .sidebar-wrapper.open .sidebar {
@@ -359,25 +353,28 @@ input:focus, select:focus, textarea:focus {
 
 .sidebar-brand {
   padding: 16px;
+  /* max() garantiza al menos 24px aunque safe-area-inset-top sea 0
+     (iPad landscape: el notch está al lado, no arriba, inset-top = 0) */
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 16px), 24px);
   padding-bottom: 12px;
   display: flex;
   justify-content: center;
 }
 
 .sidebar-logo {
-  max-width: 200px;
+  max-width: 140px;
   height: 22px;
   height: auto;
   object-fit: contain;
 }
 
 .nav-section-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.45);
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.3);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 16px 16px 6px;
+  letter-spacing: 1px;
+  padding: 20px 16px 6px;
 }
 
 .sidebar-user {
@@ -427,25 +424,26 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.65);
   font-size: 14px;
-  font-weight: 400;
-  border-radius: var(--radius-sm);
+  font-weight: 500;
+  border-radius: 8px;
   margin: 2px 8px;
   transition: all 0.15s ease;
   text-decoration: none;
+  border-left: 3px solid transparent;
 }
 
 .nav-link:hover {
-  background: rgba(255,255,255,0.07);
   color: white;
+  background: rgba(0,0,0,0.15);
 }
 
 .nav-link.active {
-  background: rgba(255,255,255,0.12);
   color: white;
   font-weight: 600;
-  border-left: 3px solid var(--role-active-tab);
+  background: rgba(0,0,0,0.25);
+  border-left: 3px solid white;
 }
 
 .nav-link i, .nav-link svg {
@@ -944,39 +942,51 @@ input:focus, select:focus, textarea:focus {
   .hamburger {
     display: none !important;
   }
-  
+
   .navbar {
     display: none !important;
   }
-  
+
   .app {
     flex-direction: row;
+    /* En standalone iPad: empuja todo el contenido debajo de la barra de estado.
+       Solo en desktop — mobile lo maneja la navbar con su propio padding. */
+    padding-top: env(safe-area-inset-top, 0px);
   }
-  
+
+  /* En desktop .app ya maneja el safe-area-inset-top,
+     así que sidebar-brand solo necesita su padding normal. */
+  .sidebar-brand {
+    padding-top: 24px;
+  }
+
   .sidebar-wrapper {
     position: relative !important;
     width: 240px !important;
     flex-shrink: 0 !important;
-    height: 100vh !important;
+    /* height:100% en lugar de 100vh para igualar al padre (.app usa 100dvh) */
+    height: 100% !important;
     visibility: visible !important;
     pointer-events: all !important;
   }
-  
+
   .overlay {
     display: none !important;
   }
-  
+
   .sidebar {
     transform: translateX(0) !important;
     position: relative !important;
-    height: 100vh !important;
+    height: 100% !important;
     width: 240px !important;
+    /* Inset inferior: empuja el último ítem del nav fuera del home indicator */
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   }
-  
+
   .content-area {
     flex: 1;
-    padding: 24px;
-    height: 100vh;
+    /* padding-bottom compensa el home indicator en standalone iPad */
+    padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0px)) 24px;
     overflow-y: auto;
   }
 }
@@ -998,25 +1008,15 @@ input:focus, select:focus, textarea:focus {
   }
   
   .content-area {
-    padding: 12px;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: 12px;
   }
   
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  /* Mobile safe area for iPhone notch */
-  .app {
-    padding-top: env(safe-area-inset-top);
-  }
-  
-  .navbar {
-    padding-top: env(safe-area-inset-top);
-    padding-top: max(env(safe-area-inset-top), 0px);
-    min-height: calc(56px + env(safe-area-inset-top));
-  }
 }
 
 /* ============================================
@@ -1161,6 +1161,22 @@ body.login-page-active .main-content {
   box-shadow: var(--shadow-lg);
 }
 
+@media (max-width: 1023px) {
+  .payment-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .payment-modal-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 80dvh !important;
+    max-height: 80vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 .payment-methods-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1283,11 +1299,89 @@ body.login-page-active .main-content {
   100% { background-position: -200% 0; }
 }
 
+/* FilterChips bar */
+.filter-chips-bar {
+  padding: 6px 0 8px;
+}
+
+@media (max-width: 1023px) {
+  /* Search bar y filter chips juntos en sticky — sin gap entre ellos */
+  .tiendas-search {
+    margin-bottom: 0 !important;
+  }
+
+  .filter-chips-bar {
+    position: static;          /* Ya no sticky independiente */
+    background: #F4F5F7;
+    margin: 0 -16px;
+    padding: 6px 16px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    top: unset;
+    z-index: unset;
+  }
+
+  .filter-chips-bar.below-search {
+    top: unset;
+  }
+
+  /* Wrapper que agrupa search + chips y hace sticky como bloque */
+  .mobile-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: #F4F5F7;
+    margin: 0 -16px;
+    padding: 0;
+  }
+
+  /* Dentro del wrapper: sin margin negativo ni sticky propios */
+  .mobile-sticky-header .tiendas-search {
+    position: static !important;
+    z-index: unset !important;
+    margin: 0 !important;
+  }
+
+  .mobile-sticky-header .filter-chips-bar {
+    margin: 0 !important;
+  }
+
+  /* Filtros de Tiendas dentro del wrapper sticky */
+  .mobile-sticky-header .tiendas-filters {
+    margin: 0 !important;
+    padding: 8px 16px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: #F4F5F7;
+  }
+
+  .filter-chips-spacer {
+    display: none;
+  }
+}
+
 /* FilterChips */
 .filter-chips {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
+}
+
+@media (max-width: 1023px) {
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
 }
 
 .filter-chip {

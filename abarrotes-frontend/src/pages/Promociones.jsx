@@ -140,19 +140,22 @@ const Promociones = () => {
 
   return (
     <div className="promociones-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <h1 style={{ margin: 0, fontSize: '24px' }}>Promociones</h1>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ background: '#FEF3C7', padding: '8px 16px', borderRadius: '8px', fontSize: '13px' }}>
-            <span style={{ color: '#F59E0B' }}>⚠️</span> {stockStats.bajoStock} bajo stock
-          </div>
-          <div style={{ background: '#FEE2E2', padding: '8px 16px', borderRadius: '8px', fontSize: '13px' }}>
-            <span style={{ color: '#EF4444' }}>❌</span> {stockStats.agotados} agotados
+      <div className="tiendas-header">
+        <div>
+          <h1>Promociones</h1>
+          <div className="tiendas-subtitle">Promociones activas del negocio</div>
+        </div>
+        <div className="tiendas-header-actions">
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <span className="tiendas-filter-chip" style={{ background: '#FEF3C7', color: '#F59E0B' }}>
+              ⚠️ {stockStats.bajoStock} bajo stock
+            </span>
+            <span className="tiendas-filter-chip" style={{ background: '#FEE2E2', color: '#EF4444' }}>
+              ❌ {stockStats.agotados} agotados
+            </span>
           </div>
           {canEdit && (
-            <button onClick={() => { setEditingPromo(null); setFormData({ nombre: '', tipo: 'descuento_porcentaje', valor: '', productos: [], categorias: [], fechaInicio: '', fechaFin: '', activa: true }); setShowModal(true); }} style={{ padding: '10px 20px', background: 'var(--role-primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-              <i className="bi bi-plus-lg me-2"></i>Nueva Promoción
-            </button>
+            <button className="tiendas-add-btn" onClick={() => { setEditingPromo(null); setFormData({ nombre: '', tipo: 'descuento_porcentaje', valor: '', productos: [], categorias: [], fechaInicio: '', fechaFin: '', activa: true }); setShowModal(true); }}>+</button>
           )}
         </div>
       </div>

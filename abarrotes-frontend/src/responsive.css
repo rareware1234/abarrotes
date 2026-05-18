@@ -65,57 +65,8 @@ h3 {
 }
 
 /* ============================================
-   4. APP SHELL - Safe areas for iPhone
+   4-5. APP SHELL & NAVBAR — handled by index.css
    ============================================ */
-.app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
-  height: auto;
-  overflow-x: hidden;
-}
-
-/* ============================================
-   5. NAVBAR - Fixed with safe area
-   ============================================ */
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1050;
-  /* iPhone notch support */
-  padding-top: max(var(--safe-top), 0px);
-  padding-left: max(var(--safe-left), 16px);
-  padding-right: max(var(--safe-right), 16px);
-  height: auto;
-  min-height: 56px;
-}
-
-/* ============================================
-   6. SIDEBAR - Mobile overlay / Desktop fixed
-   ============================================ */
-.sidebar-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  z-index: 1100;
-}
-
-.sidebar-wrapper.open .overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1099;
-}
-
-.sidebar {
-  width: 280px;
-  max-width: 85vw;
-}
 
 /* Desktop: sidebar visible */
 @media (min-width: 1024px) {
@@ -174,13 +125,14 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  min-height: calc(100vh - 100px);
 }
 
 .venta-left,
-.venta-right {
+.venta-right,
+.venta-right-col {
   width: 100%;
 }
+
 
 /* Tablet: 2 columns */
 @media (min-width: 768px) {
@@ -207,11 +159,21 @@ h3 {
     overflow: hidden;
   }
   
-  .venta-right {
-    position: sticky;
-    top: 16px;
-    max-height: calc(100vh - 140px);
-    overflow-y: auto;
+  .venta-right-col {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .venta-right-col .venta-right {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .venta-right-col .pos-summary-panel {
+    flex: 1;
   }
 }
 
@@ -388,3 +350,5 @@ textarea {
 .pt-safe {
   padding-top: calc(var(--space-md) + var(--safe-top));
 }
+
+/* Empleados: ver src/styles/empleados.css */

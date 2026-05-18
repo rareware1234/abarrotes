@@ -1,16 +1,13 @@
-import { initializeApp } from 'firebase/app';
+import { db } from '../firebase.js';
 import {
-  getFirestore,
+
   collection,
   getDocs,
   query,
   where,
   orderBy
 } from 'firebase/firestore';
-import { firebaseConfig } from '../firebase-config/firebase-config';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 export const calcularScore = async (clienteId) => {
   try {

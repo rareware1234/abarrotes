@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1e7f5c"/>
-      <stop offset="100%" style="stop-color:#165f45"/>
-    </linearGradient>
-  </defs>
-  <rect width="100" height="100" rx="20" fill="url(#grad)"/>
-  <text x="50" y="72" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">A</text>
+  <rect width="100" height="100" rx="22" fill="#0F4D2E"/>
+  <!-- Hojas del tomate -->
+  <path d="M50 22 C50 22 42 30 38 26 C34 22 40 14 50 18" fill="#4ADE80"/>
+  <path d="M50 22 C50 22 58 30 62 26 C66 22 60 14 50 18" fill="#4ADE80"/>
+  <path d="M50 18 L50 28" stroke="#4ADE80" stroke-width="3" stroke-linecap="round"/>
+  <!-- Tomate -->
+  <circle cx="50" cy="52" r="26" fill="#E63946"/>
+  <!-- Brillo -->
+  <ellipse cx="42" cy="44" rx="6" ry="4" fill="rgba(255,255,255,0.2)" transform="rotate(-20 42 44)"/>
 </svg>

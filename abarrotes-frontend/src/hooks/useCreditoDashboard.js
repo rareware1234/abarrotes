@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getFirestore, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from '../firebase-config/firebase-config';
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '../firebase.js';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);

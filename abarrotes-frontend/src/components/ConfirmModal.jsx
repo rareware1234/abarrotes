@@ -27,7 +27,7 @@ const ConfirmModal = ({
       case 'danger': return '#EF4444';
       case 'warning': return '#F59E0B';
       case 'info': return '#2563EB';
-      default: return '#1A7A48';
+      default: return 'var(--role-primary)';
     }
   };
 

@@ -95,37 +95,17 @@ const CreditoDashboard = () => {
 
   return (
     <div className="credito-dashboard">
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'flex-start',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
+      <div className="tiendas-header">
         <div>
-          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>Salud del Crédito</h1>
-          <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '14px' }}>
-            Visión por sucursal · actualizado {formatLastUpdated()}
-          </p>
+          <h1>Crédito</h1>
+          <div className="tiendas-subtitle">Salud crediticia del negocio</div>
         </div>
-        <button 
-          onClick={refresh}
-          style={{ 
-            padding: '8px 12px', 
-            background: 'white', 
-            border: '1px solid var(--border)', 
-            borderRadius: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '13px'
-          }}
-        >
-          <i className="bi bi-arrow-clockwise"></i>
-          Actualizar
-        </button>
+        <div className="tiendas-header-actions">
+          <button className="tiendas-filter-chip" onClick={refresh}>
+            <i className="bi bi-arrow-clockwise"></i>
+            Actualizar
+          </button>
+        </div>
       </div>
 
       <div style={{ 

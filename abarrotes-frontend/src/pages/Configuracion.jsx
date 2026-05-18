@@ -100,11 +100,10 @@ const Configuracion = () => {
 
   return (
     <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center px-4 py-3 bg-white shadow-sm">
-        <div className="d-flex align-items-center">
-          <img src="/src/assets/logo.png" alt="Logo" style={{ height: '40px', marginRight: '15px' }} />
-          <h4 className="mb-0 fw-bold text-dark">Configuración del Sistema</h4>
+      <div className="tiendas-header">
+        <div>
+          <h1>Configuración</h1>
+          <div className="tiendas-subtitle">Ajustes del sistema</div>
         </div>
       </div>
 

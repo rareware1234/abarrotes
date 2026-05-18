@@ -1,0 +1,1044 @@
+/* ============================================
+   TIENDAS / SUCURSALES — Diseño macOS
+   ============================================ */
+
+/* Header */
+.tiendas-header {
+  display: none !important;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 1024px) {
+  .tiendas-header {
+    display: flex !important;
+  }
+}
+
+.tiendas-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tiendas-header .tiendas-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.tiendas-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* View mode toggle */
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.view-toggle button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.view-toggle button.active {
+  background: var(--role-tinted-bg);
+  color: var(--role-primary);
+}
+
+.tiendas-add-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--role-primary);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background 0.2s;
+}
+
+.tiendas-add-btn:hover {
+  background: var(--role-hover);
+}
+
+/* Search bar — igual que pos-search-bar de Venta */
+.tiendas-search {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 14px;
+}
+
+.tiendas-search-inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #F9FAFB;
+}
+
+.tiendas-search-inner svg {
+  width: 18px;
+  height: 18px;
+  color: #6B7C93;
+  flex-shrink: 0;
+}
+
+.tiendas-search-inner input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  outline: none;
+  color: #1a2b3c;
+  padding: 10px 0;
+}
+
+.tiendas-search-inner input::placeholder {
+  color: #9CA3AF;
+}
+
+/* Filter chips */
+.tiendas-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tiendas-filter-chip {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg);
+  color: var(--text-dark);
+}
+
+.tiendas-filter-chip.active {
+  background: var(--role-primary);
+  color: white;
+}
+
+.tiendas-filter-chip.danger.active {
+  background: #EF4444;
+  color: white;
+}
+
+/* ============================================
+   DESKTOP: tiendas-header sticky global
+   Aplica a todas las páginas que usen content-area
+   como contenedor de scroll.
+   ============================================ */
+@media (min-width: 1024px) {
+  /* Header estático en todas las páginas */
+  .tiendas-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg, #F4F5F7);
+    padding-bottom: 12px;
+    margin-bottom: 0;
+  }
+
+  /* FilterChips barra sticky justo debajo del header */
+  .filter-chips-bar {
+    position: sticky;
+    top: 82px;
+    z-index: 49;
+    background: var(--bg, #F4F5F7);
+    padding-bottom: 8px;
+    margin-bottom: 0;
+  }
+
+  /* ── Tiendas, Products y Tareas: usan flex + scroll-area
+        → header, search y filtros son flex-shrink:0 ── */
+
+  /* El content-area no hace scroll en estas páginas */
+  .content-area:has(.tiendas-page),
+  .content-area:has(.products-container),
+  .content-area:has(.tareas-reminders) {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Containers ocupan el alto disponible */
+  .tiendas-page,
+  .products-container,
+  .tareas-reminders {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Header, search y filtros: nunca se mueven (override de sticky global) */
+  .tiendas-page .tiendas-header,
+  .products-container .tiendas-header,
+  .tareas-reminders .tiendas-header {
+    position: static;
+    flex-shrink: 0;
+    padding-bottom: 0;
+    margin-bottom: 16px;
+  }
+
+  .tiendas-page .tiendas-search,
+  .tiendas-page .tiendas-filters {
+    position: static;
+    flex-shrink: 0;
+  }
+
+  .products-container .tiendas-search,
+  .products-container .filter-chips-wrapper,
+  .products-container .filter-chips-bar,
+  .tareas-reminders .reminders-filters,
+  .tareas-reminders .filter-chips-bar {
+    position: static;
+    flex-shrink: 0;
+  }
+
+  /* mobile-sticky-header en desktop: no sticky, sin margen negativo */
+  .mobile-sticky-header {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    flex-shrink: 0;
+    z-index: unset;
+  }
+
+  /* Zona scrollable */
+  .tiendas-scroll-area,
+  .products-scroll-area,
+  .tareas-scroll-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding-bottom: 24px;
+  }
+}
+
+/* ============================================
+   MOBILE — Flex column (igual que desktop)
+   El scroll ocurre en scroll-area, no en content-area
+   ============================================ */
+@media (max-width: 1023px) {
+
+  /* content-area deja de hacer scroll en estas páginas */
+  .content-area:has(.tiendas-page),
+  .content-area:has(.products-container) {
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Containers: flex column, llenan el espacio */
+  .tiendas-page,
+  .products-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Header título */
+  .tiendas-page .tiendas-header,
+  .products-container .tiendas-header {
+    flex-shrink: 0;
+    padding: 12px 16px 8px;
+    margin-bottom: 0;
+  }
+
+  /* mobile-sticky-header ya no necesita ser sticky: está fuera del scroll */
+  .tiendas-page .mobile-sticky-header,
+  .products-container .mobile-sticky-header {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent;
+    flex-shrink: 0;
+  }
+
+  /* Search bar: edge-to-edge con padding propio */
+  .tiendas-page .mobile-sticky-header .tiendas-search,
+  .products-container .mobile-sticky-header .tiendas-search {
+    position: static !important;
+    margin: 0 !important;
+    padding: 8px 16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    box-shadow: none;
+    background: #F4F5F7;
+  }
+
+  /* Filtros: edge-to-edge con padding propio */
+  .tiendas-page .mobile-sticky-header .tiendas-filters,
+  .tiendas-page .mobile-sticky-header .filter-chips-bar,
+  .products-container .mobile-sticky-header .filter-chips-bar {
+    margin: 0 !important;
+    padding: 8px 16px 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: #F4F5F7;
+  }
+
+  /* Zona de scroll: ocupa todo lo que queda */
+  .tiendas-scroll-area,
+  .products-scroll-area {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 16px 16px;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Grid */
+.tiendas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 280px));
+  gap: 16px;
+}
+
+@media (max-width: 1023px) {
+  .tiendas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   TIENDA CARD — diseño full-gradient
+   ============================================ */
+.tienda-card {
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.2s;
+  cursor: pointer;
+  position: relative;
+  height: 240px;
+}
+
+.tienda-card:hover {
+  transform: translateY(-3px);
+}
+
+.tienda-card:hover .tienda-card-edit-actions {
+  opacity: 1;
+}
+
+/* Orb decorativo */
+.tienda-card-orb {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  filter: blur(30px);
+  top: -40px;
+  right: -30px;
+  pointer-events: none;
+}
+
+/* Acciones hover */
+.tienda-card-edit-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tienda-card-edit-actions button {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: rgba(0,0,0,0.30);
+  backdrop-filter: blur(6px);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  min-height: auto;
+  min-width: auto;
+  padding: 0;
+}
+
+.tienda-card-edit-actions button:hover {
+  background: rgba(0,0,0,0.50);
+}
+
+/* Contenido centrado */
+.tienda-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 14px 12px 40px;
+  text-align: center;
+  gap: 2px;
+}
+
+.tienda-card-logo {
+  width: auto;
+  max-width: 140px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+.tienda-card-nombre {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tienda-card-ciudad {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tienda-card-estado {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tienda-card-tel {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tienda-card-horario {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.tienda-card-status-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: white;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.tienda-card-manager-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.tienda-card-manager-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tienda-card-manager-nombre {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Badge formato bottom-right */
+.tienda-card-format-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  height: 32px;
+  opacity: 0.85;
+  object-fit: contain;
+  z-index: 1;
+}
+
+/* Card actions (mantenidas para compatibilidad list view) */
+.tienda-card-actions {
+  display: none;
+}
+
+.tienda-manager-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+  background: var(--role-primary);
+  padding: 1px 6px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+/* Card actions */
+.tienda-card-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 14px 14px;
+}
+
+.tienda-card-actions button {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  min-height: auto;
+}
+
+.tienda-card-actions button:hover {
+  background: var(--bg);
+}
+
+/* ============================================
+   LIST VIEW
+   ============================================ */
+.tiendas-list {
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.tienda-list-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.tienda-list-row:last-child {
+  border-bottom: none;
+}
+
+.tienda-list-row:hover {
+  background: var(--bg);
+}
+
+.tienda-list-logo-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tienda-list-logo-box img {
+  width: auto;
+  max-width: 36px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+}
+
+.tienda-list-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tienda-list-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tienda-list-title h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tienda-list-address {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.tienda-list-address svg {
+  width: 10px;
+  height: 10px;
+}
+
+.tienda-list-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tienda-list-manager {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.tienda-list-hours {
+  font-size: 11px;
+  color: #9CA3AF;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.tienda-list-chevron {
+  color: #9CA3AF;
+  flex-shrink: 0;
+}
+
+.inactiva-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+  background: #EF4444;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.tiendas-empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+.tiendas-empty svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+/* ============================================
+   DETALLE DE SUCURSAL
+   ============================================ */
+.tienda-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.tienda-detail {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.tienda-detail-scroll {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tienda-detail-header {
+  height: 200px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tienda-detail-header::after {
+  content: '';
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  filter: blur(40px);
+  top: -60px;
+  right: -50px;
+  pointer-events: none;
+}
+
+.tienda-detail-header::before {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  filter: blur(30px);
+  bottom: -40px;
+  left: -60px;
+  pointer-events: none;
+}
+
+.tienda-detail-toolbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.tienda-detail-toolbar button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  min-height: auto;
+  min-width: auto;
+  padding: 0;
+}
+
+.tienda-detail-toolbar button:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.tienda-detail-brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.tienda-detail-brand .detail-logo {
+  width: auto;
+  max-width: 180px;
+  height: 38px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+}
+
+.tienda-detail-brand h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.tienda-detail-brand .detail-badge {
+  height: 24px;
+  opacity: 0.8;
+}
+
+.tienda-detail-info {
+  padding: 0 18px 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.tienda-detail-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.tienda-detail-info-row svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.tienda-detail-manager-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+}
+
+.tienda-detail-dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px;
+}
+
+.tienda-dash-widget {
+  padding: 14px;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.tienda-dash-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.tienda-dash-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tienda-dash-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.tienda-dash-labels {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tienda-dash-labels .dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.tienda-detail-section {
+  padding: 0 16px 16px;
+}
+
+.tienda-detail-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--text-dark);
+}
+
+.tienda-detail-card {
+  background: var(--bg);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tienda-detail-card-padded {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tienda-location-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tienda-location-row svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.tienda-location-row strong {
+  color: var(--text-dark);
+}
+
+.tienda-team-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tienda-team-row:last-child {
+  border-bottom: none;
+}
+
+.tienda-team-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.tienda-team-avatar.manager-av {
+  background: linear-gradient(135deg, #2563EB, rgba(37,99,235,0.7));
+  box-shadow: 0 2px 4px rgba(37,99,235,0.3);
+}
+
+.tienda-team-avatar.staff-av {
+  background: rgba(26,122,72,0.12);
+  color: #1A7A48;
+}
+
+.tienda-team-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tienda-team-name {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tienda-team-role-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.tienda-team-id {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.tienda-team-status {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tienda-team-status.on { background: #2ECC71; box-shadow: 0 0 6px rgba(46,204,113,0.5); }
+.tienda-team-status.off { background: #EF4444; box-shadow: 0 0 6px rgba(239,68,68,0.5); }
+
+.tienda-team-staff-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 14px 4px;
+  border-top: 1px solid var(--border);
+}
+
+.tienda-team-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.tienda-team-empty svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 6px;
+  opacity: 0.4;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}

@@ -1,218 +1,540 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import turnoService from '../services/turnoService';
-import empleadoService from '../services/empleadoService';
-import ConfirmModal from '../components/ConfirmModal';
+import * as turnoService from '../services/turnoService';
+import * as empleadoService from '../services/empleadoService';
+import '../styles/horarios.css';
 
-const TIPOS_TURNO = {
-  matutino: { label: 'Matutino', color: '#2563EB', inicio: '07:00', fin: '15:00' },
-  vespertino: { label: 'Vespertino', color: '#F97316', inicio: '15:00', fin: '23:00' },
-  completo: { label: 'Completo', color: '#1A7A48', inicio: '07:00', fin: '23:00' },
-  medio: { label: 'Medio', color: '#EAB308', inicio: '09:00', fin: '13:00' },
-  descanso: { label: 'Descanso', color: '#64748B', inicio: null, fin: null }
-};
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+const DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MONTHS_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-const Turnos = () => {
-  const { hasPermission } = useAuth();
-  const [turnos, setTurnos] = useState([]);
-  const [empleados, setEmpleados] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(now.setDate(diff));
-  });
-  const [showModal, setShowModal] = useState(false);
-  const [editingTurno, setEditingTurno] = useState(null);
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // lunes como inicio
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
-  const canEdit = hasPermission('turnos_crear') || hasPermission('turnos_editar');
+function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
 
-  const [formData, setFormData] = useState({
-    empleadoId: '',
-    fecha: new Date().toISOString().split('T')[0],
-    tipo: 'matutino',
-    tienda: '',
-    notas: ''
-  });
+function toYMD(date) {
+  return date.toISOString().split('T')[0];
+}
 
-  useEffect(() => {
-    fetchData();
-  }, [currentWeekStart]);
+function calcHoras(inicio, fin) {
+  if (!inicio || !fin) return 0;
+  const [sh, sm] = inicio.split(':').map(Number);
+  const [eh, em] = fin.split(':').map(Number);
+  let mins = (eh * 60 + em) - (sh * 60 + sm);
+  if (mins <= 0) mins += 24 * 60; // turno nocturno
+  return Math.round(mins / 60 * 10) / 10;
+}
 
-  const fetchData = async () => {
-    setLoading(true);
-    const [turnosResult, empleadosResult] = await Promise.all([
-      turnoService.fetchSemana(currentWeekStart),
-      empleadoService.fetchAll()
-    ]);
-    if (turnosResult.success) setTurnos(turnosResult.data);
-    if (empleadosResult.success) setEmpleados(empleadosResult.data);
-    setLoading(false);
-  };
+function getTipoFromTime(inicio, descanso) {
+  if (descanso) return 'descanso';
+  if (!inicio) return 'matutino';
+  const h = parseInt(inicio);
+  if (h < 12) return 'matutino';
+  if (h < 18) return 'vespertino';
+  return 'nocturno';
+}
 
-  const getWeekDays = () => {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(currentWeekStart);
-      day.setDate(day.getDate() + i);
-      days.push(day);
-    }
-    return days;
-  };
+function shiftColor(inicio, descanso) {
+  if (descanso) return { bg:'#F3F4F6', text:'#6B7C93', border:'#E4E6EA' };
+  if (!inicio)  return { bg:'#EFF6FF', text:'#1D4ED8', border:'#BFDBFE' };
+  const h = parseInt(inicio);
+  if (h < 12)  return { bg:'#EFF6FF', text:'#1D4ED8', border:'#BFDBFE' };
+  if (h < 18)  return { bg:'#FFFBEB', text:'#92400E', border:'#FDE68A' };
+  return             { bg:'#EDE9FE', text:'#5B21B6', border:'#C4B5FD' };
+}
 
-  const navigateWeek = (direction) => {
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() + direction * 7);
-    setCurrentWeekStart(newStart);
-  };
+/* ============================================================
+   AVATAR
+   ============================================================ */
+const PALETTE = ['#1A7A48','#2563EB','#7C3AED','#DC2626','#D97706','#0891B2'];
 
-  const getTurnosForCell = (empleadoId, fecha) => {
-    const fechaStr = fecha.toISOString().split('T')[0];
-    return turnos.filter(t => t.empleadoId === empleadoId && t.fecha === fechaStr);
-  };
+function Avatar({ emp, size = 30 }) {
+  const initials = (emp.nombre || '?')
+    .split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+  const bg = PALETTE[(emp.nombre || '').charCodeAt(0) % PALETTE.length];
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: emp.fotoUrl ? 'transparent' : bg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.36, fontWeight: 700, color: 'white', overflow: 'hidden'
+    }}>
+      {emp.fotoUrl
+        ? <img src={emp.fotoUrl} alt={emp.nombre}
+            style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        : initials}
+    </div>
+  );
+}
+
+/* ============================================================
+   SHIFT BLOCK
+   ============================================================ */
+function ShiftBlock({ turno, onClick }) {
+  const isRest = turno.tipo === 'descanso';
+  const c = shiftColor(turno.inicio, isRest);
+  return (
+    <div
+      className="shift-block"
+      onClick={e => { e.stopPropagation(); onClick(); }}
+      style={{ background: c.bg, border: `1px solid ${c.border}` }}
+    >
+      {isRest ? (
+        <div className="shift-block-rest" style={{ color: c.text }}>Descanso</div>
+      ) : (
+        <>
+          <div className="shift-block-time" style={{ color: c.text }}>
+            {turno.inicio} – {turno.fin}
+          </div>
+          <div className="shift-block-hours" style={{ color: c.text }}>
+            {turno.horas}h
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+const QUICK = [
+  { label:'Mañana', inicio:'08:00', fin:'16:00' },
+  { label:'Tarde',  inicio:'14:00', fin:'22:00' },
+  { label:'Noche',  inicio:'22:00', fin:'06:00' },
+  { label:'Medio',  inicio:'09:00', fin:'13:00' },
+];
+
+function ShiftModal({ turno, empleado, fecha, onClose, onSave, onDelete, canEdit }) {
+  const isNew = !turno;
+  const [descanso, setDescanso] = useState(turno?.tipo === 'descanso');
+  const [inicio,   setInicio]   = useState(turno?.inicio || '08:00');
+  const [fin,      setFin]      = useState(turno?.fin    || '16:00');
+  const [notas,    setNotas]    = useState(turno?.notas  || '');
+  const [saving,   setSaving]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const horas = useMemo(
+    () => descanso ? 0 : calcHoras(inicio, fin),
+    [descanso, inicio, fin]
+  );
+
+  const isQuickActive = q => !descanso && inicio === q.inicio && fin === q.fin;
 
   const handleSave = async () => {
-    if (!formData.empleadoId || !formData.fecha) {
-      alert('Empleado y fecha son requeridos');
-      return;
-    }
-
-    const tipoInfo = TIPOS_TURNO[formData.tipo];
-    const turnoData = {
-      ...formData,
-      inicio: tipoInfo.inicio,
-      fin: tipoInfo.fin
-    };
-
-    let result;
-    if (editingTurno) {
-      result = await turnoService.update(editingTurno.id, turnoData);
-    } else {
-      result = await turnoService.crear(turnoData);
-    }
-
-    if (result.success) {
-      setShowModal(false);
-      setEditingTurno(null);
-      setFormData({ empleadoId: '', fecha: new Date().toISOString().split('T')[0], tipo: 'matutino', tienda: '', notas: '' });
-      fetchData();
-    } else {
-      alert('Error: ' + result.error);
-    }
+    setSaving(true);
+    try {
+      const data = {
+        empleadoId: empleado.uid || empleado.id,
+        fecha,
+        tipo:   getTipoFromTime(descanso ? null : inicio, descanso),
+        inicio: descanso ? null : inicio,
+        fin:    descanso ? null : fin,
+        horas:  descanso ? 0    : horas,
+        notas:  notas.trim(),
+      };
+      await onSave(data, turno?.id);
+      onClose();
+    } catch(e) { console.error(e); }
+    finally { setSaving(false); }
   };
 
-  const handleEdit = (turno) => {
-    setEditingTurno(turno);
-    setFormData({
-      empleadoId: turno.empleadoId || '',
-      fecha: turno.fecha || '',
-      tipo: turno.tipo || 'matutino',
-      tienda: turno.tienda || '',
-      notas: turno.notas || ''
-    });
-    setShowModal(true);
-  };
-
-  const handleDelete = async (turnoId) => {
-    await turnoService.remove(turnoId);
-    fetchData();
-  };
-
-  const weekDays = getWeekDays();
-  const formatWeekRange = () => {
-    const end = new Date(currentWeekStart);
-    end.setDate(end.getDate() + 6);
-    return `${currentWeekStart.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  const handleDelete = async () => {
+    setDeleting(true);
+    try { await onDelete(turno.id); onClose(); }
+    catch(e) { console.error(e); }
+    finally { setDeleting(false); }
   };
 
   return (
-    <div className="turnos-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ margin: 0, fontSize: '24px' }}>Turnos</h1>
-        {canEdit && (
-          <button onClick={() => { setEditingTurno(null); setFormData({ empleadoId: '', fecha: new Date().toISOString().split('T')[0], tipo: 'matutino', tienda: '', notas: '' }); setShowModal(true); }} style={{ padding: '10px 20px', background: 'var(--role-primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-            <i className="bi bi-plus-lg me-2"></i>Nuevo Turno
+    <div className="horarios-modal-overlay" onClick={onClose}>
+      <div className="horarios-modal" onClick={e => e.stopPropagation()}>
+
+        <div className="horarios-modal-header">
+          <div>
+            <div style={{ fontSize:15, fontWeight:700, color:'#1C1E21' }}>
+              {isNew ? 'Asignar turno' : 'Editar turno'}
+            </div>
+            <div style={{ fontSize:12, color:'#6B7C93', marginTop:3 }}>
+              {empleado.nombre} · {fecha}
+            </div>
+          </div>
+          <button className="horarios-close-btn" onClick={onClose}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+                 stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6"  x2="6"  y2="18"/>
+              <line x1="6"  y1="6"  x2="18" y2="18"/>
+            </svg>
           </button>
+        </div>
+
+        <div className="horarios-modal-body">
+
+          {/* Descanso */}
+          <label className="horarios-checkbox-row">
+            <input type="checkbox" checked={descanso}
+              onChange={e => setDescanso(e.target.checked)} disabled={!canEdit} />
+            <span style={{ fontSize:14, fontWeight:500, color:'#1C1E21' }}>
+              Día de descanso
+            </span>
+          </label>
+
+          {!descanso && (
+            <>
+              <div>
+                <span className="horarios-label">Turno rápido</span>
+                <div className="horarios-quick-chips">
+                  {QUICK.map(q => (
+                    <button
+                      key={q.label}
+                      className={`horarios-quick-chip${isQuickActive(q) ? ' active' : ''}`}
+                      onClick={() => { setInicio(q.inicio); setFin(q.fin); }}
+                      disabled={!canEdit}
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="horarios-time-grid">
+                <div>
+                  <span className="horarios-label">Entrada</span>
+                  <input type="time" className="horarios-time-input"
+                    value={inicio} onChange={e => setInicio(e.target.value)}
+                    disabled={!canEdit} />
+                </div>
+                <div>
+                  <span className="horarios-label">Salida</span>
+                  <input type="time" className="horarios-time-input"
+                    value={fin} onChange={e => setFin(e.target.value)}
+                    disabled={!canEdit} />
+                </div>
+              </div>
+
+              <div className="horarios-duration-pill">
+                <span style={{ fontSize:13, color:'#6B7C93' }}>Duración total</span>
+                <span style={{ fontSize:16, fontWeight:800, color:'var(--role-primary)' }}>
+                  {horas}h
+                </span>
+              </div>
+            </>
+          )}
+
+          <div>
+            <span className="horarios-label">Notas</span>
+            <input type="text" className="horarios-text-input"
+              value={notas} onChange={e => setNotas(e.target.value)}
+              placeholder="Opcional..." disabled={!canEdit} />
+          </div>
+        </div>
+
+        {canEdit && (
+          <div className="horarios-modal-footer">
+            {!isNew && (
+              <button className="horarios-btn-delete"
+                onClick={handleDelete} disabled={deleting}>
+                {deleting ? '…' : 'Eliminar'}
+              </button>
+            )}
+            <button className="horarios-btn-save"
+              onClick={handleSave} disabled={saving}>
+              {saving ? 'Guardando…' : isNew ? 'Guardar' : 'Actualizar'}
+            </button>
+          </div>
         )}
       </div>
+    </div>
+  );
+}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '20px' }}>
-        <button onClick={() => navigateWeek(-1)} style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>←</button>
-        <span style={{ fontWeight: 600 }}>{formatWeekRange()}</span>
-        <button onClick={() => navigateWeek(1)} style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>→</button>
+/* ============================================================
+   COMPONENTE PRINCIPAL — Horarios
+   ============================================================ */
+export default function Turnos() {
+  const { hasPermission, empleado: currentUser } = useAuth();
+  const canEdit = hasPermission('turnos_editar') || hasPermission('turnos_crear');
+  const isManager = currentUser?.rol === 'manager';
+
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+  const [empleados, setEmpleados] = useState([]);
+  const [turnos,    setTurnos]    = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [modal,     setModal]     = useState(null);
+
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
+  );
+
+  // Empleados activos — managers solo ven los de sus sucursales
+  useEffect(() => {
+    empleadoService.fetchAll().then(res => {
+      if (!res.success) return;
+      let lista = res.data.filter(e => e.activo !== false);
+
+      if (isManager) {
+        const misAsignadas = currentUser?.tiendasAsignadas || [];
+        lista = lista.filter(emp => {
+          const rolEmp = emp.rol?.toUpperCase();
+          // excluir otros managers/admins
+          if (['MANAGER', 'DIRECTOR', 'ADMIN', 'LIDER'].includes(rolEmp)) return false;
+          const empTid = emp.tiendaAsignada || emp.tiendaId;
+          return misAsignadas.includes(empTid) || emp.creadoPorUid === currentUser?.uid;
+        });
+      }
+
+      setEmpleados(
+        lista.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+      );
+    });
+  }, [isManager, currentUser]);
+
+  // Turnos de la semana
+  const loadTurnos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await turnoService.fetchSemana(weekStart);
+      setTurnos(res.success ? res.data : []);
+    } finally {
+      setLoading(false);
+    }
+  }, [weekStart]);
+
+  useEffect(() => { loadTurnos(); }, [loadTurnos]);
+
+  // Mapa rápido: empleadoId → fecha → turno
+  const turnoMap = useMemo(() => {
+    const map = {};
+    turnos.forEach(t => {
+      if (!map[t.empleadoId]) map[t.empleadoId] = {};
+      map[t.empleadoId][t.fecha] = t;
+    });
+    return map;
+  }, [turnos]);
+
+  // Horas semanales por empleado
+  const weekHours = useMemo(() => {
+    const map = {};
+    empleados.forEach(emp => {
+      const id = emp.uid || emp.id;
+      map[id] = weekDays.reduce(
+        (sum, day) => sum + (turnoMap[id]?.[toYMD(day)]?.horas || 0), 0
+      );
+    });
+    return map;
+  }, [empleados, weekDays, turnoMap]);
+
+  const today = toYMD(new Date());
+
+  const weekLabel = (() => {
+    const s = weekStart, e = addDays(weekStart, 6);
+    return `${s.getDate()} ${MONTHS_ES[s.getMonth()]} – ${e.getDate()} ${MONTHS_ES[e.getMonth()]} ${e.getFullYear()}`;
+  })();
+
+  const openModal = (emp, day) => {
+    if (!canEdit) return;
+    const fecha = toYMD(day);
+    const id    = emp.uid || emp.id;
+    setModal({ empleado: emp, fecha, turno: turnoMap[id]?.[fecha] });
+  };
+
+  const handleSave = async (data, id) => {
+    if (id) await turnoService.update(id, data);
+    else    await turnoService.crear(data);
+    await loadTurnos();
+  };
+
+  const handleDelete = async (id) => {
+    await turnoService.remove(id);
+    await loadTurnos();
+  };
+
+  return (
+    <div className="horarios-container">
+
+      {/* Header desktop */}
+      <div className="horarios-header">
+        <div>
+          <h1 style={{ fontSize:28, fontWeight:700, margin:0, color:'#1C1E21' }}>
+            Horarios
+          </h1>
+          <div className="horarios-week-label">{weekLabel}</div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <button className="horarios-nav-btn"
+            onClick={() => setWeekStart(d => addDays(d, -7))}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                 stroke="currentColor" strokeWidth="2.5">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <button className="horarios-today-btn"
+            onClick={() => setWeekStart(getWeekStart(new Date()))}>
+            Hoy
+          </button>
+          <button className="horarios-nav-btn"
+            onClick={() => setWeekStart(d => addDays(d, 7))}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                 stroke="currentColor" strokeWidth="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
+      {/* Leyenda */}
+      <div className="horarios-legend">
+        {[
+          { label:'Mañana',   color:'#3B82F6' },
+          { label:'Tarde',    color:'#F59E0B' },
+          { label:'Noche',    color:'#7C3AED' },
+          { label:'Descanso', color:'#9CA3AF' },
+        ].map(l => (
+          <div key={l.label} className="horarios-legend-item">
+            <div className="horarios-legend-dot" style={{ background: l.color }} />
+            {l.label}
+          </div>
+        ))}
+      </div>
+
+      {/* Tabla / loader */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px' }}><span className="spinner-border spinner-border-lg"></span></div>
+        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <span className="spinner-border" />
+        </div>
       ) : (
-        <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', overflowX: 'auto' }}>
-          <table style={{ minWidth: '800px', width: '100%', borderCollapse: 'collapse' }}>
+        <div className="horarios-scroll">
+          <table className="horarios-table">
             <thead>
-              <tr style={{ background: '#F4F5F7' }}>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', width: '150px' }}>Empleado</th>
-                {weekDays.map(day => (
-                  <th key={day.toISOString()} style={{ padding: '12px', textAlign: 'center', fontSize: '13px' }}>
-                    {day.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' })}
-                  </th>
-                ))}
+              <tr>
+                <th className="horarios-th-emp">Empleado</th>
+                {weekDays.map(day => {
+                  const ymd     = toYMD(day);
+                  const isToday = ymd === today;
+                  return (
+                    <th key={ymd}
+                        className={`horarios-th-day${isToday ? ' today' : ''}`}>
+                      <div style={{
+                        fontSize:11, fontWeight:600, textTransform:'uppercase',
+                        letterSpacing:0.5,
+                        color: isToday ? 'var(--role-primary)' : '#6B7C93'
+                      }}>
+                        {DAYS_ES[day.getDay()]}
+                      </div>
+                      <div style={{
+                        fontSize:20, fontWeight:700, lineHeight:1.2,
+                        color: isToday ? 'var(--role-primary)' : '#1C1E21'
+                      }}>
+                        {day.getDate()}
+                      </div>
+                    </th>
+                  );
+                })}
+                <th className="horarios-th-total">Horas</th>
               </tr>
             </thead>
+
             <tbody>
-              {empleados.map(emp => (
-                <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '12px', fontWeight: 500 }}>{emp.nombre}</td>
-                  {weekDays.map(day => {
-                    const diasTurnos = getTurnosForCell(emp.numEmpleado || emp.uid, day);
-                    return (
-                      <td key={day.toISOString()} style={{ padding: '8px', textAlign: 'center', minWidth: '100px' }}>
-                        {diasTurnos.map(turno => {
-                          const tipoInfo = TIPOS_TURNO[turno.tipo] || TIPOS_TURNO.matutino;
-                          return (
-                            <div key={turno.id} style={{ background: `${tipoInfo.color}22`, border: `1px solid ${tipoInfo.color}`, borderRadius: '6px', padding: '4px 8px', margin: '2px 0', fontSize: '12px', cursor: 'pointer' }} onClick={() => canEdit && handleEdit(turno)}>
-                              <div style={{ fontWeight: 600, color: tipoInfo.color }}>{tipoInfo.label}</div>
-                              <div style={{ color: 'var(--text-muted)' }}>{turno.inicio} - {turno.fin}</div>
-                            </div>
-                          );
-                        })}
-                        {canEdit && (
-                          <button onClick={() => { setFormData({ ...formData, empleadoId: emp.numEmpleado || emp.uid, fecha: day.toISOString().split('T')[0] }); setShowModal(true); }} style={{ width: '24px', height: '24px', border: '1px dashed var(--border)', borderRadius: '4px', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '12px' }}>+</button>
-                        )}
-                      </td>
-                    );
-                  })}
+              {empleados.length === 0 ? (
+                <tr>
+                  <td colSpan={9} style={{
+                    textAlign:'center', padding:48, color:'#6B7C93', fontSize:14
+                  }}>
+                    No hay empleados activos
+                  </td>
                 </tr>
-              ))}
+              ) : empleados.map(emp => {
+                const id  = emp.uid || emp.id;
+                const hrs = weekHours[id] || 0;
+                return (
+                  <tr key={id} className="horarios-row">
+                    <td className="horarios-td-emp">
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <Avatar emp={emp} size={30} />
+                        <div style={{ minWidth:0 }}>
+                          <div style={{
+                            fontSize:13, fontWeight:600, color:'#1C1E21',
+                            whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'
+                          }}>
+                            {emp.nombre}
+                          </div>
+                          <div style={{ fontSize:10, color:'#9CA3AF', textTransform:'capitalize' }}>
+                            {(emp.rol || '').toLowerCase()}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {weekDays.map(day => {
+                      const fecha   = toYMD(day);
+                      const turno   = turnoMap[id]?.[fecha];
+                      const isToday = fecha === today;
+                      return (
+                        <td
+                          key={fecha}
+                          className={[
+                            'horarios-td-day',
+                            isToday  ? 'today'    : '',
+                            canEdit  ? 'editable' : '',
+                          ].filter(Boolean).join(' ')}
+                          onClick={() => openModal(emp, day)}
+                        >
+                          {turno ? (
+                            <ShiftBlock turno={turno} onClick={() => openModal(emp, day)} />
+                          ) : canEdit ? (
+                            <div className="horarios-add-hint">
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+                                   stroke="currentColor" strokeWidth="2.5">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5"  y1="12" x2="19" y2="12"/>
+                              </svg>
+                            </div>
+                          ) : null}
+                        </td>
+                      );
+                    })}
+
+                    <td className="horarios-td-total">
+                      <span style={{
+                        fontSize:13, fontWeight:700,
+                        color: hrs > 0 ? 'var(--role-primary)' : '#C4CAD4'
+                      }}>
+                        {hrs > 0 ? `${hrs}h` : '—'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="confirm-modal" style={{ maxWidth: '400px', textAlign: 'left' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom: '20px' }}>{editingTurno ? 'Editar Turno' : 'Nuevo Turno'}</h3>
-            <div style={{ display: 'grid', gap: '12px' }}>
-              <select value={formData.empleadoId} onChange={e => setFormData({...formData, empleadoId: e.target.value})} style={{ padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                <option value="">Seleccionar empleado...</option>
-                {empleados.map(emp => <option key={emp.id} value={emp.numEmpleado || emp.uid}>{emp.nombre}</option>)}
-              </select>
-              <input type="date" value={formData.fecha} onChange={e => setFormData({...formData, fecha: e.target.value})} style={{ padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }} />
-              <select value={formData.tipo} onChange={e => setFormData({...formData, tipo: e.target.value})} style={{ padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                {Object.entries(TIPOS_TURNO).map(([key, val]) => <option key={key} value={key}>{val.label}</option>)}
-              </select>
-              <input type="text" placeholder="Tienda (opcional)" value={formData.tienda} onChange={e => setFormData({...formData, tienda: e.target.value})} style={{ padding: '12px', border: '1px solid var(--border)', borderRadius: '8px' }} />
-              <textarea placeholder="Notas" value={formData.notas} onChange={e => setFormData({...formData, notas: e.target.value})} style={{ padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', minHeight: '60px' }} />
-            </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button onClick={() => setShowModal(false)} className="btn btn-outline-secondary" style={{ flex: 1 }}>Cancelar</button>
-              <button onClick={handleSave} className="btn btn-primary" style={{ flex: 1, background: 'var(--role-primary)' }}>Guardar</button>
-            </div>
-          </div>
-        </div>
+      {modal && (
+        <ShiftModal
+          turno={modal.turno}
+          empleado={modal.empleado}
+          fecha={modal.fecha}
+          onClose={() => setModal(null)}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          canEdit={canEdit}
+        />
       )}
     </div>
   );
-};
-
-export default Turnos;
+}

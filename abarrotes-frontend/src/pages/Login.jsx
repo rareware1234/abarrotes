@@ -87,54 +87,9 @@ const Login = () => {
 
   return (
     <div className="login-desktop-container">
-      <div className="login-bg-circles">
-        <div className="login-bg-circle login-bg-circle-1"></div>
-        <div className="login-bg-circle login-bg-circle-2"></div>
-        <div className="login-bg-circle login-bg-circle-3"></div>
-        <div className="login-bg-circle login-bg-circle-4"></div>
-        <div className="login-bg-circle login-bg-circle-5"></div>
-        <div className="login-bg-circle login-bg-circle-6"></div>
-      </div>
-
       <div className="login-branding">
         <div className="login-branding-content">
-          <div className="login-logo-container">
-            <img src={logoBlanco} alt="PuntoVerde" className="login-logo-img" />
-          </div>
-          
-          <h1 className="login-brand-title">Punto Verde POS</h1>
-          <p className="login-subtitle">Tu tienda inteligente</p>
-          
-          <div className="login-features">
-            <div className="login-feature-item">
-              <div className="login-feature-check">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </div>
-              <span>Punto de venta rápido y eficiente</span>
-            </div>
-            <div className="login-feature-item">
-              <div className="login-feature-check">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </div>
-              <span>Control de inventario en tiempo real</span>
-            </div>
-            <div className="login-feature-item">
-              <div className="login-feature-check">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </div>
-              <span>Reportes y analytics inteligentes</span>
-            </div>
-          </div>
-          
-          <p style={{ marginTop: '48px', color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem' }}>
-            v2.0 · 2025
-          </p>
+          <img src={logoBlanco} alt="PuntoVerde" style={{ height: '55px', objectFit: 'contain' }} />
         </div>
       </div>
 
