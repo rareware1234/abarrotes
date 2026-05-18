@@ -307,7 +307,7 @@ const Dashboard = () => {
                     <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>{formatCurrency(orden.total)}</td>
                     <td style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>{formatDate(orden.createdAt)}</td>
                     <td style={{ padding: '12px' }}>
-                      <BadgeEstado estado={orden.status} />
+                      <BadgeEstado estado={orden.estado || orden.status} />
                     </td>
                   </tr>
                 ))}

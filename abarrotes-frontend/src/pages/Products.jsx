@@ -89,8 +89,11 @@ const Products = () => {
       return;
     }
 
+    // Schema canónico (ver SCHEMA.md): imagenUrl, no "imagen"
+    const { imagen, ...rest } = formData;
     const productData = {
-      ...formData,
+      ...rest,
+      imagenUrl: imagen || rest.imagenUrl || '',
       precioCompra: parseFloat(formData.precioCompra) || 0,
       precioVenta: parseFloat(formData.precioVenta),
       stock: parseInt(formData.stock) || 0,
@@ -130,7 +133,7 @@ const Products = () => {
       stockMinimo: product.stockMinimo || 5,
       categoria: product.categoria || '',
       proveedor: product.proveedor || '',
-      imagen: product.imagen || ''
+      imagen: product.imagenUrl || product.imagen || ''
     });
     setShowModal(true);
   };

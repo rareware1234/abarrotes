@@ -185,8 +185,10 @@ export const fetchByTienda = async (tiendaId) => {
 
 export const uploadAvatar = async (uid, file) => {
   try {
-    const storageRef = ref(storage, `avatars/${uid}.jpg`);
-    await uploadBytes(storageRef, file);
+    // Path canónico compartido con la app macOS (ver SCHEMA.md):
+    // empleados/{uid}/foto/avatar.jpg — así ambas apps leen la misma imagen.
+    const storageRef = ref(storage, `empleados/${uid}/foto/avatar.jpg`);
+    await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
     const fotoUrl = await getDownloadURL(storageRef);
 
     // Guardar URL en Firestore buscando por uid

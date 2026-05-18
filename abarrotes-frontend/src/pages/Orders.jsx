@@ -34,7 +34,7 @@ const OrderDetailModal = ({ orden, onClose }) => {
             <div><strong>ID:</strong> {orden.id}</div>
             <div><strong>Fecha:</strong> {formatDate(orden.createdAt)}</div>
             <div><strong>Método:</strong> {orden.metodoPago}</div>
-            <div><strong>Estado:</strong> <BadgeEstado estado={orden.status} /></div>
+            <div><strong>Estado:</strong> <BadgeEstado estado={orden.estado || orden.status} /></div>
           </div>
         </div>
 
@@ -77,11 +77,11 @@ const OrderDetailModal = ({ orden, onClose }) => {
             <span>Total</span>
             <span style={{ color: 'var(--role-primary)' }}>{formatCurrency(orden.total)}</span>
           </div>
-          {orden.metodoPago === 'efectivo' && orden.efectivoRecibido && (
+          {orden.metodoPago === 'efectivo' && (orden.montoPagado ?? orden.efectivoRecibido) && (
             <div style={{ marginTop: '12px', padding: '12px', background: '#F4F5F7', borderRadius: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Recibido</span>
-                <span>{formatCurrency(orden.efectivoRecibido)}</span>
+                <span>{formatCurrency(orden.montoPagado ?? orden.efectivoRecibido)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                 <span>Cambio</span>
@@ -190,7 +190,7 @@ const Orders = () => {
                   <td style={{ padding: '12px', textAlign: 'center' }}>{orden.productos?.length || 0}</td>
                   <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(orden.total)}</td>
                   <td style={{ padding: '12px' }}>
-                    <BadgeEstado estado={orden.status} />
+                    <BadgeEstado estado={orden.estado || orden.status} />
                   </td>
                 </tr>
               ))}

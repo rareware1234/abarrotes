@@ -175,17 +175,22 @@ export const CartProvider = ({ children }) => {
   const isEmpty = items.length === 0;
 
   const toOrden = (empleadoId, metodoPago, efectivoRecibido) => {
+    // OrdenItem canónico (ver SCHEMA.md): id, codigo, nombre, precioUnitario,
+    // precioOriginal, cantidad, imagenUrl?, categoria?
     const productos = items.map(item => ({
       id: item.id,
+      codigo: item.codigo || '',
       nombre: item.nombre,
       precioUnitario: item.precio,
-      precioFinal: item.precioFinal || item.precio,
+      precioOriginal: item.precioOriginal || item.precio,
       cantidad: item.cantidad,
-      descuento: item.precioOriginal - (item.precioFinal || item.precio)
+      imagenUrl: item.imagenUrl || null,
+      categoria: item.categoria || ''
     }));
 
-    const cambio = metodoPago === 'efectivo' 
-      ? efectivoRecibido - total 
+    const montoPagado = metodoPago === 'efectivo' ? efectivoRecibido : null;
+    const cambio = metodoPago === 'efectivo'
+      ? Math.max(efectivoRecibido - total, 0)
       : 0;
 
     return {
@@ -196,9 +201,9 @@ export const CartProvider = ({ children }) => {
       iva,
       total,
       metodoPago,
-      efectivoRecibido: metodoPago === 'efectivo' ? efectivoRecibido : null,
-      cambio: cambio > 0 ? cambio : 0,
-      status: 'completada',
+      montoPagado,
+      cambio,
+      estado: 'completada',
       createdAt: new Date()
     };
   };
