@@ -1,7 +1,33 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // Avatares legacy — mantener por compatibilidad con docs viejos
     match /avatars/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Fotos y documentos de empleados (path canónico SCHEMA.md)
+    match /empleados/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Imágenes de productos compartidas entre web y macOS
+    match /productos/{codigo}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Logos y fotos de tiendas
+    match /tiendas/{tiendaId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Banners promocionales
+    match /banners/{fileName} {
       allow read: if true;
       allow write: if request.auth != null;
     }
