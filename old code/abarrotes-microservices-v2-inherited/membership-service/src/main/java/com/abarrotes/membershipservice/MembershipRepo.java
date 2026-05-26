@@ -1,1 +1,0 @@
-package com.abarrotes.membershipservice; import org.springframework.data.jpa.repository.JpaRepository; import java.util.Optional; public interface MembershipRepo extends JpaRepository<Membership,Long>{ Optional<Membership> findFirstByUserIdAndStatus(Long userId, Membership.Status status);}

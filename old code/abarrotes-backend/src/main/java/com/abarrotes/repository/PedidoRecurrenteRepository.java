@@ -1,1 +1,0 @@
-package com.abarrotes.repository; import com.abarrotes.domain.PedidoRecurrente; import org.springframework.data.jpa.repository.JpaRepository; public interface PedidoRecurrenteRepository extends JpaRepository<PedidoRecurrente, Long>{}

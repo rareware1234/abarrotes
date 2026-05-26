@@ -1,1 +1,0 @@
-package com.abarrotes.productservice; import org.springframework.data.jpa.repository.JpaRepository; import java.util.List; public interface PromotionRepo extends JpaRepository<Promotion,Long>{ List<Promotion> findByProduct_Id(Long id);}
