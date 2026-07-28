@@ -160,7 +160,7 @@ export function BrightnessSlider({ value, onChange }) {
         type="range" min="-30" max="30"
         value={pct}
         onChange={e => onChange(parseInt(e.target.value) / 100)}
-        style={{ width: '100%', accentColor: '#1A7A48' }}
+        style={{ width: '100%', accentColor: 'var(--role-primary)' }}
       />
     </div>
   );
@@ -354,7 +354,7 @@ function EmpresaFormModal({ empresa, onClose, onSaved, onDeleted, onOpenDiseno }
               disabled={!isValid || saving}
               style={{
                 height: 46, borderRadius: 12, border: 'none',
-                background: isValid && !saving ? '#1A7A48' : 'rgba(255,255,255,0.08)',
+                background: isValid && !saving ? 'var(--role-primary)' : 'rgba(255,255,255,0.08)',
                 color: 'white', fontWeight: 700, fontSize: 15,
                 cursor: isValid && !saving ? 'pointer' : 'not-allowed',
               }}

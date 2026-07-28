@@ -50,7 +50,7 @@ function getTipoFromTime(inicio, descanso) {
 }
 
 function shiftColor(inicio, descanso) {
-  if (descanso) return { bg:'#F3F4F6', text:'#6B7C93', border:'#E4E6EA' };
+  if (descanso) return { bg:'#F3F4F6', text:'var(--text-muted)', border:'#E4E6EA' };
   if (!inicio)  return { bg:'#EFF6FF', text:'#1D4ED8', border:'#BFDBFE' };
   const h = parseInt(inicio);
   if (h < 12)  return { bg:'#EFF6FF', text:'#1D4ED8', border:'#BFDBFE' };
@@ -166,10 +166,10 @@ function ShiftModal({ turno, empleado, fecha, onClose, onSave, onDelete, canEdit
 
         <div className="horarios-modal-header">
           <div>
-            <div style={{ fontSize:15, fontWeight:700, color:'#1C1E21' }}>
+            <div style={{ fontSize:15, fontWeight:700, color:'var(--text-dark)' }}>
               {isNew ? 'Asignar turno' : 'Editar turno'}
             </div>
-            <div style={{ fontSize:12, color:'#6B7C93', marginTop:3 }}>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>
               {empleado.nombre} · {fecha}
             </div>
           </div>
@@ -188,7 +188,7 @@ function ShiftModal({ turno, empleado, fecha, onClose, onSave, onDelete, canEdit
           <label className="horarios-checkbox-row">
             <input type="checkbox" checked={descanso}
               onChange={e => setDescanso(e.target.checked)} disabled={!canEdit} />
-            <span style={{ fontSize:14, fontWeight:500, color:'#1C1E21' }}>
+            <span style={{ fontSize:14, fontWeight:500, color:'var(--text-dark)' }}>
               Día de descanso
             </span>
           </label>
@@ -227,7 +227,7 @@ function ShiftModal({ turno, empleado, fecha, onClose, onSave, onDelete, canEdit
               </div>
 
               <div className="horarios-duration-pill">
-                <span style={{ fontSize:13, color:'#6B7C93' }}>Duración total</span>
+                <span style={{ fontSize:13, color:'var(--text-muted)' }}>Duración total</span>
                 <span style={{ fontSize:16, fontWeight:800, color:'var(--role-primary)' }}>
                   {horas}h
                 </span>
@@ -489,7 +489,7 @@ export default function Turnos() {
           <div key={s.label} style={{ background:'white', border:'1px solid var(--border, #e5e7eb)', borderRadius:10, padding:'8px 14px', display:'flex', alignItems:'center', gap:8, minWidth:90 }}>
             <i className={`bi ${s.icon}`} style={{ color: s.color, fontSize:14 }} />
             <div>
-              <div style={{ fontSize:16, fontWeight:800, color:'#1C1E21', lineHeight:1 }}>{s.value}</div>
+              <div style={{ fontSize:16, fontWeight:800, color:'var(--text-dark)', lineHeight:1 }}>{s.value}</div>
               <div style={{ fontSize:9, color:'#9CA3AF', fontWeight:600, textTransform:'uppercase', letterSpacing:0.5, marginTop:2 }}>{s.label}</div>
             </div>
           </div>
@@ -497,7 +497,7 @@ export default function Turnos() {
         {canEdit && stats.nomina?.length > 0 && (
           <button
             onClick={() => setShowNomina(v => !v)}
-            style={{ background: showNomina ? 'var(--role-primary)' : 'white', border:`1px solid ${showNomina ? 'var(--role-primary)' : 'var(--border, #e5e7eb)'}`, borderRadius:10, padding:'8px 14px', display:'flex', alignItems:'center', gap:6, cursor:'pointer', color: showNomina ? 'white' : '#1C1E21', fontWeight:600, fontSize:12, whiteSpace:'nowrap' }}
+            style={{ background: showNomina ? 'var(--role-primary)' : 'white', border:`1px solid ${showNomina ? 'var(--role-primary)' : 'var(--border, #e5e7eb)'}`, borderRadius:10, padding:'8px 14px', display:'flex', alignItems:'center', gap:6, cursor:'pointer', color: showNomina ? 'white' : 'var(--text-dark)', fontWeight:600, fontSize:12, whiteSpace:'nowrap' }}
           >
             <i className="bi bi-currency-dollar" style={{ fontSize:14 }} />
             Nómina
@@ -546,7 +546,7 @@ export default function Turnos() {
         return (
           <div style={{ marginBottom:8, background:'white', border:'1px solid var(--border, #e5e7eb)', borderRadius:10, padding:'10px 14px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:12 }}>
-              <span style={{ fontWeight:600, color:'#1C1E21' }}>Planificación {pct}%</span>
+              <span style={{ fontWeight:600, color:'var(--text-dark)' }}>Planificación {pct}%</span>
               <span style={{ color: complete ? 'var(--role-primary)' : '#F0A500', fontWeight:600 }}>
                 {complete ? 'Semana completa ✓' : `${stats.turnosAsignados} de ${totalPosible} turnos`}
               </span>
@@ -606,13 +606,13 @@ export default function Turnos() {
                       <div style={{
                         fontSize:11, fontWeight:600, textTransform:'uppercase',
                         letterSpacing:0.5,
-                        color: isToday ? 'var(--role-primary)' : '#6B7C93'
+                        color: isToday ? 'var(--role-primary)' : 'var(--text-muted)'
                       }}>
                         {DAYS_ES[day.getDay()]}
                       </div>
                       <div style={{
                         fontSize:20, fontWeight:700, lineHeight:1.2,
-                        color: isToday ? 'var(--role-primary)' : '#1C1E21'
+                        color: isToday ? 'var(--role-primary)' : 'var(--text-dark)'
                       }}>
                         {day.getDate()}
                       </div>
@@ -627,7 +627,7 @@ export default function Turnos() {
               {empleados.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{
-                    textAlign:'center', padding:48, color:'#6B7C93', fontSize:14
+                    textAlign:'center', padding:48, color:'var(--text-muted)', fontSize:14
                   }}>
                     No hay empleados activos
                   </td>
@@ -642,7 +642,7 @@ export default function Turnos() {
                         <Avatar emp={emp} size={30} />
                         <div style={{ minWidth:0 }}>
                           <div style={{
-                            fontSize:13, fontWeight:600, color:'#1C1E21',
+                            fontSize:13, fontWeight:600, color:'var(--text-dark)',
                             whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'
                           }}>
                             {emp.nombre}
@@ -725,7 +725,7 @@ export default function Turnos() {
           <div className="horarios-modal" style={{ maxWidth:340 }} onClick={e => e.stopPropagation()}>
             <div style={{ padding:'20px 20px 0' }}>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:8 }}>Limpiar semana</div>
-              <p style={{ fontSize:13, color:'#6B7C93', margin:0 }}>
+              <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
                 Esto eliminará todos los turnos de la semana del {weekLabel}. ¿Continuar?
               </p>
             </div>
@@ -746,7 +746,7 @@ export default function Turnos() {
           <div className="horarios-modal" style={{ maxWidth:360 }} onClick={e => e.stopPropagation()}>
             <div style={{ padding:'20px 20px 0' }}>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:8 }}>Aplicar plantilla estándar</div>
-              <p style={{ fontSize:13, color:'#6B7C93', margin:0 }}>
+              <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
                 Se asignarán turnos donde no haya ninguno: Lun–Vie completo, Sáb medio, Dom descanso. Los turnos existentes no se modificarán.
               </p>
             </div>
@@ -767,7 +767,7 @@ export default function Turnos() {
         <div style={{ marginTop:16, background:'white', border:'1px solid var(--border, #e5e7eb)', borderRadius:14, overflow:'hidden' }}>
           <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border, #e5e7eb)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
-              <span style={{ fontSize:14, fontWeight:700, color:'#1C1E21' }}>Nómina Semanal</span>
+              <span style={{ fontSize:14, fontWeight:700, color:'var(--text-dark)' }}>Nómina Semanal</span>
               <span style={{ fontSize:12, color:'#9CA3AF', marginLeft:8 }}>{weekLabel}</span>
             </div>
             <div style={{ fontSize:15, fontWeight:800, color:'var(--role-primary)' }}>
@@ -791,13 +791,13 @@ export default function Turnos() {
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <Avatar emp={n.emp} size={26} />
                       <div>
-                        <div style={{ fontSize:13, fontWeight:600, color:'#1C1E21' }}>{n.emp.nombre}</div>
+                        <div style={{ fontSize:13, fontWeight:600, color:'var(--text-dark)' }}>{n.emp.nombre}</div>
                         <div style={{ fontSize:10, color:'#9CA3AF', textTransform:'capitalize' }}>{(n.emp.rol||'').toLowerCase()}</div>
                       </div>
                     </div>
                   </td>
                   <td style={{ padding:'10px 8px', textAlign:'center' }}>
-                    <span style={{ fontSize:14, fontWeight:700, color: n.horas > 48 ? '#EF4444' : n.horas > 40 ? '#F97316' : '#1C1E21' }}>{n.horas}h</span>
+                    <span style={{ fontSize:14, fontWeight:700, color: n.horas > 48 ? '#EF4444' : n.horas > 40 ? '#F97316' : 'var(--text-dark)' }}>{n.horas}h</span>
                   </td>
                   <td style={{ padding:'10px 8px', textAlign:'center' }}>
                     <span style={{ fontSize:13, color:'#6B7280' }}>{Math.min(n.horas, 40)}h</span>

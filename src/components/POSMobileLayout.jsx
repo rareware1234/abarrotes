@@ -135,7 +135,7 @@ const POSMobileLayout = ({
           e.currentTarget.style.borderColor = '#e2e8f0';
           e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
         }}>
-          <div style={{ padding: '0 10px', color: '#6b7c93', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ padding: '0 10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <FaBarcode size={17} />
           </div>
 
@@ -173,7 +173,7 @@ const POSMobileLayout = ({
               border: 'none',
               borderLeft: '1px solid #e2e8f0',
               background: 'transparent',
-              color: '#6b7c93',
+              color: 'var(--text-muted)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -272,7 +272,7 @@ const POSMobileLayout = ({
               padding: '44px 16px', gap: 8, color: '#9ca3af'
             }}>
               <FaShoppingCart size={44} style={{ opacity: 0.25 }} />
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#6b7c93' }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-muted)' }}>
                 El carrito está vacío
               </p>
               <span style={{ fontSize: 13 }}>Escanea un producto para comenzar</span>
@@ -433,7 +433,7 @@ const POSMobileLayout = ({
 
           {employeeName && (
             <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 12, color: '#9ca3af' }}>
-              Empleado: <strong style={{ color: '#6b7c93' }}>{employeeName}</strong>
+              Empleado: <strong style={{ color: 'var(--text-muted)' }}>{employeeName}</strong>
             </p>
           )}
         </div>

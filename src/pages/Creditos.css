@@ -91,7 +91,7 @@
   gap: 6px;
 }
 
-.credito-kpi-sub.positive { color: #1A7A48; }
+.credito-kpi-sub.positive { color: var(--role-primary); }
 .credito-kpi-sub.negative { color: #EF4444; }
 
 /* Grid sections */

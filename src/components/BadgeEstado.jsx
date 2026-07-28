@@ -7,7 +7,7 @@ const BadgeEstado = ({ estado }) => {
       case 'completado':
       case 'activo':
       case 'activa':
-        return { bg: '#1A7A48', text: 'white', label: estado };
+        return { bg: 'var(--role-primary)', text: 'white', label: estado };
       case 'pendiente':
       case 'en_progreso':
       case 'en progreso':

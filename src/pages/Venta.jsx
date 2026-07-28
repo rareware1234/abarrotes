@@ -67,7 +67,7 @@ const CajaModal = ({ caja, onClose, onCerrarCaja }) => {
               {caja.empleadoNombre || 'Cajero'} · Abierta hace {getTimeOpen()}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7C93', padding: '4px', minHeight: 'auto', minWidth: 'auto' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', minHeight: 'auto', minWidth: 'auto' }}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -75,7 +75,7 @@ const CajaModal = ({ caja, onClose, onCerrarCaja }) => {
         <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px' }}>
 
           <div style={{ background: 'var(--role-tinted-bg, #F0FDF4)', padding: '20px', borderRadius: '14px', marginBottom: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#6B7C93', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Monto esperado en caja</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Monto esperado en caja</div>
             <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--role-primary)' }}>
               {formatCurrency(montoEsperado)}
             </div>
@@ -223,7 +223,7 @@ const BloqueoCaja = ({ onAbrirCaja }) => {
         Abre la caja para comenzar a vender
       </h2>
       
-      <p style={{ fontSize: '15px', color: '#6B7C93', margin: '0 0 32px 0', textAlign: 'center', maxWidth: '320px' }}>
+      <p style={{ fontSize: '15px', color: 'var(--text-muted)', margin: '0 0 32px 0', textAlign: 'center', maxWidth: '320px' }}>
         Necesitas abrir caja antes de procesar ventas. Esto asocia cada venta a tu turno.
       </p>
       
@@ -292,7 +292,7 @@ const AbrirCajaModal = ({ onClose, onAperturaExitosa }) => {
         <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Abrir Caja</h3>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6B7C93' }}>×</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
           </div>
         </div>
         
@@ -402,13 +402,13 @@ const CerrarCajaModal = ({ caja, onClose, onCerrarExitoso }) => {
         <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Cerrar Caja</h3>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6B7C93' }}>×</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
           </div>
         </div>
         
         <div style={{ padding: '20px' }}>
           <div style={{ background: 'var(--role-light, #F0FDF4)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: '#6B7C93', marginBottom: '4px' }}>Monto esperado</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Monto esperado</div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--role-primary)' }}>
               {formatCurrency(montoEsperado)}
             </div>
@@ -675,7 +675,7 @@ const Venta = () => {
   if (verificandoCaja) {
     return (
       <div className="venta-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: '#6B7C93' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
           <div className="spinner-border" role="status"></div>
           <p style={{ marginTop: '12px' }}>Verificando caja...</p>
         </div>
@@ -695,7 +695,7 @@ const Venta = () => {
     if (c) {
       const [r, g, b] = [to255(c[0]), to255(c[1]), to255(c[2])];
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      return { bg: `linear-gradient(135deg, rgba(${r},${g},${b},0.92), rgba(${r},${g},${b},0.7))`, text: lum > 186 ? '#1C1E21' : '#fff' };
+      return { bg: `linear-gradient(135deg, rgba(${r},${g},${b},0.92), rgba(${r},${g},${b},0.7))`, text: lum > 186 ? 'var(--text-dark)' : '#fff' };
     }
     return { bg: 'linear-gradient(135deg, var(--role-primary), var(--role-dark))', text: '#fff' };
   };

@@ -88,7 +88,7 @@ const Navbar = () => {
           <div className="sidebar-user-name">{storedName}</div>
           <div className="sidebar-user-role" style={{ color: profile.color }}>{getRoleLabel(storedRole)}</div>
         </div>
-        <button className="btn btn-link p-0 border-0" style={{ color: '#6B7C93', marginLeft: 'auto' }}>
+        <button className="btn btn-link p-0 border-0" style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>
           <FiLogOut size={16} />
         </button>
       </div>

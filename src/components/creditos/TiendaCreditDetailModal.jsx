@@ -16,7 +16,7 @@ const formatFecha = (date) => {
 };
 
 const FORMATO_GRADIENTS = {
-  puntoVerde: 'linear-gradient(135deg, #0F4D2E, #1A7A48)',
+  puntoVerde: 'linear-gradient(135deg, #0F4D2E, var(--role-primary))',
   puntoVerdeGo: 'linear-gradient(135deg, #1E3A5F, #2563EB)',
   puntoVerdeXL: 'linear-gradient(135deg, #4C1D95, #7C3AED)',
 };
@@ -79,7 +79,7 @@ function PagoModal({ credito, onClose, onDone }) {
             const label = i === 2 ? 'Total' : `${[25, 50][i]}%`;
             return (
               <button key={i} type="button" onClick={() => setMonto(String(Math.round(amt)))}
-                style={{ flex:1, padding:'6px 0', borderRadius:8, border:`1.5px solid ${monto === String(Math.round(amt)) ? '#1A7A48' : 'var(--border,#e5e7eb)'}`, background: monto === String(Math.round(amt)) ? '#1A7A48' : 'white', color: monto === String(Math.round(amt)) ? 'white' : 'inherit', fontWeight:700, fontSize:11, cursor:'pointer' }}>
+                style={{ flex:1, padding:'6px 0', borderRadius:8, border:`1.5px solid ${monto === String(Math.round(amt)) ? 'var(--role-primary)' : 'var(--border,#e5e7eb)'}`, background: monto === String(Math.round(amt)) ? 'var(--role-primary)' : 'white', color: monto === String(Math.round(amt)) ? 'white' : 'inherit', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                 {label}
               </button>
             );
@@ -90,12 +90,12 @@ function PagoModal({ credito, onClose, onDone }) {
             <span>Saldo actual</span><span style={{ fontWeight:600 }}>{fmt(usado)}</span>
           </div>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
-            <span>Nuevo saldo</span><span style={{ fontWeight:700, color:'var(--role-primary,#1A7A48)' }}>{fmt(nuevo)}</span>
+            <span>Nuevo saldo</span><span style={{ fontWeight:700, color:'var(--role-primary)' }}>{fmt(nuevo)}</span>
           </div>
         </div>
         {err && <div style={{ color:'#EF4444', fontSize:12, marginBottom:10 }}>{err}</div>}
         <button onClick={handlePagar} disabled={!montoNum || montoNum > usado || loading}
-          style={{ width:'100%', padding:12, background: montoNum > 0 && montoNum <= usado ? 'var(--role-primary,#1A7A48)' : '#d1d5db', color:'white', border:'none', borderRadius:10, fontWeight:700, fontSize:15, cursor:'pointer' }}>
+          style={{ width:'100%', padding:12, background: montoNum > 0 && montoNum <= usado ? 'var(--role-primary)' : '#d1d5db', color:'white', border:'none', borderRadius:10, fontWeight:700, fontSize:15, cursor:'pointer' }}>
           {loading ? 'Procesando...' : 'Confirmar Pago'}
         </button>
       </div>
@@ -189,7 +189,7 @@ const TiendaCreditDetailModal = ({ tienda, creditos: creditosProp, onClose }) =>
           <div style={{ display:'flex', borderBottom:'1px solid var(--border)', background:'#FAFAFA' }}>
             {[{ id:'resumen', label:'Resumen' }, { id:'creditos', label:'Créditos' }, { id:'historial', label:'Historial' }].map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
-                style={{ flex:1, padding:'12px', background: activeTab === t.id ? 'white' : 'transparent', border:'none', borderBottom: activeTab === t.id ? '2px solid var(--role-primary,#1A7A48)' : '2px solid transparent', color: activeTab === t.id ? 'var(--role-primary,#1A7A48)' : 'var(--text-muted)', fontWeight:600, fontSize:13, cursor:'pointer' }}>
+                style={{ flex:1, padding:'12px', background: activeTab === t.id ? 'white' : 'transparent', border:'none', borderBottom: activeTab === t.id ? '2px solid var(--role-primary)' : '2px solid transparent', color: activeTab === t.id ? 'var(--role-primary)' : 'var(--text-muted)', fontWeight:600, fontSize:13, cursor:'pointer' }}>
                 {t.label}
               </button>
             ))}
@@ -201,7 +201,7 @@ const TiendaCreditDetailModal = ({ tienda, creditos: creditosProp, onClose }) =>
               <div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:12, marginBottom:24 }}>
                   {[
-                    { label:'Cartera', value:fmt(carteraTotal), color:'var(--role-primary,#1A7A48)' },
+                    { label:'Cartera', value:fmt(carteraTotal), color:'var(--role-primary)' },
                     { label:'En uso', value:fmt(montoUsado), color:'#F59E0B' },
                     { label:'Vencido', value:fmt(montoVencido), color:'#EF4444' },
                     { label:'Activos', value:activos.length, color:'inherit' },
@@ -246,7 +246,7 @@ const TiendaCreditDetailModal = ({ tienda, creditos: creditosProp, onClose }) =>
                 <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
                   {FILTER_CHIPS.map(chip => (
                     <button key={chip.key} onClick={() => setFiltroCreditos(chip.key)}
-                      style={{ padding:'6px 12px', border:`1.5px solid ${filtroCreditos === chip.key ? 'var(--role-primary,#1A7A48)' : 'var(--border,#e5e7eb)'}`, borderRadius:16, background: filtroCreditos === chip.key ? 'var(--role-primary,#1A7A48)' : 'white', color: filtroCreditos === chip.key ? 'white' : 'inherit', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                      style={{ padding:'6px 12px', border:`1.5px solid ${filtroCreditos === chip.key ? 'var(--role-primary)' : 'var(--border,#e5e7eb)'}`, borderRadius:16, background: filtroCreditos === chip.key ? 'var(--role-primary)' : 'white', color: filtroCreditos === chip.key ? 'white' : 'inherit', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                       {chip.label} ({chip.count})
                     </button>
                   ))}
@@ -280,11 +280,11 @@ const TiendaCreditDetailModal = ({ tienda, creditos: creditosProp, onClose }) =>
                           <div><span style={{ color:'var(--text-muted)' }}>Tasa:</span> <strong>{credito.tasaMensual != null ? `${credito.tasaMensual}%` : '—'}</strong></div>
                         </div>
                         <div style={{ height:4, background:'var(--border,#e5e7eb)', borderRadius:2, overflow:'hidden', marginBottom: credito.estado === 'activo' ? 10 : 0 }}>
-                          <div style={{ height:'100%', width:`${pct * 100}%`, background: pct > 0.75 ? '#EF4444' : pct > 0.5 ? '#F97316' : '#1A7A48', borderRadius:2 }} />
+                          <div style={{ height:'100%', width:`${pct * 100}%`, background: pct > 0.75 ? '#EF4444' : pct > 0.5 ? '#F97316' : 'var(--role-primary)', borderRadius:2 }} />
                         </div>
                         {credito.estado === 'activo' && (
                           <button onClick={() => setPagoCredito(credito)}
-                            style={{ width:'100%', padding:'8px 0', background:'var(--role-primary,#1A7A48)', color:'white', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                            style={{ width:'100%', padding:'8px 0', background:'var(--role-primary)', color:'white', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
                             <i className="bi bi-cash-coin" /> Registrar Pago
                           </button>
                         )}

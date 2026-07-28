@@ -283,7 +283,7 @@ const PaymentModal = ({ onClose, onSuccess }) => {
       borderRadius: 14, padding: '14px 20px',
       display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
     }}>
-      <span style={{ fontSize: 13, color: '#6B7C93' }}>Total a cobrar</span>
+      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Total a cobrar</span>
       <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--role-primary)' }}>
         {formatCurrency(total)}
       </span>
@@ -342,7 +342,7 @@ const PaymentModal = ({ onClose, onSuccess }) => {
           <TotalChip />
 
           {isCard ? (
-            <div style={{ padding: '24px 16px', textAlign: 'center', color: '#6B7C93' }}>
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <div style={{ width: 72, height: 72, borderRadius: '50%',
                 background: 'var(--role-tinted-bg)', margin: '0 auto 16px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -389,7 +389,7 @@ const PaymentModal = ({ onClose, onSuccess }) => {
                   alignItems: 'center', marginTop: 12, padding: '10px 14px',
                   borderRadius: 10,
                   background: cambio >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
-                  <span style={{ fontSize: 14, color: '#6B7C93' }}>Cambio</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Cambio</span>
                   <span style={{ fontSize: 20, fontWeight: 700,
                     color: cambio >= 0 ? 'var(--role-primary)' : '#EF4444' }}>
                     {formatCurrency(Math.max(cambio, 0))}
@@ -487,13 +487,13 @@ const PaymentModal = ({ onClose, onSuccess }) => {
 
           {/* Instrucción + timer */}
           <div style={{ padding: '0 20px', textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: '#6B7C93', margin: '0 0 8px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: '0 0 8px', lineHeight: 1.5 }}>
               {instructions}
             </p>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '5px 14px', borderRadius: 20, background: '#F4F5F7',
-              fontSize: 13, color: '#6B7C93', fontFamily: 'monospace',
+              fontSize: 13, color: 'var(--text-muted)', fontFamily: 'monospace',
             }}>
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -512,7 +512,7 @@ const PaymentModal = ({ onClose, onSuccess }) => {
           {/* Acciones */}
           <div style={{ padding: '16px', display: 'flex', gap: 8, flexShrink: 0 }}>
             <button onClick={() => setScreen('select')} style={{
-              flex: 1, height: 50, background: '#F4F5F7', color: '#6B7C93',
+              flex: 1, height: 50, background: '#F4F5F7', color: 'var(--text-muted)',
               border: 'none', borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}>Cancelar</button>
             <button onClick={() => confirmarPago(metodoPago, total)} style={{
@@ -654,7 +654,7 @@ const PaymentModal = ({ onClose, onSuccess }) => {
             background: '#F0FDF4', borderRadius: 14, padding: '16px 24px', marginBottom: 8,
             display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
           }}>
-            <span style={{ fontSize: 14, color: '#6B7C93' }}>Cambio al cliente</span>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Cambio al cliente</span>
             <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--role-primary)' }}>
               {formatCurrency(cambioFinal)}
             </span>

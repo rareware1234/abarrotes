@@ -15,7 +15,7 @@ const PantallaCliente = () => {
   // Color de marca por formato/empresa de la caja activa (llega en el payload
   // de `cliente_pantalla`); default = verde Punto Verde. (biblia §7.7)
   const [brandColor, setBrandColor] = useState('#0F4D2E');
-  const [brandLight, setBrandLight] = useState('#1A7A48');
+  const [brandLight, setBrandLight] = useState('var(--role-primary)');
   // Banners rotativos (colección `banners`); fallback a imagen estática.
   const [banners, setBanners] = useState(['/banner.png']);
   const [bannerIdx, setBannerIdx] = useState(0);

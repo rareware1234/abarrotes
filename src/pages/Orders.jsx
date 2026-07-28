@@ -94,7 +94,7 @@ const OrderDetailModal = ({ orden, onClose }) => {
           {orden.metodoPago === 'efectivo' && (orden.montoPagado ?? orden.efectivoRecibido) && (
             <div style={{ marginTop: 12, padding: 12, background: '#F4F5F7', borderRadius: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Recibido</span><span>{formatCurrency(orden.montoPagado ?? orden.efectivoRecibido)}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}><span>Cambio</span><span style={{ color: '#1A7A48' }}>{formatCurrency(orden.cambio)}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}><span>Cambio</span><span style={{ color: 'var(--role-primary)' }}>{formatCurrency(orden.cambio)}</span></div>
             </div>
           )}
         </div>
@@ -232,7 +232,7 @@ const Orders = () => {
                     onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
                     onMouseLeave={e => e.currentTarget.style.transform = ''}>
                     <div style={{ width: 46, height: 46, borderRadius: 23, background: 'var(--role-tinted-bg, rgba(26,122,72,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <i className={`bi ${iconMetodo}`} style={{ color: 'var(--role-primary, #1A7A48)', fontSize: 18 }} />
+                      <i className={`bi ${iconMetodo}`} style={{ color: 'var(--role-primary)', fontSize: 18 }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -246,7 +246,7 @@ const Orders = () => {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: 17, color: esPendiente ? '#F97316' : 'var(--role-primary, #1A7A48)' }}>{formatCurrency(orden.total)}</div>
+                      <div style={{ fontWeight: 800, fontSize: 17, color: esPendiente ? '#F97316' : 'var(--role-primary)' }}>{formatCurrency(orden.total)}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{orden.metodoPago || '—'}</div>
                     </div>
                     <i className="bi bi-chevron-right" style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }} />

@@ -606,7 +606,7 @@ const Promociones = () => {
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', color: '#6B7C93', display: 'block', marginBottom: '4px' }}>Fecha inicio</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Fecha inicio</label>
                   <input
                     type="date" value={formData.fechaInicio}
                     onChange={e => setFormData({ ...formData, fechaInicio: e.target.value })}
@@ -614,7 +614,7 @@ const Promociones = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', color: '#6B7C93', display: 'block', marginBottom: '4px' }}>Fecha fin</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Fecha fin</label>
                   <input
                     type="date" value={formData.fechaFin}
                     onChange={e => setFormData({ ...formData, fechaFin: e.target.value })}
@@ -624,7 +624,7 @@ const Promociones = () => {
               </div>
               {productos.length > 0 && (
                 <div>
-                  <label style={{ fontSize: '12px', color: '#6B7C93', display: 'block', marginBottom: '6px' }}>Categorías</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Categorías</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {[...new Set(productos.map(p => p.categoria).filter(Boolean))].sort().map(cat => (
                       <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '13px' }}>

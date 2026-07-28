@@ -5,7 +5,7 @@ import logoBlanco from '../assets/logo-blanco.png';
 import './Creditos.css';
 
 const ESTADO_GRADIENTS = {
-  activo:     'linear-gradient(135deg, #1A7A48 0%, #0A4A2A 100%)',
+  activo:     'linear-gradient(135deg, var(--role-primary) 0%, #0A4A2A 100%)',
   vencido:    'linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)',
   pagado:     'linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%)',
   suspendido: 'linear-gradient(135deg, #EA580C 0%, #7C2D12 100%)',
@@ -32,10 +32,10 @@ const porcentaje = (c) => {
   return Math.min(1, (c.montoUsado || 0) / aprobado);
 };
 
-const progColor = (pct) => pct > 0.75 ? '#EF4444' : pct > 0.5 ? '#F97316' : '#1A7A48';
+const progColor = (pct) => pct > 0.75 ? '#EF4444' : pct > 0.5 ? '#F97316' : 'var(--role-primary)';
 
 const ESTADO_CFG = {
-  activo:     { label: 'Activo',     color: '#1A7A48', bg: '#D1FAE5', icon: 'bi-check-circle-fill' },
+  activo:     { label: 'Activo',     color: 'var(--role-primary)', bg: '#D1FAE5', icon: 'bi-check-circle-fill' },
   vencido:    { label: 'Vencido',    color: '#EF4444', bg: '#FEE2E2', icon: 'bi-exclamation-circle-fill' },
   pagado:     { label: 'Pagado',     color: '#2563EB', bg: '#DBEAFE', icon: 'bi-credit-card-fill' },
   suspendido: { label: 'Suspendido', color: '#F97316', bg: '#FFF7ED', icon: 'bi-pause-circle-fill' },
@@ -57,7 +57,7 @@ const riesgoInfo = (c) => {
   const dias = diasRestantes(c.fechaVencimiento);
   if (pct > 0.75 || (dias !== null && dias < 7))  return { label: 'Alto',  color: '#EF4444', bg: '#FEE2E2', icon: 'bi-exclamation-triangle-fill', desc: 'Requiere atención urgente' };
   if (pct > 0.5  || (dias !== null && dias < 14)) return { label: 'Medio', color: '#F97316', bg: '#FFF7ED', icon: 'bi-exclamation-circle-fill',  desc: 'Requiere atención pronto' };
-  return { label: 'Bajo', color: '#1A7A48', bg: '#D1FAE5', icon: 'bi-check-circle-fill', desc: 'El crédito está en buen estado' };
+  return { label: 'Bajo', color: 'var(--role-primary)', bg: '#D1FAE5', icon: 'bi-check-circle-fill', desc: 'El crédito está en buen estado' };
 };
 
 /* ── Credit detail panel ──────────────────────────────────────────────────── */
@@ -138,7 +138,7 @@ function CreditoDetalle({ credito, onClose, onPagoRegistrado, onSuspender, canEd
             </div>
             <div className="cr-metric-row">
               <div className="cr-metric"><span className="cr-lbl">Pendiente</span><span style={{ color: '#EF4444', fontWeight: 700 }}>{fmt(usado)}</span></div>
-              <div className="cr-metric"><span className="cr-lbl">Disponible</span><span style={{ color: '#1A7A48', fontWeight: 700 }}>{fmt(disponible)}</span></div>
+              <div className="cr-metric"><span className="cr-lbl">Disponible</span><span style={{ color: 'var(--role-primary)', fontWeight: 700 }}>{fmt(disponible)}</span></div>
               <div className="cr-metric"><span className="cr-lbl">Tasa mens.</span><span style={{ fontWeight: 700 }}>{credito.tasaMensual != null ? `${credito.tasaMensual * 100}%` : '—'}</span></div>
             </div>
             <div>
@@ -177,12 +177,12 @@ function CreditoDetalle({ credito, onClose, onPagoRegistrado, onSuspender, canEd
                   const esPago = t.tipo === 'pago';
                   return (
                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: idx < transacciones.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                      <i className={`bi ${esPago ? 'bi-arrow-down-circle-fill' : 'bi-arrow-up-circle-fill'}`} style={{ fontSize: 20, color: esPago ? '#1A7A48' : '#EF4444' }} />
+                      <i className={`bi ${esPago ? 'bi-arrow-down-circle-fill' : 'bi-arrow-up-circle-fill'}`} style={{ fontSize: 20, color: esPago ? 'var(--role-primary)' : '#EF4444' }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{esPago ? 'Pago registrado' : 'Compra realizada'}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(t.fecha)}</div>
                       </div>
-                      <div style={{ fontWeight: 700, color: esPago ? '#1A7A48' : '#EF4444' }}>{esPago ? '+' : '-'}{fmt(t.monto)}</div>
+                      <div style={{ fontWeight: 700, color: esPago ? 'var(--role-primary)' : '#EF4444' }}>{esPago ? '+' : '-'}{fmt(t.monto)}</div>
                     </div>
                   );
                 })}
@@ -290,7 +290,7 @@ function NuevoCreditoForm({ onCreditoCreado }) {
     }
   };
 
-  const nivelColor = (n) => n === 'Excelente' ? '#1A7A48' : n === 'Bueno' ? '#2563EB' : n === 'Regular' ? '#F97316' : '#EF4444';
+  const nivelColor = (n) => n === 'Excelente' ? 'var(--role-primary)' : n === 'Bueno' ? '#2563EB' : n === 'Regular' ? '#F97316' : '#EF4444';
 
   const ScoreGauge = ({ score, nivel }) => {
     const color = nivelColor(nivel);
@@ -406,7 +406,7 @@ function NuevoCreditoForm({ onCreditoCreado }) {
             {[2, 4, 8].map(s => (
               <button key={s} type="button"
                 onClick={() => setPlazo(s)}
-                style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: `1.5px solid ${plazo === s ? 'var(--role-primary,#1A7A48)' : 'var(--border,#e5e7eb)'}`, background: plazo === s ? 'var(--role-primary,#1A7A48)' : 'white', color: plazo === s ? 'white' : 'inherit', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: `1.5px solid ${plazo === s ? 'var(--role-primary)' : 'var(--border,#e5e7eb)'}`, background: plazo === s ? 'var(--role-primary)' : 'white', color: plazo === s ? 'white' : 'inherit', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                 {s}sem
               </button>
             ))}
@@ -421,7 +421,7 @@ function NuevoCreditoForm({ onCreditoCreado }) {
       {error && <div style={{ color: '#EF4444', fontSize: 13 }}>{error}</div>}
 
       <button type="submit" className="cr-submit-btn" disabled={loading || success || !clienteNombre.trim() || !monto}
-        style={{ background: success ? '#1A7A48' : 'var(--role-primary)' }}>
+        style={{ background: success ? 'var(--role-primary)' : 'var(--role-primary)' }}>
         {success ? <><i className="bi bi-check-circle-fill" /> Crédito aprobado</>
           : loading ? <><span className="spinner-border spinner-border-sm me-2" />Procesando...</>
           : <><i className="bi bi-check2-circle" /> Aprobar Crédito</>}

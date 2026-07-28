@@ -70,6 +70,7 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 18px;                     /* RADIUS.card */
   overflow: hidden;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.18); /* cardShadow() macOS — DISEÑO §9.3 (blur suave ~14) */
 }
 .app-card--pad { padding: 20px; }          /* sectionCard padding 20 */
 
@@ -83,6 +84,11 @@
 .app-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 11px 16px; min-height: 44px;
+}
+.app-row:focus-visible {
+  outline: 2px solid var(--role-accent, #4ADE80);
+  outline-offset: -2px;
+  border-radius: 8px;
 }
 .app-row-label { font-size: 13.5px; font-weight: 500; color: #fff; }
 .app-row-detail { display: flex; align-items: center; gap: 4px; font-size: 13px; color: rgba(255,255,255,0.6); }
@@ -98,6 +104,10 @@
   background: rgba(255,255,255,0.2); position: relative; cursor: pointer;
   transition: background 0.2s; flex-shrink: 0;
 }
+.app-toggle:focus-visible {
+  outline: 2px solid var(--role-accent, #4ADE80);
+  outline-offset: 2px;
+}
 .app-toggle.on { background: var(--role-primary, #1A7A48); }
 .app-toggle-thumb {
   position: absolute; width: 20px; height: 20px; border-radius: 50%;
@@ -111,8 +121,18 @@
   height: 44px; padding: 0 22px; border-radius: 12px; border: none;
   font-weight: 700; font-size: 14px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
 }
 .app-btn--primary { background: var(--role-primary, #1A7A48); color: #fff; }
+.app-btn--primary:hover { background: var(--role-hover, #166040); }
 .app-btn--ghost { background: transparent; border: 1.5px solid rgba(255,255,255,0.15); color: #fff; }
+.app-btn--ghost:hover { background: rgba(255,255,255,0.08); }
+.app-btn--danger { background: var(--danger, #E63946); color: #fff; }
+.app-btn--danger:hover { background: #cf303d; }
 .app-btn--link { background: none; border: none; color: var(--role-accent, #60D4A0); font-weight: 600; height: auto; padding: 0; }
+.app-btn:active:not(:disabled) { transform: scale(0.97); }
+.app-btn:focus-visible {
+  outline: 2px solid var(--role-accent, #4ADE80);
+  outline-offset: 2px;
+}
 .app-btn:disabled { opacity: 0.5; cursor: not-allowed; }

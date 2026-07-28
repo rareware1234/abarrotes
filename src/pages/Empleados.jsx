@@ -22,29 +22,29 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 const COLORS = {
-  primary: '#1A7A48',
+  primary: 'var(--role-primary)',
   primaryDark: '#0F4D2E',
   success: '#4ADE80',
   warning: '#F0A500',
   danger: '#E63946',
   purple: '#8B5CF6',
   blue: '#2563EB',
-  textDark: '#1C1E21',
-  textMuted: '#6B7C93',
+  textDark: 'var(--text-dark)',
+  textMuted: 'var(--text-muted)',
   border: '#E4E6EA',
   background: '#F4F5F7',
   surface: '#FFFFFF',
 };
 
 const ROL_COLORS = {
-  STAFF: '#1A7A48',
+  STAFF: 'var(--role-primary)',
   MANAGER: '#2563EB',
   ADMIN: '#64748B',
 };
 
 const FORMATO_COLORS = {
-  'Punto Verde':    ['#1A7A48', '#0F4D2E'],
-  'PuntoVerde':     ['#1A7A48', '#0F4D2E'],
+  'Punto Verde':    ['var(--role-primary)', '#0F4D2E'],
+  'PuntoVerde':     ['var(--role-primary)', '#0F4D2E'],
   'Punto Verde GO': ['#F0A500', '#C67F00'],
   'PuntoVerde GO':  ['#F0A500', '#C67F00'],
   'Punto Verde XL': ['#1A1A1A', '#000000'],
@@ -135,7 +135,7 @@ const getHeaderGradient = (empleado, tienda) => {
     if (key) return FORMATO_COLORS[key];
   }
   const map = {
-    STAFF: ['#1A7A48', '#0F4D2E'],
+    STAFF: ['var(--role-primary)', '#0F4D2E'],
     MANAGER: ['#2563EB', '#1E3A5F'],
     ADMIN: ['#64748B', '#1E293B'],
   };
@@ -143,7 +143,7 @@ const getHeaderGradient = (empleado, tienda) => {
 };
 
 const EmptyState = () => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7C93' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
     <i className="bi bi-person-circle" style={{ fontSize: 64, marginBottom: 16 }}></i>
     <p>Selecciona un empleado</p>
   </div>
@@ -427,7 +427,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
             >
               <i className="bi bi-telephone-fill" style={{ color: themePrimary, fontSize: 20 }}></i>
             </div>
-            <span style={{ fontSize: 11, color: '#6B7C93' }}>Llamar</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Llamar</span>
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -445,7 +445,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
           >
             <i className="bi bi-envelope-fill" style={{ color: themePrimary, fontSize: 20 }}></i>
           </div>
-          <span style={{ fontSize: 11, color: '#6B7C93' }}>Email</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Email</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
           <div
@@ -462,7 +462,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
           >
             <i className="bi bi-file-text-fill" style={{ color: themePrimary, fontSize: 20 }}></i>
           </div>
-          <span style={{ fontSize: 11, color: '#6B7C93' }}>Documentos</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Documentos</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={() => onNuevaTarea(empleado)}>
           <div
@@ -479,7 +479,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
           >
             <i className="bi bi-check2-square" style={{ color: themePrimary, fontSize: 20 }}></i>
           </div>
-          <span style={{ fontSize: 11, color: '#6B7C93' }}>Tarea</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tarea</span>
         </div>
       </div>
 
@@ -492,35 +492,35 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
               boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 'bold', color: '#1C1E21', marginBottom: 10 }}>Desempeño en ventas</div>
+            <div style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-dark)', marginBottom: 10 }}>Desempeño en ventas</div>
             <div className="emp-stats-grid">
               <div style={{ backgroundColor: '#F4F5F7', borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: themePrimary + '20', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="bi bi-cart-fill" style={{ color: themePrimary, fontSize: 14 }}></i>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 'bold', color: '#1C1E21' }}>{loading ? '…' : m.ordenes}</div>
-                <div style={{ fontSize: 10, color: '#6B7C93' }}>Total ventas</div>
+                <div style={{ fontSize: 15, fontWeight: 'bold', color: 'var(--text-dark)' }}>{loading ? '…' : m.ordenes}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Total ventas</div>
               </div>
               <div style={{ backgroundColor: '#F4F5F7', borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#3B82F620', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="bi bi-calendar2-event" style={{ color: '#3B82F6', fontSize: 14 }}></i>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 'bold', color: '#1C1E21' }}>{m.ventasMesCount}</div>
-                <div style={{ fontSize: 10, color: '#6B7C93' }}>Ventas mes</div>
+                <div style={{ fontSize: 15, fontWeight: 'bold', color: 'var(--text-dark)' }}>{m.ventasMesCount}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Ventas mes</div>
               </div>
               <div style={{ backgroundColor: '#F4F5F7', borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#8B5CF620', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="bi bi-credit-card" style={{ color: '#8B5CF6', fontSize: 14 }}></i>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 'bold', color: '#1C1E21' }}>{m.creditosAprobados}</div>
-                <div style={{ fontSize: 10, color: '#6B7C93' }}>Créditos · ${m.creditosMonto.toLocaleString()}</div>
+                <div style={{ fontSize: 15, fontWeight: 'bold', color: 'var(--text-dark)' }}>{m.creditosAprobados}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Créditos · ${m.creditosMonto.toLocaleString()}</div>
               </div>
               <div style={{ backgroundColor: '#F4F5F7', borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#F0A50020', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="bi bi-tag-fill" style={{ color: '#F0A500', fontSize: 14 }}></i>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 'bold', color: '#1C1E21' }}>${ticketPromedio.toLocaleString()}</div>
-                <div style={{ fontSize: 10, color: '#6B7C93' }}>Ticket prom.</div>
+                <div style={{ fontSize: 15, fontWeight: 'bold', color: 'var(--text-dark)' }}>${ticketPromedio.toLocaleString()}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Ticket prom.</div>
               </div>
             </div>
           </div>
@@ -534,7 +534,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 12, fontWeight: 'bold', color: '#1C1E21' }}>Ventas esta semana</span>
+              <span style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-dark)' }}>Ventas esta semana</span>
               <span
                 style={{
                   padding: '3px 8px',
@@ -551,8 +551,8 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
             </div>
             <div style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 10, color: '#6B7C93' }}>Sem. pasada</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#6B7C93' }}>${m.montoPasado.toLocaleString()}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Sem. pasada</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>${m.montoPasado.toLocaleString()}</span>
               </div>
               <div style={{ height: 14, borderRadius: 4, backgroundColor: 'rgba(107,124,147,0.12)', overflow: 'hidden' }}>
                 <div
@@ -566,7 +566,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
             </div>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 10, color: '#6B7C93' }}>Esta semana</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Esta semana</span>
                 <span style={{ fontSize: 11, fontWeight: 'bold', color: themePrimary }}>${m.montoActual.toLocaleString()}</span>
               </div>
               <div style={{ height: 14, borderRadius: 4, backgroundColor: themePrimary + '20', overflow: 'hidden' }}>
@@ -583,12 +583,12 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
               {m.montoPasado > m.montoActual ? (
                 <>
                   <i className="bi bi-arrow-right" style={{ color: '#F0A500' }}></i>
-                  <span style={{ color: '#6B7C93' }}>Faltan ${(m.montoPasado - m.montoActual).toLocaleString()} para igualar la semana pasada</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Faltan ${(m.montoPasado - m.montoActual).toLocaleString()} para igualar la semana pasada</span>
                 </>
               ) : m.montoActual > 0 ? (
                 <>
                   <i className="bi bi-check-circle-fill" style={{ color: '#4ADE80' }}></i>
-                  <span style={{ color: '#6B7C93' }}>Superaste la semana pasada</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Superaste la semana pasada</span>
                 </>
               ) : null}
             </div>
@@ -596,7 +596,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
 
           {/* ── Weekly attendance visualization ── */}
           <div style={{ background: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: 12, fontWeight: 'bold', color: '#1C1E21', marginBottom: 10 }}>Asistencia esta semana</div>
+            <div style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-dark)', marginBottom: 10 }}>Asistencia esta semana</div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               {['L','M','X','J','V','S','D'].map((dayLabel, idx) => {
                 const dayDate = new Date(getInicioSemanaActual());
@@ -666,7 +666,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
             const MONTH_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
             return (
               <div style={{ background: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
-                <div style={{ fontSize: 12, fontWeight: 'bold', color: '#1C1E21', marginBottom: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-dark)', marginBottom: 10 }}>
                   Asistencia — {MONTH_LABELS[month]}
                 </div>
                 {/* Day-of-week header */}
@@ -720,23 +720,23 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
           <div className="emp-mini-stats">
             <div style={{ background: 'white', borderRadius: 12, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
               <i className="bi bi-hourglass-split" style={{ fontSize: 15, color: m.puntualidad >= 90 ? '#4ADE80' : m.puntualidad >= 75 ? '#F0A500' : '#E63946' }}></i>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1C1E21' }}>{m.puntualidad.toFixed(0)}%</div>
-              <div style={{ fontSize: 10, color: '#6B7C93', textAlign: 'center' }}>Puntualidad</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-dark)' }}>{m.puntualidad.toFixed(0)}%</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Puntualidad</div>
             </div>
             <div style={{ background: 'white', borderRadius: 12, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
               <i className="bi bi-person-check-fill" style={{ fontSize: 15, color: m.asistencia >= 90 ? '#4ADE80' : m.asistencia >= 75 ? '#F0A500' : '#E63946' }}></i>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1C1E21' }}>{m.asistencia.toFixed(0)}%</div>
-              <div style={{ fontSize: 10, color: '#6B7C93', textAlign: 'center' }}>Asistencia</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-dark)' }}>{m.asistencia.toFixed(0)}%</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Asistencia</div>
             </div>
             <div style={{ background: 'white', borderRadius: 12, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
               <i className="bi bi-calendar-x" style={{ fontSize: 15, color: m.faltasMes === 0 ? '#4ADE80' : m.faltasMes <= 2 ? '#F0A500' : '#E63946' }}></i>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1C1E21' }}>{m.faltasMes}</div>
-              <div style={{ fontSize: 10, color: '#6B7C93', textAlign: 'center' }}>Faltas mes</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-dark)' }}>{m.faltasMes}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Faltas mes</div>
             </div>
             <div style={{ background: 'white', borderRadius: 12, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
               <i className="bi bi-umbrella-fill" style={{ fontSize: 15, color: themePrimary }}></i>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1C1E21' }}>{m.vacacionInfo.dias > 0 ? `${m.vacacionInfo.dias}d` : '—'}</div>
-              <div style={{ fontSize: 10, color: '#6B7C93', textAlign: 'center' }}>Vacaciones</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-dark)' }}>{m.vacacionInfo.dias > 0 ? `${m.vacacionInfo.dias}d` : '—'}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>Vacaciones</div>
             </div>
           </div>
 
@@ -804,7 +804,7 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
                 <div key={ri} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', borderBottom: ri < sec.rows.length - 1 ? '1px solid #F1F3F5' : 'none' }}>
                   <i className={`bi ${row.icon}`} style={{ fontSize:14, color:'#9CA3AF', width:18, textAlign:'center', flexShrink:0 }} />
                   <div style={{ fontSize:12, color:'#9CA3AF', width:90, flexShrink:0 }}>{row.label}</div>
-                  <div style={{ fontSize:13, fontWeight:500, color:'#1C1E21', flex:1 }}>{row.value}</div>
+                  <div style={{ fontSize:13, fontWeight:500, color:'var(--text-dark)', flex:1 }}>{row.value}</div>
                 </div>
               ))}
             </div>
@@ -1156,7 +1156,7 @@ const Empleados = () => {
 
   if (!isManager) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#6B7C93' }}>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
         <i className="bi bi-lock-fill" style={{ fontSize: 48, marginBottom: 16 }}></i>
         <p>No tienes acceso a esta sección</p>
       </div>
@@ -1212,7 +1212,7 @@ const Empleados = () => {
             ].map(f => (
               <button key={f.key}
                 onClick={() => setFiltroRol(f.key)}
-                style={{ padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.3)', background: filtroRol === f.key ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.1)', color: filtroRol === f.key ? '#1C1E21' : 'rgba(255,255,255,0.85)' }}>
+                style={{ padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.3)', background: filtroRol === f.key ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.1)', color: filtroRol === f.key ? 'var(--text-dark)' : 'rgba(255,255,255,0.85)' }}>
                 {f.label}
               </button>
             ))}
@@ -1227,14 +1227,14 @@ const Empleados = () => {
             const isSelected = selectedEmpleado?.uid === yo.uid;
             return (
               <div>
-                <div style={{ padding: '3px 16px', fontSize: 11, fontWeight: 700, color: 'var(--role-primary, #1A7A48)', backgroundColor: 'rgba(0,0,0,0.02)', borderBottom: '1px solid #E4E6EA' }}>
+                <div style={{ padding: '3px 16px', fontSize: 11, fontWeight: 700, color: 'var(--role-primary)', backgroundColor: 'rgba(0,0,0,0.02)', borderBottom: '1px solid #E4E6EA' }}>
                   Yo
                 </div>
                 <div onClick={() => handleSelect(yo)}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', cursor: 'pointer', backgroundColor: isSelected ? '#F4F5F7' : 'white' }}>
                   <EmpleadoAvatar empleado={yo} size={42} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#1C1E21' }}>{yo.nombre}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-dark)' }}>{yo.nombre}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{(yo.rol || '').toLowerCase()}</div>
                   </div>
                 </div>
@@ -1244,7 +1244,7 @@ const Empleados = () => {
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}><span className="spinner-border spinner-border-lg"></span></div>
           ) : Object.keys(groupedEmpleados).length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#6B7C93' }}>No hay empleados</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No hay empleados</div>
           ) : (
             Object.keys(groupedEmpleados).sort().map(letter => (
               <div key={letter}>
@@ -1255,7 +1255,7 @@ const Empleados = () => {
                     padding: '3px 16px',
                     fontSize: 11,
                     fontWeight: 'bold',
-                    color: '#6B7C93',
+                    color: 'var(--text-muted)',
                     backgroundColor: 'white',
                     borderBottom: '1px solid #E4E6EA',
                   }}
@@ -1282,7 +1282,7 @@ const Empleados = () => {
                     >
                       <EmpleadoAvatar empleado={emp} size={32} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: isSelected ? 600 : 'normal', color: '#1C1E21', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: 14, fontWeight: isSelected ? 600 : 'normal', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 6 }}>
                           {emp.nombre}
                           {emp.activo === false && (
                             <span style={{ fontSize: 10, color: '#EF4444' }}>Inactivo</span>
@@ -1346,7 +1346,7 @@ const Empleados = () => {
         };
         const F = ({ label, required, children, half }) => (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, gridColumn: half ? 'span 1' : undefined }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: '#6B7C93', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>
               {label}{required && <span style={{ color: 'var(--role-primary)', marginLeft: 3 }}>*</span>}
             </label>
             {children}
@@ -1565,7 +1565,7 @@ const Empleados = () => {
               <input type="text" placeholder="Título *" value={tareaData.titulo} onChange={e => setTareaData({...tareaData, titulo: e.target.value})} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8 }} />
               <textarea placeholder="Notas" value={tareaData.notas} onChange={e => setTareaData({...tareaData, notas: e.target.value})} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8, minHeight: 80 }} />
               <div>
-                <label style={{ fontSize: 12, color: '#6B7C93', marginBottom: 4, display: 'block' }}>Prioridad</label>
+                <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Prioridad</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {[
                     { key: 'baja', color: '#3B82F6' },
@@ -1582,7 +1582,7 @@ const Empleados = () => {
                         border: `1px solid ${tareaData.prioridad === p ? color : 'var(--border)'}`,
                         borderRadius: 6,
                         background: tareaData.prioridad === p ? color : 'white',
-                        color: tareaData.prioridad === p ? 'white' : '#6B7C93',
+                        color: tareaData.prioridad === p ? 'white' : 'var(--text-muted)',
                         cursor: 'pointer',
                         textTransform: 'capitalize',
                         fontSize: 12,

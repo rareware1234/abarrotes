@@ -246,7 +246,7 @@ const Inventory = () => {
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
                 {selectedProduct ? `Entrada: ${selectedProduct.nombre}` : 'Registrar Entrada'}
               </h3>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#6B7C93' }}>×</button>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
             </div>
 
             {!selectedProduct && (

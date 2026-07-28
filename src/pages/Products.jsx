@@ -854,8 +854,8 @@ const Products = () => {
                 <div className="pd-stats">
                   {/* Stock */}
                   <div className="pd-stat">
-                    <div className="pd-stat-icon" style={{ background: 'var(--role-primary,#1A7A48)1A' }}>
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--role-primary,#1A7A48)" strokeWidth="2">
+                    <div className="pd-stat-icon" style={{ background: 'var(--role-tinted-bg)' }}>
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--role-primary)" strokeWidth="2">
                         <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                       </svg>
                     </div>
@@ -871,8 +871,8 @@ const Products = () => {
                     <>
                       <div className="pd-stat-divider" />
                       <div className="pd-stat">
-                        <div className="pd-stat-icon" style={{ background: 'var(--role-primary,#1A7A48)1A' }}>
-                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--role-primary,#1A7A48)" strokeWidth="2">
+                        <div className="pd-stat-icon" style={{ background: 'var(--role-tinted-bg)' }}>
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--role-primary)" strokeWidth="2">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/>
                             <polyline points="9,22 9,12 15,12 15,22"/>
                           </svg>
@@ -943,7 +943,7 @@ const Products = () => {
                 {editingProduct && <div className="pf-subtitle">{editingProduct.nombre}</div>}
               </div>
               <button className="pf-close-btn" onClick={() => setShowModal(false)}>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#6B7C93" strokeWidth="2.5">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
@@ -967,7 +967,7 @@ const Products = () => {
                   </svg>
                 }
                 titulo="Información básica"
-                color="var(--role-primary, #1A7A48)"
+                color="var(--role-primary)"
               >
                 <NuevoCampo
                   label="Nombre del producto"

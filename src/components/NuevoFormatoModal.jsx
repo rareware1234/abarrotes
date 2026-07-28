@@ -305,7 +305,7 @@ export default function NuevoFormatoModal({ onClose, onCreated, editing = null, 
             >
               <i
                 className={`bi ${mostrarNombre ? 'bi-check-square-fill' : 'bi-square'}`}
-                style={{ fontSize: 18, color: mostrarNombre ? '#1A7A48' : 'rgba(255,255,255,0.7)' }}
+                style={{ fontSize: 18, color: mostrarNombre ? 'var(--role-primary)' : 'rgba(255,255,255,0.7)' }}
               />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>Mostrar nombre en el card</span>
@@ -378,7 +378,7 @@ export default function NuevoFormatoModal({ onClose, onCreated, editing = null, 
             <button
               onClick={handleSave}
               disabled={!isValid || saving}
-              style={{ height: 46, borderRadius: 12, border: 'none', background: isValid && !saving ? '#1A7A48' : 'rgba(255,255,255,0.08)', color: 'white', fontWeight: 700, fontSize: 15, cursor: isValid && !saving ? 'pointer' : 'not-allowed', marginTop: 4 }}
+              style={{ height: 46, borderRadius: 12, border: 'none', background: isValid && !saving ? 'var(--role-primary)' : 'rgba(255,255,255,0.08)', color: 'white', fontWeight: 700, fontSize: 15, cursor: isValid && !saving ? 'pointer' : 'not-allowed', marginTop: 4 }}
             >
               {saving ? (isEditing ? 'Guardando…' : 'Creando…') : (isEditing ? 'Guardar cambios' : 'Crear formato')}
             </button>

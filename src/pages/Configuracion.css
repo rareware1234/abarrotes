@@ -196,7 +196,7 @@
   flex-shrink: 0;
 }
 
-.cfg-toggle.on { background: var(--role-primary, #1A7A48); }
+.cfg-toggle.on { background: var(--role-primary); }
 
 .cfg-toggle-thumb {
   position: absolute;

@@ -6,7 +6,7 @@ const formatCurrency = (amount) => {
 };
 
 const FORMATO_GRADIENTS = {
-  puntoVerde: 'linear-gradient(135deg, #0F4D2E, #1A7A48)',
+  puntoVerde: 'linear-gradient(135deg, #0F4D2E, var(--role-primary))',
   puntoVerdeGo: 'linear-gradient(135deg, #1E3A5F, #2563EB)',
   puntoVerdeXL: 'linear-gradient(135deg, #4C1D95, #7C3AED)'
 };

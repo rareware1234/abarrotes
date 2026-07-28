@@ -564,11 +564,11 @@ const Tareas = () => {
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                 <button onClick={handleGenerarSemana} disabled={generandoSemana}
-                  style={{ background:'rgba(26,122,72,0.1)', color:'var(--role-primary,#1A7A48)', border:'1px solid rgba(26,122,72,0.2)', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+                  style={{ background:'rgba(26,122,72,0.1)', color:'var(--role-primary)', border:'1px solid rgba(26,122,72,0.2)', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
                   {generandoSemana ? <span className="spinner-border spinner-border-sm" /> : <><i className="bi bi-calendar-week" /> Generar semana</>}
                 </button>
                 <button onClick={() => setShowNuevaPlantilla(!showNuevaPlantilla)}
-                  style={{ background:'var(--role-primary, #1A7A48)', color:'white', border:'none', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  style={{ background:'var(--role-primary)', color:'white', border:'none', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                   <i className="bi bi-plus" /> Nueva
                 </button>
                 <button onClick={() => { setShowPlantillas(false); setShowNuevaPlantilla(false); }}
@@ -602,7 +602,7 @@ const Tareas = () => {
                     </select>
                   </div>
                   <button onClick={handleGuardarPlantilla} disabled={!plantillaForm.nombre.trim() || savingPlantilla}
-                    style={{ background:'var(--role-primary, #1A7A48)', color:'white', border:'none', borderRadius:8, padding:'9px 0', fontSize:13, fontWeight:700, cursor:'pointer', opacity: !plantillaForm.nombre.trim() ? 0.5 : 1 }}>
+                    style={{ background:'var(--role-primary)', color:'white', border:'none', borderRadius:8, padding:'9px 0', fontSize:13, fontWeight:700, cursor:'pointer', opacity: !plantillaForm.nombre.trim() ? 0.5 : 1 }}>
                     {savingPlantilla ? 'Guardando...' : 'Guardar plantilla'}
                   </button>
                 </div>
@@ -629,7 +629,7 @@ const Tareas = () => {
                       </div>
                     </div>
                     <button onClick={() => { usarPlantilla(p); setShowPlantillas(false); }}
-                      style={{ background:'var(--role-primary, #1A7A48)', color:'white', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>
+                      style={{ background:'var(--role-primary)', color:'white', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>
                       Usar
                     </button>
                     <button onClick={() => handleEliminarPlantilla(p.id)}

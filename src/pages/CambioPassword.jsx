@@ -126,7 +126,7 @@ export default function CambioPassword() {
 
           {/* Botón */}
           <button type="submit" className="cp-btn" disabled={!canSave}
-            style={{ background: canSave ? `linear-gradient(135deg, ${roleTheme?.primaryDark || '#155d33'}, ${roleTheme?.primary || '#1A7A48'})` : undefined }}>
+            style={{ background: canSave ? `linear-gradient(135deg, ${roleTheme?.primaryDark || '#155d33'}, ${roleTheme?.primary || 'var(--role-primary)'})` : undefined }}>
             {saving
               ? <span className="cp-spinner" />
               : <><span>Establecer Contraseña</span><i className="bi bi-arrow-right" /></>

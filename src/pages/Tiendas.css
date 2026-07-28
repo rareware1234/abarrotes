@@ -106,7 +106,7 @@
 .tiendas-search-inner svg {
   width: 18px;
   height: 18px;
-  color: #6B7C93;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -896,7 +896,7 @@
 
 .tienda-team-avatar.staff-av {
   background: rgba(26,122,72,0.12);
-  color: #1A7A48;
+  color: var(--role-primary);
 }
 
 .tienda-team-info {

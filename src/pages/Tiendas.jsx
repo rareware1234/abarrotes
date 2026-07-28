@@ -706,11 +706,11 @@ const Tiendas = () => {
                         borderBottom: i < activityLog.length - 1 ? '1px solid var(--border, #e5e7eb)' : 'none'
                       }}>
                         <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--role-tinted-bg, rgba(26,122,72,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--role-primary, #1A7A48)" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--role-primary)" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{reg.accion}</div>
-                          <div style={{ fontSize: '12px', color: '#6B7C93', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.descripcion}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reg.descripcion}</div>
                           <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>{reg.realizadoPor} · {timeStr}</div>
                         </div>
                       </div>
@@ -1282,7 +1282,7 @@ const Tiendas = () => {
         };
         const F = ({ label, required, children }) => (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: '#6B7C93', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.6 }}>
               {label}{required && <span style={{ color: fmt.color, marginLeft: 3 }}>*</span>}
             </label>
             {children}

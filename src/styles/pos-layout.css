@@ -145,7 +145,7 @@
 .search-input-wrapper svg {
   width: 18px;
   height: 18px;
-  color: #6B7C93;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -232,7 +232,7 @@
 
 .pos-cart-count {
   font-size: 13px;
-  color: #6B7C93;
+  color: var(--text-muted);
   background: #F3F4F6;
   padding: 2px 10px;
   border-radius: 12px;
@@ -272,7 +272,7 @@
 
 .pos-item-price {
   font-size: 12px;
-  color: #6B7C93;
+  color: var(--text-muted);
 }
 
 .pos-item-quantity {
@@ -295,7 +295,7 @@
   font-weight: 700;
   font-size: 13px;
   transition: all 0.15s ease;
-  color: #1C1E21;
+  color: var(--text-dark);
 }
 
 .pos-qty-btn:hover {
@@ -337,7 +337,7 @@
 .pos-empty-cart {
   text-align: center;
   padding: 48px 24px;
-  color: #6B7C93;
+  color: var(--text-muted);
 }
 
 .pos-empty-cart svg {
@@ -385,7 +385,7 @@
   align-items: center;
   padding: 10px 0;
   font-size: 14px;
-  color: #6B7C93;
+  color: var(--text-muted);
 }
 
 .pos-summary-divider {
@@ -519,7 +519,7 @@
 
 .pos-employee small {
   font-size: 12px;
-  color: #6B7C93;
+  color: var(--text-muted);
 }
 
 .pos-employee strong {

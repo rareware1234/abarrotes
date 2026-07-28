@@ -63,7 +63,7 @@ const VentaDetalles = () => {
       <div style={styles.page}>
         <div style={styles.center}>
           <div className="spinner-border text-success" style={{ width: 40, height: 40 }} role="status" />
-          <p style={{ color: '#6B7C93', marginTop: 16 }}>Cargando recibo...</p>
+          <p style={{ color: 'var(--text-muted)', marginTop: 16 }}>Cargando recibo...</p>
         </div>
       </div>
     );
@@ -74,7 +74,7 @@ const VentaDetalles = () => {
       <div style={styles.page}>
         <div style={styles.center}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🧾</div>
-          <p style={{ color: '#6B7C93', maxWidth: 320, textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)', maxWidth: 320, textAlign: 'center' }}>
             {error || 'No hay datos de venta disponibles.'}
           </p>
           <button style={styles.btnPrimary} onClick={() => window.close()}>Cerrar</button>
@@ -107,16 +107,16 @@ const VentaDetalles = () => {
         {/* ID y fecha */}
         <div style={styles.receiptHead}>
           <div style={styles.badge}>Venta #{shortId}</div>
-          <div style={{ fontSize: 13, color: '#6B7C93', marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
             {fmtDate(orden.createdAt)}
           </div>
           {orden.nombreEmpleado && (
-            <div style={{ fontSize: 13, color: '#6B7C93', marginTop: 2 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
               Atendido por: <strong>{orden.nombreEmpleado}</strong>
             </div>
           )}
           {orden.tiendaNombre && (
-            <div style={{ fontSize: 13, color: '#6B7C93', marginTop: 2 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
               Sucursal: <strong>{orden.tiendaNombre}</strong>
             </div>
           )}
@@ -161,11 +161,11 @@ const VentaDetalles = () => {
         {/* Totales */}
         <div style={styles.totals}>
           <div style={styles.totalRow}>
-            <span style={{ color: '#6B7C93' }}>Subtotal</span>
+            <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
             <span>{fmt(orden.subtotal)}</span>
           </div>
           <div style={styles.totalRow}>
-            <span style={{ color: '#6B7C93' }}>IVA (16%)</span>
+            <span style={{ color: 'var(--text-muted)' }}>IVA (16%)</span>
             <span>{fmt(orden.iva)}</span>
           </div>
           <div style={{ ...styles.totalRow, ...styles.totalFinal }}>
@@ -174,7 +174,7 @@ const VentaDetalles = () => {
           </div>
           {orden.montoPagado > 0 && (
             <div style={styles.totalRow}>
-              <span style={{ color: '#6B7C93' }}>Pagado</span>
+              <span style={{ color: 'var(--text-muted)' }}>Pagado</span>
               <span>{fmt(orden.montoPagado)}</span>
             </div>
           )}
@@ -190,7 +190,7 @@ const VentaDetalles = () => {
 
         {/* Método de pago */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <i className={`bi ${METODO_ICON[metodo] || 'bi-credit-card'}`} style={{ fontSize: 18, color: '#1A7A48' }} />
+          <i className={`bi ${METODO_ICON[metodo] || 'bi-credit-card'}`} style={{ fontSize: 18, color: 'var(--role-primary)' }} />
           <span style={{ fontWeight: 600, fontSize: 15 }}>
             {METODO_LABEL[metodo] || orden.metodoPago || '—'}
           </span>
@@ -238,7 +238,7 @@ const styles = {
     className: 'no-print',
   },
   logo: {
-    fontSize: 18, fontWeight: 800, color: '#1A7A48',
+    fontSize: 18, fontWeight: 800, color: 'var(--role-primary)',
   },
   receipt: {
     maxWidth: 580, margin: '32px auto', padding: '28px',
@@ -277,11 +277,11 @@ const styles = {
     fontSize: 14,
   },
   totalFinal: {
-    fontSize: 18, fontWeight: 700, color: '#1A7A48',
+    fontSize: 18, fontWeight: 700, color: 'var(--role-primary)',
     paddingTop: 8, borderTop: '1px solid #E5E7EB',
   },
   btnPrimary: {
-    background: '#1A7A48', color: '#fff',
+    background: 'var(--role-primary)', color: '#fff',
     border: 'none', borderRadius: 10, padding: '10px 24px',
     fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 16,
   },

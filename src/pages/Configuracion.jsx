@@ -123,7 +123,7 @@ function SectionApariencia() {
         <div className="cfg-row">
           <span className="cfg-row-label">Color de acento</span>
           <span className="cfg-row-detail" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 14, height: 14, borderRadius: '50%', background: roleTheme?.primary || '#1A7A48', display: 'inline-block' }} />
+            <span style={{ width: 14, height: 14, borderRadius: '50%', background: roleTheme?.primary || 'var(--role-primary)', display: 'inline-block' }} />
             {roleTheme?.primary || '#1A7A48'}
           </span>
         </div>

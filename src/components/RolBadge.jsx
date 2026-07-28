@@ -4,7 +4,7 @@ const RolBadge = ({ rol }) => {
   const getConfig = () => {
     switch (rol?.toLowerCase()) {
       case 'staff':
-        return { bg: '#1A7A48', text: 'white', label: 'Staff' };
+        return { bg: 'var(--role-primary)', text: 'white', label: 'Staff' };
       case 'manager':
       case 'lider':
         return { bg: '#2563EB', text: 'white', label: 'Manager' };

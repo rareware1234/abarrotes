@@ -110,14 +110,14 @@ const CierreCajaModal = ({ caja, ventas, onClose, onConfirm }) => {
             {[500, 1000, 2000, 5000].map(amt => (
               <button key={amt} type="button"
                 onClick={() => setMontoReal(String(amt))}
-                style={{ flex:1, padding:'6px 0', borderRadius:8, border:`1.5px solid ${montoReal === String(amt) ? '#1A7A48' : 'var(--border,#e5e7eb)'}`, background: montoReal === String(amt) ? '#1A7A48' : 'white', color: montoReal === String(amt) ? 'white' : 'inherit', fontWeight:700, fontSize:11, cursor:'pointer' }}>
+                style={{ flex:1, padding:'6px 0', borderRadius:8, border:`1.5px solid ${montoReal === String(amt) ? 'var(--role-primary)' : 'var(--border,#e5e7eb)'}`, background: montoReal === String(amt) ? 'var(--role-primary)' : 'white', color: montoReal === String(amt) ? 'white' : 'inherit', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                 ${(amt).toLocaleString()}
               </button>
             ))}
             {montoEsperado > 0 && (
               <button type="button"
                 onClick={() => setMontoReal(String(montoEsperado.toFixed(0)))}
-                style={{ flex:1, padding:'6px 0', borderRadius:8, border:`1.5px solid ${montoReal === String(montoEsperado.toFixed(0)) ? '#1A7A48' : 'var(--border,#e5e7eb)'}`, background: montoReal === String(montoEsperado.toFixed(0)) ? '#1A7A48' : 'white', color: montoReal === String(montoEsperado.toFixed(0)) ? 'white' : 'inherit', fontWeight:700, fontSize:11, cursor:'pointer' }}>
+                style={{ flex:1, padding:'6px 0', borderRadius:8, border:`1.5px solid ${montoReal === String(montoEsperado.toFixed(0)) ? 'var(--role-primary)' : 'var(--border,#e5e7eb)'}`, background: montoReal === String(montoEsperado.toFixed(0)) ? 'var(--role-primary)' : 'white', color: montoReal === String(montoEsperado.toFixed(0)) ? 'white' : 'inherit', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                 Exacto
               </button>
             )}
@@ -128,7 +128,7 @@ const CierreCajaModal = ({ caja, ventas, onClose, onConfirm }) => {
           <div style={{ padding: '16px', background: diferencia >= 0 ? '#dcfce7' : '#fee2e2', borderRadius: '8px', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
               <span>{diferencia >= 0 ? 'Sobrante:' : 'Faltante:'}</span>
-              <span style={{ color: diferencia >= 0 ? '#1A7A48' : '#EF4444' }}>{formatCurrency(Math.abs(diferencia))}</span>
+              <span style={{ color: diferencia >= 0 ? 'var(--role-primary)' : '#EF4444' }}>{formatCurrency(Math.abs(diferencia))}</span>
             </div>
           </div>
         )}
@@ -258,10 +258,10 @@ const Caja = () => {
         </div>
 
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: '12px', color: '#6B7C93' }}>
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: '12px', color: 'var(--text-muted)' }}>
             <rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
           </svg>
-          <p style={{ color: '#6B7C93', margin: 0 }}>Abre la caja para comenzar a operar</p>
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Abre la caja para comenzar a operar</p>
         </div>
 
         {historial.length > 0 && (
@@ -308,7 +308,7 @@ const Caja = () => {
             <div className="confirm-modal" onClick={e => e.stopPropagation()}>
               <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
                 <div style={{ width:44, height:44, borderRadius:12, background:'rgba(26,122,72,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <i className="bi bi-cash-coin" style={{ fontSize:22, color:'var(--role-primary,#1A7A48)' }} />
+                  <i className="bi bi-cash-coin" style={{ fontSize:22, color:'var(--role-primary)' }} />
                 </div>
                 <div>
                   <h3 style={{ margin:0 }}>Abrir Caja</h3>
@@ -333,7 +333,7 @@ const Caja = () => {
                 {[500, 1000, 2000, 5000].map(amt => (
                   <button key={amt} type="button"
                     onClick={() => setMontoInicial(String(amt))}
-                    style={{ flex:1, padding:'8px 0', borderRadius:10, border:`1.5px solid ${montoInicial === String(amt) ? 'var(--role-primary,#1A7A48)' : 'var(--border,#e5e7eb)'}`, background: montoInicial === String(amt) ? 'var(--role-primary,#1A7A48)' : 'white', color: montoInicial === String(amt) ? 'white' : 'inherit', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                    style={{ flex:1, padding:'8px 0', borderRadius:10, border:`1.5px solid ${montoInicial === String(amt) ? 'var(--role-primary)' : 'var(--border,#e5e7eb)'}`, background: montoInicial === String(amt) ? 'var(--role-primary)' : 'white', color: montoInicial === String(amt) ? 'white' : 'inherit', fontWeight:700, fontSize:12, cursor:'pointer' }}>
                     ${(amt).toLocaleString()}
                   </button>
                 ))}
@@ -370,7 +370,7 @@ const Caja = () => {
           {/* ── Hero card turno activo ── */}
           <div style={{
             borderRadius: 20, padding: '22px 24px', marginBottom: 16,
-            background: 'linear-gradient(135deg, var(--role-dark, #0F4D2E), var(--role-primary, #1A7A48))',
+            background: 'linear-gradient(135deg, var(--role-dark, #0F4D2E), var(--role-primary))',
             position: 'relative', overflow: 'hidden',
             boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           }}>
@@ -420,7 +420,7 @@ const Caja = () => {
               { label:'Esperado', value:(caja.montoInicial||0)+ventasEfectivo, color:'#10B981', bg:'rgba(16,185,129,0.08)' },
             ].map(m => (
               <div key={m.label} style={{ background:'white', borderRadius:12, padding:'12px 14px', boxShadow:'0 1px 6px rgba(0,0,0,0.04)', borderTop:`3px solid ${m.color}` }}>
-                <div style={{ fontSize:16, fontWeight:800, color:'#1C1E21', marginBottom:3 }}>{formatCurrency(m.value)}</div>
+                <div style={{ fontSize:16, fontWeight:800, color:'var(--text-dark)', marginBottom:3 }}>{formatCurrency(m.value)}</div>
                 <div style={{ fontSize:11, color:'#9CA3AF', fontWeight:600, textTransform:'uppercase', letterSpacing:0.4 }}>{m.label}</div>
               </div>
             ))}
@@ -429,7 +429,7 @@ const Caja = () => {
           <div style={{ marginBottom: '24px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '10px', color: 'var(--text-dark)' }}>Movimientos del turno</h4>
             {ventas.length === 0 ? (
-              <div style={{ background: 'white', borderRadius: '14px', padding: '40px', textAlign: 'center', color: '#6B7C93', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+              <div style={{ background: 'white', borderRadius: '14px', padding: '40px', textAlign: 'center', color: 'var(--text-muted)', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                 <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: '8px' }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 <p style={{ margin: 0 }}>Sin ventas en este turno</p>
               </div>

@@ -383,7 +383,7 @@
 .pos-prod-rank {
   position: absolute; top: -6px; left: -6px;
   width: 22px; height: 22px; border-radius: 50%;
-  background: #fff; color: #1C1E21; font-size: 11px; font-weight: 800;
+  background: #fff; color: var(--text-dark); font-size: 11px; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.9);
 }

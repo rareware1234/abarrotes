@@ -27,7 +27,7 @@
 
 .horarios-week-label {
   font-size: 13px;
-  color: #6B7C93;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -41,7 +41,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1C1E21;
+  color: var(--text-dark);
   transition: background 0.15s;
   flex-shrink: 0;
 }
@@ -108,7 +108,7 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #6B7C93;
+  color: var(--text-muted);
   border-bottom: 1px solid #E4E6EA;
   white-space: nowrap;
   min-width: 160px;
@@ -133,7 +133,7 @@
   border-bottom: 1px solid #E4E6EA;
   font-size: 11px;
   font-weight: 600;
-  color: #6B7C93;
+  color: var(--text-muted);
   white-space: nowrap;
   min-width: 64px;
 }
@@ -265,7 +265,7 @@
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  color: #6B7C93;
+  color: var(--text-muted);
 }
 
 .horarios-legend-dot {
@@ -367,7 +367,7 @@
 .horarios-label {
   font-size: 11px;
   font-weight: 600;
-  color: #6B7C93;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: block;
@@ -389,7 +389,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.12s;
-  color: #6B7C93;
+  color: var(--text-muted);
 }
 
 .horarios-quick-chip.active {
@@ -411,7 +411,7 @@
   border-radius: 10px;
   font-size: 16px;
   background: #F9FAFB;
-  color: #1C1E21;
+  color: var(--text-dark);
   transition: border-color 0.15s;
 }
 
@@ -437,7 +437,7 @@
   border-radius: 10px;
   font-size: 14px;
   background: #F9FAFB;
-  color: #1C1E21;
+  color: var(--text-dark);
   transition: border-color 0.15s;
 }
 
