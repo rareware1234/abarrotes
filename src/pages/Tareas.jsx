@@ -5,9 +5,10 @@ import empleadoService from '../services/empleadoService';
 import '../styles/tareas-reminders.css';
 
 const PRIORIDADES = {
-  alta:  { label: 'Alta',  color: '#EF4444' },
-  media: { label: 'Media', color: '#F59E0B' },
-  baja:  { label: 'Baja',  color: '#22C55E' },
+  urgente: { label: 'Urgente', color: '#B91C1C' },
+  alta:    { label: 'Alta',    color: '#E63946' },
+  media:   { label: 'Media',   color: '#F0A500' },
+  baja:    { label: 'Baja',    color: '#3B82F6' },
 };
 
 const DIAS_LABEL = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -65,7 +66,12 @@ const TareaRow = ({ tarea, expanded, onToggle, onComplete, onEdit, onDelete }) =
           <div className={`reminders-row-title${done ? ' done' : ''}`}>{tarea.titulo}</div>
           {(dateStr || tarea.asignadoA || tarea.recurrente) && (
             <div className="reminders-row-meta">
-              {dateStr && <span className={`reminders-date${overdue ? ' overdue' : ''}`}>{dateStr}</span>}
+              {dateStr && (
+                <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 0 }}>
+                  <span className={`reminders-date${overdue ? ' overdue' : ''}`}>{dateStr}</span>
+                  {overdue && <span style={{ fontSize: 9, fontWeight: 600, color: '#FF8C80', lineHeight: 1.2 }}>Vencida</span>}
+                </span>
+              )}
               {tarea.asignadoA && <span className="reminders-assignee">· {tarea.asignadoA}</span>}
               {tarea.recurrente && <span className="reminders-recurrence">↻</span>}
             </div>
@@ -280,6 +286,10 @@ const Tareas = () => {
   const [editingTarea, setEditingTarea] = useState(null);
   const [formData,   setFormData]   = useState(emptyForm);
   const [showPlantillas,  setShowPlantillas]  = useState(false);
+  const [showNuevaPlantilla, setShowNuevaPlantilla] = useState(false);
+  const [plantillaForm, setPlantillaForm] = useState({ nombre: '', notas: '', prioridad: 'media', frecuencia: 'diaria', diasSemana: [], asignadoA: '' });
+  const [savingPlantilla, setSavingPlantilla] = useState(false);
+  const [generandoSemana, setGenerandoSemana] = useState(false);
   const [showCompletadas, setShowCompletadas] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [quickAdd,   setQuickAdd]   = useState('');
@@ -293,10 +303,12 @@ const Tareas = () => {
 
   useEffect(() => { fetchData(); }, [filtro]);
 
+  const isStaff = empleado?.rol === 'staff';
+
   const fetchData = async () => {
     setLoading(true);
     const [tRes, pRes, eRes] = await Promise.all([
-      filtro === 'mis_tareas'
+      (filtro === 'mis_tareas' || isStaff)
         ? tareaService.fetchPorEmpleado(empleado?.uid)
         : tareaService.fetchTodas(),
       tareaService.fetchPlantillas(),
@@ -374,6 +386,42 @@ const Tareas = () => {
     fetchData();
   };
 
+  const handleGenerarSemana = async () => {
+    if (generandoSemana) return;
+    setGenerandoSemana(true);
+    const result = await tareaService.generarTareasSemanales();
+    setGenerandoSemana(false);
+    if (result.success) {
+      if (result.created === 0) {
+        alert('Ya están generadas todas las tareas de esta semana.');
+      } else {
+        alert(`✓ ${result.created} tarea${result.created !== 1 ? 's' : ''} generada${result.created !== 1 ? 's' : ''} para esta semana.`);
+        fetchData();
+      }
+    } else {
+      alert('Error al generar tareas: ' + (result.error || 'Desconocido'));
+    }
+  };
+
+  const handleGuardarPlantilla = async () => {
+    if (!plantillaForm.nombre.trim()) return;
+    setSavingPlantilla(true);
+    const result = await tareaService.crearPlantilla(plantillaForm);
+    setSavingPlantilla(false);
+    if (result.success) {
+      setShowNuevaPlantilla(false);
+      setPlantillaForm({ nombre: '', notas: '', prioridad: 'media', frecuencia: 'diaria', diasSemana: [], asignadoA: '' });
+      const pRes = await tareaService.fetchPlantillas();
+      if (pRes.success) setPlantillas(pRes.data);
+    }
+  };
+
+  const handleEliminarPlantilla = async (id) => {
+    await tareaService.eliminarPlantilla(id);
+    const pRes = await tareaService.fetchPlantillas();
+    if (pRes.success) setPlantillas(pRes.data);
+  };
+
   /* ── grouping ── */
   const today    = todayDate();
   const nextWeek = new Date(today); nextWeek.setDate(today.getDate() + 7);
@@ -412,34 +460,10 @@ const Tareas = () => {
       <div className="tiendas-header">
         <div>
           <h1>Tareas</h1>
-          <div className="tiendas-subtitle">
-            {pendientes.length} pendiente{pendientes.length !== 1 ? 's' : ''}
-          </div>
         </div>
-        <div className="tiendas-header-actions">
+        <div className="tiendas-header-actions" style={{ display:'flex', alignItems:'center', gap:8 }}>
           <button className="tiendas-add-btn" onClick={openNuevaTarea}>+</button>
         </div>
-      </div>
-
-      {/* Filter chips */}
-      <div className="reminders-filters">
-        {[
-          { key: 'todas',      label: 'Todas',       count: pendientes.length },
-          { key: 'hoy',        label: 'Hoy',          count: countHoy },
-          { key: 'programadas',label: 'Programadas',  count: countProgramadas },
-          { key: 'mis_tareas', label: 'Mis tareas',   count: null },
-        ].map(f => (
-          <button
-            key={f.key}
-            className={`reminders-filter-btn${filtro === f.key ? ' active' : ''}`}
-            onClick={() => setFiltro(f.key)}
-          >
-            {f.label}
-            {f.count != null && f.count > 0 && (
-              <span className="reminders-filter-count">{f.count}</span>
-            )}
-          </button>
-        ))}
       </div>
 
       {/* List */}
@@ -525,6 +549,99 @@ const Tareas = () => {
           onSave={handleSave}
           onClose={() => setShowModal(false)}
         />
+      )}
+
+      {/* Plantillas Recurrentes modal */}
+      {showPlantillas && (
+        <div className="horarios-modal-overlay" onClick={() => { setShowPlantillas(false); setShowNuevaPlantilla(false); }}>
+          <div style={{ background:'white', borderRadius:16, width:'min(480px, 94vw)', maxHeight:'80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border, #e5e7eb)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <div style={{ fontSize:16, fontWeight:700 }}>Tareas Recurrentes</div>
+                <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{plantillas.length} plantilla{plantillas.length !== 1 ? 's' : ''}</div>
+              </div>
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <button onClick={handleGenerarSemana} disabled={generandoSemana}
+                  style={{ background:'rgba(26,122,72,0.1)', color:'var(--role-primary,#1A7A48)', border:'1px solid rgba(26,122,72,0.2)', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+                  {generandoSemana ? <span className="spinner-border spinner-border-sm" /> : <><i className="bi bi-calendar-week" /> Generar semana</>}
+                </button>
+                <button onClick={() => setShowNuevaPlantilla(!showNuevaPlantilla)}
+                  style={{ background:'var(--role-primary, #1A7A48)', color:'white', border:'none', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  <i className="bi bi-plus" /> Nueva
+                </button>
+                <button onClick={() => { setShowPlantillas(false); setShowNuevaPlantilla(false); }}
+                  style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'#9CA3AF' }}>×</button>
+              </div>
+            </div>
+
+            {/* Nueva plantilla form */}
+            {showNuevaPlantilla && (
+              <div style={{ padding:'14px 20px', background:'#F8FAFC', borderBottom:'1px solid var(--border, #e5e7eb)' }}>
+                <div style={{ display:'grid', gap:8 }}>
+                  <input type="text" placeholder="Nombre de la plantilla *" value={plantillaForm.nombre}
+                    onChange={e => setPlantillaForm({...plantillaForm, nombre: e.target.value})}
+                    style={{ padding:'9px 12px', border:'1px solid var(--border, #e5e7eb)', borderRadius:8, fontSize:13 }} autoFocus />
+                  <textarea placeholder="Descripción (opcional)" value={plantillaForm.notas}
+                    onChange={e => setPlantillaForm({...plantillaForm, notas: e.target.value})}
+                    style={{ padding:'9px 12px', border:'1px solid var(--border, #e5e7eb)', borderRadius:8, fontSize:13, minHeight:56, resize:'none' }} />
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                    <select value={plantillaForm.prioridad} onChange={e => setPlantillaForm({...plantillaForm, prioridad: e.target.value})}
+                      style={{ padding:'8px 10px', border:'1px solid var(--border, #e5e7eb)', borderRadius:8, fontSize:13 }}>
+                      <option value="alta">Alta prioridad</option>
+                      <option value="media">Media prioridad</option>
+                      <option value="baja">Baja prioridad</option>
+                    </select>
+                    <select value={plantillaForm.frecuencia} onChange={e => setPlantillaForm({...plantillaForm, frecuencia: e.target.value})}
+                      style={{ padding:'8px 10px', border:'1px solid var(--border, #e5e7eb)', borderRadius:8, fontSize:13 }}>
+                      <option value="diaria">Diaria</option>
+                      <option value="semanal">Semanal</option>
+                      <option value="quincenal">Quincenal</option>
+                      <option value="mensual">Mensual</option>
+                    </select>
+                  </div>
+                  <button onClick={handleGuardarPlantilla} disabled={!plantillaForm.nombre.trim() || savingPlantilla}
+                    style={{ background:'var(--role-primary, #1A7A48)', color:'white', border:'none', borderRadius:8, padding:'9px 0', fontSize:13, fontWeight:700, cursor:'pointer', opacity: !plantillaForm.nombre.trim() ? 0.5 : 1 }}>
+                    {savingPlantilla ? 'Guardando...' : 'Guardar plantilla'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* List */}
+            <div style={{ overflowY:'auto', flex:1 }}>
+              {plantillas.length === 0 ? (
+                <div style={{ padding:'40px 20px', textAlign:'center', color:'var(--text-muted)' }}>
+                  <i className="bi bi-repeat" style={{ fontSize:36, opacity:0.3 }} /><br/>
+                  <span style={{ fontSize:13, marginTop:8, display:'block' }}>Sin plantillas recurrentes</span>
+                </div>
+              ) : plantillas.map((p, i) => {
+                const prioColor = PRIORIDADES[p.prioridad]?.color || '#CBD5E1';
+                const freq = { diaria:'Diaria', semanal:'Semanal', quincenal:'Quincenal', mensual:'Mensual' }[p.frecuencia] || p.frecuencia;
+                return (
+                  <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 20px', borderBottom: i < plantillas.length - 1 ? '1px solid var(--border, #e5e7eb)' : 'none' }}>
+                    <div style={{ width:10, height:10, borderRadius:'50%', background: prioColor, flexShrink:0 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:600 }}>{p.nombre}</div>
+                      <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
+                        ↻ {freq}{p.asignadoA ? ` · ${p.asignadoA}` : ''}{p.notas ? ` · ${p.notas.slice(0, 40)}` : ''}
+                      </div>
+                    </div>
+                    <button onClick={() => { usarPlantilla(p); setShowPlantillas(false); }}
+                      style={{ background:'var(--role-primary, #1A7A48)', color:'white', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>
+                      Usar
+                    </button>
+                    <button onClick={() => handleEliminarPlantilla(p.id)}
+                      style={{ background:'rgba(239,68,68,0.08)', color:'#EF4444', border:'1px solid rgba(239,68,68,0.2)', borderRadius:7, padding:'5px 10px', fontSize:12, cursor:'pointer', flexShrink:0 }}>
+                      <i className="bi bi-trash3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -2,17 +2,6 @@
    HORARIOS — Semana + asignación por horas
    ============================================ */
 
-/* Layout fijo: content-area pasa a flex column */
-.content-area:has(.horarios-container) {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding-top: 0 !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  padding-bottom: 0 !important;
-}
-
 /* Contenedor principal */
 .horarios-container {
   display: flex;
@@ -20,7 +9,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: #F4F5F7;
+  background: transparent;
 }
 
 /* ============================================
@@ -31,7 +20,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 24px 20px 16px;
-  background: #F4F5F7;
+  background: transparent;
   flex-shrink: 0;
   gap: 12px;
 }
@@ -135,7 +124,7 @@
 }
 
 .horarios-th-day.today {
-  background: rgba(26,122,72,0.04);
+  background: var(--role-tinted-bg, rgba(26,122,72,0.04));
 }
 
 .horarios-th-total {
@@ -186,7 +175,7 @@
 }
 
 .horarios-td-day.today {
-  background: rgba(26,122,72,0.03);
+  background: var(--role-tinted-bg, rgba(26,122,72,0.03));
 }
 
 .horarios-td-day.editable {
@@ -194,7 +183,7 @@
 }
 
 .horarios-td-day.editable:hover {
-  background: rgba(26,122,72,0.05);
+  background: var(--role-tinted-bg, rgba(26,122,72,0.05));
 }
 
 /* Total cell */
@@ -232,7 +221,7 @@
   }
 
   .horarios-container {
-    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 52px);
   }
 
   .horarios-scroll {

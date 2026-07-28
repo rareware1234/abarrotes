@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '../firebase.js';
 
 const PantallaCliente = () => {
   const [productos, setProductos] = useState([]);
@@ -10,9 +12,14 @@ const PantallaCliente = () => {
   const [transferenciaInfo, setTransferenciaInfo] = useState(null);
   const [currentPath, setCurrentPath] = useState('/');
   
-  const BANNER_URL = '/banner.png';
-  const BRAND_COLOR = '#0F4D2E';
-  const BRAND_LIGHT = '#1A7A48';
+  // Color de marca por formato/empresa de la caja activa (llega en el payload
+  // de `cliente_pantalla`); default = verde Punto Verde. (biblia §7.7)
+  const [brandColor, setBrandColor] = useState('#0F4D2E');
+  const [brandLight, setBrandLight] = useState('#1A7A48');
+  // Banners rotativos (colección `banners`); fallback a imagen estática.
+  const [banners, setBanners] = useState(['/banner.png']);
+  const [bannerIdx, setBannerIdx] = useState(0);
+  const BANNER_URL = banners[bannerIdx] || '/banner.png';
   const lastProcessedTimestamp = useRef('');
   const currentPathRef = useRef('/');
   
@@ -28,6 +35,25 @@ const PantallaCliente = () => {
     }, 1000);
     return () => clearInterval(intervalId);
   }, []);
+
+  // Cargar banners activos (colección `banners`, ordenados por `orden`).
+  useEffect(() => {
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'banners'), where('activo', '==', true), orderBy('orden')));
+        const urls = [];
+        snap.forEach((d) => { const u = d.data().imagenUrl; if (u) urls.push(u); });
+        if (urls.length) setBanners(urls);
+      } catch { /* sin permiso / offline → fallback estático */ }
+    })();
+  }, []);
+
+  // Rotar banners cada 5s (biblia §7.7).
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const id = setInterval(() => setBannerIdx((i) => (i + 1) % banners.length), 5000);
+    return () => clearInterval(id);
+  }, [banners]);
 
   // Efecto para leer la ruta actual desde localStorage
   useEffect(() => {
@@ -106,7 +132,11 @@ const PantallaCliente = () => {
   const procesarMensaje = useCallback((data) => {
     console.log('[PANTALLA-DEBUG] === INICIO procesarMensaje ===');
     console.log('[PANTALLA-DEBUG] Datos recibidos:', JSON.stringify(data, null, 2));
-    
+
+    // Color de marca por formato/empresa de la caja activa (biblia §7.7).
+    if (data?.color) setBrandLight(data.color);
+    if (data?.colorDark) setBrandColor(data.colorDark);
+
     if (!data || !data.type) {
       console.log('[PANTALLA-DEBUG] ✗ Datos inválidos o sin tipo');
       return;
@@ -316,7 +346,7 @@ const PantallaCliente = () => {
 
   return (
     <div className="container-fluid p-0" style={{ 
-      backgroundColor: showThankYou ? '#ffffff' : (isWaiting ? BRAND_COLOR : '#ffffff'), 
+      backgroundColor: showThankYou ? '#ffffff' : (isWaiting ? brandColor : '#ffffff'), 
       minHeight: '100vh',
       color: showThankYou ? '#333' : (isWaiting ? 'white' : '#333'),
       overflow: 'hidden',
@@ -336,7 +366,7 @@ const PantallaCliente = () => {
               objectFit: 'contain'
             }}
           />
-          <h1 className="fw-bold" style={{ fontSize: '4rem', marginTop: '20px', color: BRAND_LIGHT }}>¡Gracias por tu compra!</h1>
+          <h1 className="fw-bold" style={{ fontSize: '4rem', marginTop: '20px', color: brandLight }}>¡Gracias por tu compra!</h1>
           <p className="mt-2" style={{ fontSize: '1.5rem', opacity: 0.8 }}>Esperamos verte pronto nuevamente.</p>
         </div>
       )}
@@ -365,7 +395,7 @@ const PantallaCliente = () => {
       {!showThankYou && !isWaiting && (
         <>
           {/* Header */}
-          <div className="d-flex justify-content-between align-items-center px-5 py-3 shadow-sm" style={{ backgroundColor: BRAND_COLOR }}>
+          <div className="d-flex justify-content-between align-items-center px-5 py-3 shadow-sm" style={{ backgroundColor: brandColor }}>
             <div className="text-start">
               <img
                 src="/logo-blanco.png"
@@ -398,7 +428,7 @@ const PantallaCliente = () => {
               {transferenciaInfo ? (
                 // Mostrar código QR para transferencia
                 <div className="text-center">
-                  <h4 className="mb-4" style={{ color: BRAND_LIGHT }}>Escanea para transferir</h4>
+                  <h4 className="mb-4" style={{ color: brandLight }}>Escanea para transferir</h4>
                   <div className="p-3 bg-white rounded shadow-sm d-inline-block">
                     <QRCodeCanvas 
                       value={`https://pay.conekta.io/link/${transferenciaInfo.clabe}`} 
@@ -422,7 +452,7 @@ const PantallaCliente = () => {
                   borderRadius: '20px',
                   overflow: 'hidden',
                   boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                  backgroundColor: BRAND_COLOR,
+                  backgroundColor: brandColor,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -443,7 +473,7 @@ const PantallaCliente = () => {
             {/* Columna Derecha: Resumen */}
             <div className="col-md-6 p-4" style={{ backgroundColor: '#f8f9fa' }}>
               <div className="card mb-4 shadow-sm" style={{ borderRadius: '15px', border: 'none' }}>
-                <div className="card-header" style={{ backgroundColor: BRAND_COLOR, color: 'white', borderTopLeftRadius: '14px', borderTopRightRadius: '14px' }}>
+                <div className="card-header" style={{ backgroundColor: brandColor, color: 'white', borderTopLeftRadius: '14px', borderTopRightRadius: '14px' }}>
                   <h5 className="mb-0">
                     <i className="bi bi-receipt me-2"></i> Resumen de Compra
                   </h5>
@@ -457,7 +487,7 @@ const PantallaCliente = () => {
                           <br />
                           <small className="text-muted">x {item.cantidad}</small>
                         </div>
-                        <span className="fw-bold" style={{ color: BRAND_LIGHT }}>
+                        <span className="fw-bold" style={{ color: brandLight }}>
                           {formatCurrency(item.subtotal)}
                         </span>
                       </li>
@@ -467,7 +497,7 @@ const PantallaCliente = () => {
                 <div className="card-footer bg-light" style={{ borderBottomLeftRadius: '15px', borderBottomRightRadius: '15px' }}>
                   <div className="d-flex justify-content-between align-items-center">
                     <span className="fs-5">Total:</span>
-                    <span className="fs-2 fw-bold" style={{ color: BRAND_LIGHT }}>
+                    <span className="fs-2 fw-bold" style={{ color: brandLight }}>
                       {formatCurrency(total)}
                     </span>
                   </div>

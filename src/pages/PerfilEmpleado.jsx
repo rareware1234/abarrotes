@@ -1,16 +1,44 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { PERMISOS } from '../context/AuthContext';
 import empleadoService from '../services/empleadoService';
+import orderService from '../services/orderService';
+import registroActividadService from '../services/registroActividadService';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
 };
 
 const PerfilEmpleado = () => {
-  const { empleado, signOut, roleTheme, hasPermission, updateEmpleadoFoto } = useAuth();
+  const { empleado, signOut, roleTheme, updateEmpleadoFoto } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState('');
   const fileInputRef = useRef(null);
+  const [metricas, setMetricas] = useState({ ventasHoy: 0, ticketsHoy: 0, ticketProm: 0, ventasMes: 0 });
+  const [actividad, setActividad] = useState([]);
+
+  useEffect(() => {
+    if (!empleado?.uid) return;
+    orderService.getByEmpleado(empleado.uid).then(result => {
+      if (!result.success || !result.data) return;
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const mesInicio = new Date(); mesInicio.setDate(1); mesInicio.setHours(0,0,0,0);
+      const ordenesHoy = result.data.filter(o => {
+        const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt || 0);
+        return d >= hoy;
+      });
+      const ordenesMes = result.data.filter(o => {
+        const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt || 0);
+        return d >= mesInicio;
+      });
+      const ventasHoy = ordenesHoy.reduce((s, o) => s + (o.total || 0), 0);
+      const ventasMes = ordenesMes.reduce((s, o) => s + (o.total || 0), 0);
+      setMetricas({ ventasHoy, ticketsHoy: ordenesHoy.length, ticketProm: ordenesHoy.length > 0 ? ventasHoy / ordenesHoy.length : 0, ventasMes });
+    });
+    registroActividadService.fetchPorEmpleado(empleado.uid, 10).then(res => {
+      if (res.success) setActividad(res.data);
+    });
+  }, [empleado?.uid]);
 
   if (!empleado) {
     return (
@@ -63,11 +91,12 @@ const PerfilEmpleado = () => {
   };
 
   const handleLogout = async () => {
+    if (!window.confirm('¿Cerrar sesión?')) return;
     await signOut();
   };
 
   return (
-    <div>
+    <div className="perfil-page">
       {/* Header con gradiente del rol */}
       <div style={{
         padding: '32px 24px', textAlign: 'center',
@@ -134,32 +163,64 @@ const PerfilEmpleado = () => {
         <h2 style={{ margin: '0 0 6px', fontSize: '22px', fontWeight: 700, color: 'white' }}>{empleado.nombre}</h2>
         <span style={{
           background: 'rgba(255,255,255,0.18)', color: 'white',
-          padding: '4px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 600
+          padding: '4px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 600,
+          display: 'inline-flex', alignItems: 'center', gap: 5
         }}>
+          <i className="bi bi-patch-check-fill" style={{ fontSize: 11 }} />
           {getRoleLabel(empleado.rol)}
         </span>
         <div style={{ marginTop: '8px', fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
           {empleado.numEmpleado} · {empleado.email}
         </div>
+        {empleado.telefono && (
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', marginTop: '2px' }}>
+            {empleado.telefono}
+          </div>
+        )}
+      </div>
+
+      {/* Stats bar — No. Empleado / Permisos / Estado — white card overlapping gradient bottom edge */}
+      <div style={{
+        display: 'flex', background: 'white',
+        border: '1px solid var(--border, #e5e7eb)',
+        borderRadius: '16px', padding: '14px 0', marginBottom: '16px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        position: 'relative', zIndex: 2,
+        marginTop: '-20px', marginLeft: '12px', marginRight: '12px'
+      }}>
+        {[
+          { label: 'No. Empleado', value: empleado.numEmpleado || '—' },
+          { label: 'Permisos', value: (PERMISOS[empleado.rol] || []).length },
+          { label: 'Estado', value: empleado.activo !== false ? 'Activo' : 'Inactivo',
+            color: empleado.activo !== false ? '#16a34a' : '#dc2626' },
+        ].map((s, i, arr) => (
+          <div key={s.label} style={{
+            flex: 1, textAlign: 'center', padding: '0 8px',
+            borderRight: i < arr.length - 1 ? '1px solid var(--border, #e5e7eb)' : 'none'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: s.color || 'var(--text-dark, #111827)' }}>{s.value}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted, #6B7280)', marginTop: '2px' }}>{s.label}</div>
+          </div>
+        ))}
       </div>
 
       {/* Métricas */}
       <div className="metrics-grid" style={{ marginBottom: '20px' }}>
         <div className="metric-card">
           <div className="metric-label">Ventas Hoy</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: roleTheme.primary }}>$0.00</div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: roleTheme.primary }}>{formatCurrency(metricas.ventasHoy)}</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Tickets</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: roleTheme.primary }}>0</div>
+          <div className="metric-label">Tickets Hoy</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: roleTheme.primary }}>{metricas.ticketsHoy}</div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Ticket Prom.</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: roleTheme.primary }}>$0.00</div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: roleTheme.primary }}>{formatCurrency(metricas.ticketProm)}</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Objetivo</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--success, #10B981)' }}>—</div>
+          <div className="metric-label">Ventas Mes</div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: '#10B981' }}>{formatCurrency(metricas.ventasMes)}</div>
         </div>
       </div>
 
@@ -168,28 +229,42 @@ const PerfilEmpleado = () => {
         <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
           <h5 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Actividad Reciente</h5>
         </div>
-        {[
-          { label: 'Inicio de sesión', time: 'Ahora' },
-          { label: 'Turno activo', time: 'Hoy' },
-        ].map((item, i, arr) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '12px 16px',
-            borderBottom: i < arr.length - 1 ? '1px solid var(--border, #e5e7eb)' : 'none'
-          }}>
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '50%',
-              background: roleTheme.tintedBg,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-            }}>
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={roleTheme.primary} strokeWidth="2.5">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: '14px', flex: 1 }}>{item.label}</span>
-            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{item.time}</span>
+        {actividad.length === 0 ? (
+          <div style={{ padding: '20px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+            Sin actividad registrada aún
           </div>
-        ))}
+        ) : actividad.slice(0, 6).map((item, i, arr) => {
+          const ts = item.fecha?.toDate ? item.fecha.toDate() : new Date(item.fecha || 0);
+          const timeLabel = (() => {
+            const diff = (Date.now() - ts.getTime()) / 1000;
+            if (diff < 60) return 'Ahora';
+            if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+            return ts.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+          })();
+          return (
+            <div key={item.id || i} style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '12px 16px',
+              borderBottom: i < arr.length - 1 ? '1px solid var(--border, #e5e7eb)' : 'none'
+            }}>
+              <div style={{
+                width: '28px', height: '28px', borderRadius: '50%',
+                background: roleTheme.tintedBg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={roleTheme.primary} strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.descripcion || item.accion}</div>
+                {item.tiendaNombre && <div style={{ fontSize: '11px', color: '#9CA3AF' }}>{item.tiendaNombre}</div>}
+              </div>
+              <span style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>{timeLabel}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Cerrar sesión */}

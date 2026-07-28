@@ -1,0 +1,28 @@
+/* ============================================================
+   Punto Verde — pulido transversal alineado a DISEÑO.md.
+   100% aditivo: solo refuerza detalles "que se pierden"
+   (§9.2 números tabulares, §9.8 dot de estado en vivo).
+   No cambia layout ni lógica.
+   ============================================================ */
+
+/* §9.2 — Los números no deben "bailar" al cambiar de valor. */
+.tb-metric-val,
+.stat-card-value,
+.pos-np-total span:last-child,
+.pos-np-ventas-total,
+.pos-np-row span:last-child,
+.tienda-dash-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* §9.8 — El dot de estado "Abierto / En vivo" pulsa suave (verde). */
+@keyframes pv-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.pos-np-dot,
+.pos-header-dot,
+.caja-status-dot.open {
+  animation: pv-dot-pulse 2s ease-in-out infinite;
+}

@@ -1,6 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase.js';
+import { getActivaId } from '../lib/empresaActiva';
+import { stockEn } from '../lib/stock';
+
+// Redondeo de cambio en efectivo a incrementos de $0.05 (biblia §9).
+const redondear05 = (v) => Math.round((v || 0) / 0.05) * 0.05;
 
 const CartContext = createContext();
 
@@ -79,56 +84,60 @@ export const CartProvider = ({ children }) => {
     return Math.round(precioFinal * 100) / 100;
   };
 
-  const add = (producto) => {
+  const add = (producto, tiendaId = null) => {
     return new Promise((resolve) => {
+      // Stock disponible por tienda (biblia §3.1). Si no se pasa tiendaId,
+      // cae al stock legacy — retrocompatible con llamadas existentes.
+      const disponible = stockEn(producto, tiendaId ?? producto.tiendaId);
+      const stockMin = producto.stockMinimo || 5;
       setItems(prev => {
         const existente = prev.find(item => item.id === producto.id);
-        
+
         if (existente) {
           const nuevoStock = existente.cantidad + 1;
-          if (nuevoStock > producto.stock) {
+          if (nuevoStock > disponible) {
             resolve({ resultado: 'sinStock', restante: 0 });
             return prev;
           }
-          if (nuevoStock >= producto.stockMinimo) {
-            resolve({ resultado: 'added', restante: producto.stock - nuevoStock });
+          if (nuevoStock >= stockMin) {
+            resolve({ resultado: 'added', restante: disponible - nuevoStock });
           } else {
-            resolve({ resultado: 'stockBajo', restante: producto.stock - nuevoStock });
+            resolve({ resultado: 'stockBajo', restante: disponible - nuevoStock });
           }
-          
-          return prev.map(item => 
-            item.id === producto.id 
+
+          return prev.map(item =>
+            item.id === producto.id
               ? { ...item, cantidad: nuevoStock, precioFinal: calcularDescuento({...item, cantidad: nuevoStock}, promocionesActivas) }
               : item
           );
         }
-        
-        if (producto.stock <= 0) {
+
+        if (disponible <= 0) {
           resolve({ resultado: 'sinStock', restante: 0 });
           return prev;
         }
-        
+
         const nuevoItem = {
           id: producto.id,
           nombre: producto.nombre,
           precio: producto.precioVenta,
           precioOriginal: producto.precioVenta,
           cantidad: 1,
-          stock: producto.stock,
-          stockMinimo: producto.stockMinimo || 5,
+          stock: disponible,
+          stockMinimo: stockMin,
           codigo: producto.codigo,
           categoria: producto.categoria,
           imagen: producto.imagen
         };
-        
+
         nuevoItem.precioFinal = calcularDescuento(nuevoItem, promocionesActivas);
-        
-        if (producto.stock >= producto.stockMinimo) {
-          resolve({ resultado: 'added', restante: producto.stock - 1 });
+
+        if (disponible >= stockMin) {
+          resolve({ resultado: 'added', restante: disponible - 1 });
         } else {
-          resolve({ resultado: 'stockBajo', restante: producto.stock - 1 });
+          resolve({ resultado: 'stockBajo', restante: disponible - 1 });
         }
-        
+
         return [...prev, nuevoItem];
       });
     });
@@ -190,11 +199,12 @@ export const CartProvider = ({ children }) => {
 
     const montoPagado = metodoPago === 'efectivo' ? efectivoRecibido : null;
     const cambio = metodoPago === 'efectivo'
-      ? Math.max(efectivoRecibido - total, 0)
+      ? redondear05(Math.max(efectivoRecibido - total, 0))
       : 0;
 
     return {
       id: `ORD-${Date.now()}`,
+      empresaId: getActivaId(), // scoping multi-tenant (biblia §3.3) — sin esto cae a default-pv
       empleadoId,
       productos,
       subtotal,
@@ -205,6 +215,23 @@ export const CartProvider = ({ children }) => {
       cambio,
       estado: 'completada',
       createdAt: new Date()
+    };
+  };
+
+  // Color de marca de la empresa activa (leído de las CSS vars que fija
+  // EmpresaContext). La pantalla de cliente corre en OTRA ventana y no comparte
+  // el DOM, así que el color viaja dentro del payload (biblia §7.7: color por
+  // formato/marca de la caja activa).
+  const brandColors = () => {
+    const cssVar = (n, fb) => {
+      try {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+        return v || fb;
+      } catch { return fb; }
+    };
+    return {
+      color: cssVar('--brand-color', '#1A7A48'),
+      colorDark: cssVar('--brand-color-dark', '#0F4D2E'),
     };
   };
 
@@ -220,6 +247,7 @@ export const CartProvider = ({ children }) => {
       subtotal: subtotal.toFixed(2),
       iva: iva.toFixed(2),
       total: total.toFixed(2),
+      ...brandColors(),
       timestamp: Date.now()
     };
     localStorage.setItem('cliente_pantalla', JSON.stringify(data));
@@ -229,6 +257,7 @@ export const CartProvider = ({ children }) => {
     const data = {
       tipo: 'completar',
       total: total.toFixed(2),
+      ...brandColors(),
       timestamp: Date.now()
     };
     localStorage.setItem('cliente_pantalla', JSON.stringify(data));

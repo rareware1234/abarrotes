@@ -1,0 +1,145 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Data shape validators — previenen escrituras malformadas desde el cliente.
+    // No reemplazan validación en backend pero sí rechazan datos inválidos.
+
+    function validOrden() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['empleadoId', 'productos', 'subtotal', 'iva', 'total', 'metodoPago', 'estado'])
+          && d.total is number && d.total > 0
+          && d.subtotal is number && d.iva is number
+          && d.empleadoId is string && d.empleadoId.size() > 0
+          && d.productos is list && d.productos.size() > 0
+          && d.estado in ['completada', 'pendiente', 'cancelada'];
+    }
+
+    function validCredito() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['clienteId', 'montoAprobado', 'estado'])
+          && d.montoAprobado is number
+          && d.montoAprobado > 0
+          && d.montoAprobado <= 50000   // techo máximo de crédito por política
+          && d.clienteId is string && d.clienteId.size() > 0
+          && d.estado in ['activo', 'pagado', 'vencido', 'suspendido', 'rechazado'];
+    }
+
+    function validProducto() {
+      let d = request.resource.data;
+      return d.nombre is string && d.nombre.size() > 0
+          && d.precio is number && d.precio >= 0;
+    }
+
+    // ── Órdenes ──────────────────────────────────────────────────────────────
+    // Solo crear (ventas). No modificar ni borrar desde el cliente.
+    match /ordenes/{ordenId} {
+      allow read:   if isAuth();
+      allow create: if isAuth() && validOrden();
+      allow update, delete: if false;
+    }
+
+    // ── Productos ─────────────────────────────────────────────────────────────
+    match /productos/{productoId} {
+      allow read:   if isAuth();
+      allow create, update: if isAuth() && validProducto();
+      allow delete: if isAuth();   // idealmente admin — sin custom claims no podemos filtrar aquí
+    }
+
+    // ── Créditos ──────────────────────────────────────────────────────────────
+    // Creación validada. Actualización no puede aumentar montoAprobado.
+    match /creditos/{creditoId} {
+      allow read:   if isAuth();
+      allow create: if isAuth() && validCredito();
+      allow update: if isAuth()
+          && (
+            !('montoAprobado' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.montoAprobado <= resource.data.montoAprobado
+          );
+      allow delete: if false;   // créditos nunca se borran, solo se marcan pagado/rechazado
+    }
+
+    // ── Cajas ─────────────────────────────────────────────────────────────────
+    match /cajas/{cajaId} {
+      allow read:          if isAuth();
+      allow create, update: if isAuth();
+      allow delete:        if false;
+    }
+
+    // ── Empleados ─────────────────────────────────────────────────────────────
+    // Lectura pública: necesario para el lookup por numEmpleado durante el login
+    // (el cliente busca el email real antes de autenticarse con Firebase Auth).
+    // Escritura solo para autenticados; borrar nunca desde cliente.
+    match /empleados/{empleadoId} {
+      allow read:           if true;
+      allow create, update: if isAuth();
+      allow delete:         if false;
+    }
+
+    // ── Tiendas ───────────────────────────────────────────────────────────────
+    match /tiendas/{tiendaId} {
+      allow read:          if isAuth();
+      allow create, update: if isAuth();
+      allow delete:        if false;
+    }
+
+    // ── Turnos ────────────────────────────────────────────────────────────────
+    match /turnos/{turnoId} {
+      allow read, write: if isAuth();
+    }
+
+    // ── Tareas ────────────────────────────────────────────────────────────────
+    match /tareas/{tareaId} {
+      allow read, write: if isAuth();
+    }
+
+    // ── Plantillas de tareas ──────────────────────────────────────────────────
+    match /plantillas_tareas/{plantillaId} {
+      allow read, write: if isAuth();
+    }
+
+    // ── Promociones ───────────────────────────────────────────────────────────
+    match /promociones/{promoId} {
+      allow read:   if isAuth();
+      allow create, update, delete: if isAuth();
+    }
+
+    // ── Faltas ────────────────────────────────────────────────────────────────
+    match /faltas/{faltaId} {
+      allow read:          if isAuth();
+      allow create, update: if isAuth();
+      allow delete:        if false;
+    }
+
+    // ── Registros de actividad ────────────────────────────────────────────────
+    // Append-only: solo crear, nunca modificar ni borrar.
+    match /registros_actividad/{registroId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if false;
+    }
+
+    // ── Marca customizaciones ─────────────────────────────────────────────────
+    // Lectura pública: Venta.jsx las carga sin auth para aplicar colores de marca.
+    match /marcaCustomizaciones/{marcaId} {
+      allow read:  if true;
+      allow write: if isAuth();
+    }
+
+    // ── Pantalla cliente (sincronización local) ───────────────────────────────
+    match /pantalla_cliente/{docId} {
+      allow read, write: if isAuth();
+    }
+
+    // ── Deny everything else ──────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

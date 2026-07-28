@@ -4,6 +4,7 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -97,7 +98,7 @@ export const remove = async (id) => {
 export const toggle = async (id) => {
   try {
     const promoRef = doc(db, 'promociones', id);
-    const docSnap = await getDocs(promoRef);
+    const docSnap = await getDoc(promoRef);
     
     if (!docSnap.exists()) {
       return { success: false, error: 'Promoción no encontrada' };

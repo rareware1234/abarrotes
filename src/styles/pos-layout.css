@@ -559,11 +559,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.15s;
   margin: 2px 6px;
   border-radius: 8px;
+}
+
+.pos-suggestion-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  padding: 3px;
+  flex-shrink: 0;
 }
 
 .pos-suggestion-item:hover {

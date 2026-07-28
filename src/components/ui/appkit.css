@@ -1,0 +1,118 @@
+/* ============================================================
+   AppKit — sistema de diseño de VENTANAS reutilizable (web).
+   Encapsula: frame de pantalla, título, paddings, colores, cards glass,
+   filas, toggles, botones. Réplica del patrón de macOS (AppScreen +
+   AppPageHeader + sectionCard). Valores tomados de UI_LAYOUT_SPEC §0/§1.
+   Úsalo en TODAS las pantallas para que se vean idénticas.
+   ============================================================ */
+
+/* ── Screen (frame de ventana) ── */
+.app-screen { min-height: 100%; width: 100%; }
+
+/* El gradiente vive en .app; dejamos transparente el content-area para que
+   se vea continuo, igual que Inicio. */
+.content-area:has(.app-screen) {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.app-screen-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;                 /* SPACING.xxl entre secciones */
+  padding: 16px 0 40px;
+  min-height: 100%;
+}
+
+.app-screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 20px 0;       /* content padding 20 */
+}
+.app-screen-header h1 {
+  font-size: 34px;           /* TYPO.pageTitle */
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+.app-screen-subtitle {
+  font-size: 13px; font-weight: 600;
+  color: rgba(255,255,255,0.78);
+  padding: 2px 20px 0;
+}
+.app-screen-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ── Section ── */
+.app-section { display: flex; flex-direction: column; gap: 12px; }
+.app-section-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 20px;
+}
+.app-section-head h2 {
+  font-size: 20px; font-weight: 700;       /* TYPO.sectionHeader */
+  color: #fff; margin: 0;
+}
+.app-section-head .app-section-count {
+  font-size: 13px; font-weight: 700;
+  color: rgba(255,255,255,0.55);
+}
+.app-section-head .app-section-actions { margin-left: auto; }
+.app-section-body { padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Card (glass) ── */
+.app-card {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;                     /* RADIUS.card */
+  overflow: hidden;
+}
+.app-card--pad { padding: 20px; }          /* sectionCard padding 20 */
+
+.app-group-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: rgba(255,255,255,0.55);
+  margin: 0 4px 6px;
+}
+
+/* ── Row ── */
+.app-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 11px 16px; min-height: 44px;
+}
+.app-row-label { font-size: 13.5px; font-weight: 500; color: #fff; }
+.app-row-detail { display: flex; align-items: center; gap: 4px; font-size: 13px; color: rgba(255,255,255,0.6); }
+.app-row-subtitle { font-size: 11.5px; color: rgba(255,255,255,0.5); }
+.app-row-text { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.app-chevron { font-size: 10px; font-weight: 700; opacity: 0.5; }
+
+.app-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 0 16px; }
+
+/* ── Toggle ── */
+.app-toggle {
+  width: 42px; height: 24px; border-radius: 12px;
+  background: rgba(255,255,255,0.2); position: relative; cursor: pointer;
+  transition: background 0.2s; flex-shrink: 0;
+}
+.app-toggle.on { background: var(--role-primary, #1A7A48); }
+.app-toggle-thumb {
+  position: absolute; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; top: 2px; left: 2px; transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.app-toggle.on .app-toggle-thumb { left: 20px; }
+
+/* ── Botones ── */
+.app-btn {
+  height: 44px; padding: 0 22px; border-radius: 12px; border: none;
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.app-btn--primary { background: var(--role-primary, #1A7A48); color: #fff; }
+.app-btn--ghost { background: transparent; border: 1.5px solid rgba(255,255,255,0.15); color: #fff; }
+.app-btn--link { background: none; border: none; color: var(--role-accent, #60D4A0); font-weight: 600; height: auto; padding: 0; }
+.app-btn:disabled { opacity: 0.5; cursor: not-allowed; }

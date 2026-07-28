@@ -3,7 +3,9 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useCart } from '../context/CartContext';
 import orderService from '../services/orderService';
 import cajaService from '../services/cajaService';
+import creditoService from '../services/creditoService';
 import { useAuth } from '../context/AuthContext';
+import { emit, CAJA_ACTUALIZADA } from '../lib/appEvents';
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
@@ -36,6 +38,13 @@ const IconPhone = () => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8">
     <rect x="5" y="2" width="14" height="20" rx="2"/>
     <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" strokeLinecap="round"/>
+  </svg>
+);
+const IconCredit = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <rect x="1" y="4" width="22" height="16" rx="2"/>
+    <path d="M7 15h4M15 15h2"/>
+    <circle cx="7" cy="11" r="1.5"/>
   </svg>
 );
 const IconCheck = () => (
@@ -74,23 +83,27 @@ const PaymentModal = ({ onClose, onSuccess }) => {
   const { total, iva, subtotal, toOrden, clear, marcarCompletada } = useCart();
   const { empleado } = useAuth();
 
-  // screen: 'select' | 'cash' | 'qr' | 'processing' | 'success'
+  // screen: 'select' | 'cash' | 'qr' | 'credito-search' | 'credito-confirm' | 'processing' | 'success'
   const [screen, setScreen] = useState('select');
   const [metodoPago, setMetodoPago] = useState(null);
   const [efectivoRecibido, setEfectivoRecibido] = useState('');
   const [error, setError] = useState('');
   const [cambioFinal, setCambioFinal] = useState(0);
   const [referencia] = useState(generateRef);
+  const [clienteId, setClienteId] = useState('');
+  const [buscandoCredito, setBuscandoCredito] = useState(false);
+  const [creditoEncontrado, setCreditoEncontrado] = useState(null);
 
   const montoRecibido = parseFloat(efectivoRecibido) || 0;
   const cambio = montoRecibido - total;
   const timer = useTimer(screen === 'qr');
 
   const metodos = [
-    { id: 'efectivo',    label: 'Efectivo',      icon: <IconCash />,  desc: 'Billetes y monedas' },
-    { id: 'tarjeta',     label: 'Tarjeta',        icon: <IconCard />,  desc: 'Débito o crédito' },
-    { id: 'mercadopago', label: 'Mercado Pago',   icon: <IconQR />,    desc: 'Código QR' },
-    { id: 'codi',        label: 'CoDi',           icon: <IconPhone />, desc: 'Código QR bancario' },
+    { id: 'efectivo',    label: 'Efectivo',      icon: <IconCash />,    desc: 'Billetes y monedas' },
+    { id: 'tarjeta',     label: 'Tarjeta',        icon: <IconCard />,    desc: 'Débito o crédito' },
+    { id: 'mercadopago', label: 'Mercado Pago',   icon: <IconQR />,      desc: 'Código QR' },
+    { id: 'codi',        label: 'CoDi',           icon: <IconPhone />,   desc: 'Código QR bancario' },
+    { id: 'credito',     label: 'Crédito',        icon: <IconCredit />,  desc: 'Cargo a cuenta de crédito' },
   ];
 
   /* ── Datos del QR ── */
@@ -114,8 +127,69 @@ const PaymentModal = ({ onClose, onSuccess }) => {
     setMetodoPago(id);
     setError('');
     if (id === 'efectivo') setScreen('cash');
-    else if (id === 'tarjeta') setScreen('cash'); // tarjeta usa confirmar directo
+    else if (id === 'tarjeta') setScreen('cash');
+    else if (id === 'credito') setScreen('credito-search');
     else setScreen('qr');
+  };
+
+  /* ── Buscar crédito activo del cliente ── */
+  const handleBuscarCredito = async () => {
+    const id = clienteId.trim();
+    if (!id) return;
+    setBuscandoCredito(true);
+    setError('');
+    const res = await creditoService.creditoActivo(id);
+    setBuscandoCredito(false);
+    if (res.success && res.data) {
+      if ((res.data.montoDisponible || 0) < total) {
+        setError(`Crédito insuficiente. Disponible: $${(res.data.montoDisponible || 0).toFixed(2)}`);
+      } else {
+        setCreditoEncontrado(res.data);
+        setScreen('credito-confirm');
+      }
+    } else {
+      setError('No se encontró crédito activo para este cliente.');
+    }
+  };
+
+  /* ── Confirmar pago con crédito ── */
+  const confirmarPagoCredito = async () => {
+    if (!creditoEncontrado) return;
+    setError('');
+    setScreen('processing');
+    try {
+      const cajaResult = await cajaService.cajaAbierta(empleado?.uid);
+      const cajaId = cajaResult.data?.id;
+      const orden = toOrden(empleado?.uid || 'pos', 'credito', 0);
+      orden.cajaId = cajaId;
+      orden.tiendaId = cajaResult.data?.tiendaId || null;
+      orden.tiendaNombre = cajaResult.data?.tiendaNombre || null;
+      orden.clienteId = clienteId.trim();
+      orden.creditoId = creditoEncontrado.id;
+      const result = await orderService.create(orden);
+      if (result.success) {
+        await creditoService.usarCredito(creditoEncontrado.id, total, result.id);
+        if (cajaId) {
+          await cajaService.addVentaToCaja(cajaId, {
+            ordenId: result.id, total, metodoPago: 'credito',
+            empleadoId: empleado?.uid, empleadoNombre: empleado?.nombre,
+            referencia, createdAt: new Date(),
+          });
+        }
+        marcarCompletada();
+        emit(CAJA_ACTUALIZADA);
+        setCambioFinal(0);
+        setScreen('success');
+        setTimeout(() => { clear(); onSuccess(result.id, 0); }, 2200);
+      } else {
+        setError('No se pudo procesar la orden. Intenta de nuevo.');
+        setScreen('credito-confirm');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Error de conexión.');
+      setScreen('credito-confirm');
+    }
   };
 
   /* ── Confirmar pago (tarjeta / QR) ── */
@@ -127,6 +201,8 @@ const PaymentModal = ({ onClose, onSuccess }) => {
       const cajaId = cajaResult.data?.id;
       const orden = toOrden(empleado?.uid || 'pos', metodo, montoEfectivo);
       orden.cajaId = cajaId;
+      orden.tiendaId = cajaResult.data?.tiendaId || null;
+      orden.tiendaNombre = cajaResult.data?.tiendaNombre || null;
       orden.referencia = referencia;
 
       const result = await orderService.create(orden);
@@ -143,9 +219,11 @@ const PaymentModal = ({ onClose, onSuccess }) => {
           });
         }
         marcarCompletada();
-        setCambioFinal(montoEfectivo - total);
+        emit(CAJA_ACTUALIZADA);
+        const cambio = Math.round(Math.max(montoEfectivo - total, 0) / 0.05) * 0.05; // redondeo 0.05
+        setCambioFinal(cambio);
         setScreen('success');
-        setTimeout(() => { clear(); onSuccess(result.id, montoEfectivo - total); }, 2200);
+        setTimeout(() => { clear(); onSuccess(result.id, cambio); }, 2200);
       } else {
         setError('No se pudo procesar la orden. Intenta de nuevo.');
         setScreen(metodo === 'efectivo' || metodo === 'tarjeta' ? 'cash' : 'qr');
@@ -443,6 +521,88 @@ const PaymentModal = ({ onClose, onSuccess }) => {
               boxShadow: `0 4px 12px ${accentColor}40`,
             }}>
               ✓ Confirmar Pago Recibido
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─────────── CRÉDITO — BUSCAR CLIENTE ─────────── */
+  if (screen === 'credito-search') return (
+    <div className="payment-modal-overlay" onClick={onClose}>
+      <div className="payment-modal-container" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+        <Header title="Pago con Crédito" onBack={() => { setScreen('select'); setError(''); setClienteId(''); }} />
+        <TotalChip />
+        <div style={{ padding: '20px 16px' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 8 }}>ID del cliente</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="text"
+                value={clienteId}
+                onChange={e => { setClienteId(e.target.value); setError(''); }}
+                onKeyDown={e => e.key === 'Enter' && handleBuscarCredito()}
+                placeholder="Ingresa el ID del cliente"
+                autoFocus
+                style={{ flex: 1, height: 44, border: '1.5px solid #D1D5DB', borderRadius: 10, padding: '0 12px', fontSize: 15 }}
+              />
+              <button
+                onClick={handleBuscarCredito}
+                disabled={!clienteId.trim() || buscandoCredito}
+                style={{ height: 44, padding: '0 16px', background: 'var(--role-primary)', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: !clienteId.trim() ? 0.5 : 1 }}
+              >
+                {buscandoCredito ? '...' : 'Buscar'}
+              </button>
+            </div>
+          </div>
+          {error && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#DC2626' }}>{error}</div>}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ─────────── CRÉDITO — CONFIRMAR ─────────── */
+  if (screen === 'credito-confirm' && creditoEncontrado) {
+    const disponible = creditoEncontrado.montoDisponible || 0;
+    const usado = creditoEncontrado.montoUsado || 0;
+    const aprobado = creditoEncontrado.montoAprobado || 0;
+    const pct = aprobado > 0 ? Math.min(1, (usado + total) / aprobado) : 0;
+    return (
+      <div className="payment-modal-overlay" onClick={onClose}>
+        <div className="payment-modal-container" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+          <Header title="Confirmar Crédito" onBack={() => { setScreen('credito-search'); setCreditoEncontrado(null); setError(''); }} />
+          <TotalChip />
+          <div style={{ padding: '16px 16px 0' }}>
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+              <div style={{ fontSize: 13, color: '#64748B', marginBottom: 4 }}>Cliente: <strong style={{ color: '#1e293b' }}>{clienteId}</strong></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 12 }}>
+                {[
+                  { label: 'Disponible', value: `$${disponible.toFixed(2)}`, color: '#16A34A' },
+                  { label: 'Este cargo', value: `$${total.toFixed(2)}`, color: '#DC2626' },
+                  { label: 'Aprobado', value: `$${aprobado.toFixed(2)}`, color: '#1e293b' },
+                ].map(s => (
+                  <div key={s.label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: s.color }}>{s.value}</div>
+                    <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2, textTransform: 'uppercase', fontWeight: 600 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <div style={{ height: 6, background: '#E2E8F0', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct * 100}%`, background: pct > 0.9 ? '#EF4444' : '#16A34A', borderRadius: 99 }} />
+                </div>
+                <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4, textAlign: 'right' }}>Uso tras cargo: {Math.round(pct * 100)}%</div>
+              </div>
+            </div>
+            {error && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#DC2626', marginBottom: 12 }}>{error}</div>}
+          </div>
+          <div style={{ padding: '12px 16px 20px', display: 'flex', gap: 10 }}>
+            <button onClick={() => { setScreen('credito-search'); setCreditoEncontrado(null); setError(''); }} style={{ flex: 1, height: 48, background: '#F3F4F6', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>
+              Cancelar
+            </button>
+            <button onClick={confirmarPagoCredito} style={{ flex: 2, height: 48, background: 'var(--role-primary)', color: 'white', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+              Cargar ${total.toFixed(2)} al crédito
             </button>
           </div>
         </div>

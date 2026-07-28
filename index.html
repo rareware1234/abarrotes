@@ -9,14 +9,46 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Punto Verde" />
     <meta name="theme-color" content="#0F4D2E" />
+    <script>
+      (function(){
+        var T={
+          staff:  {g:'linear-gradient(135deg,#0F4D2E 0%,#1A7A48 100%)',c:'#0F4D2E',p:'#1A7A48',h:'#166040',a:'#4ADE80',n:'#0F4D2E'},
+          manager:{g:'linear-gradient(135deg,#1E4F8F 0%,#2E6BC4 100%)',c:'#1E4F8F',p:'#2E6BC4',h:'#245DAA',a:'#5A9AE0',n:'#1E4F8F'},
+          admin:  {g:'linear-gradient(135deg,#475569 0%,#64748B 100%)',c:'#475569',p:'#64748B',h:'#334155',a:'#F59E0B',n:'#475569'}
+        };
+        try{
+          var s=sessionStorage.getItem('desktop_empleado');
+          if(s){
+            var r=JSON.parse(s).rol;
+            var t=T[r]||T.staff;
+            var root=document.documentElement;
+            root.style.setProperty('--role-gradient',t.g);
+            root.style.setProperty('--role-dark',t.c);
+            root.style.setProperty('--role-nav-bg',t.n);
+            root.style.setProperty('--role-primary',t.p);
+            root.style.setProperty('--role-hover',t.h);
+            root.style.setProperty('--role-accent',t.a);
+            var m=document.querySelector('meta[name="theme-color"]');
+            if(m)m.content=t.c;
+          }
+        }catch(e){}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Punto Verde — POS</title>
+    <!-- Preconexiones Firebase — reduce cold-start de Auth y Firestore -->
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+    <link rel="preconnect" href="https://securetoken.googleapis.com">
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://firebase.googleapis.com">
+    <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: Inter (app) + fuentes de marca BrandFont (doc §4):
+         Cinzel/Montserrat (empaquetadas en Swift) y Fredoka (tema neonParty). -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cinzel:wght@400..900&family=Montserrat:wght@100..900&family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>

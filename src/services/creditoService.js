@@ -13,6 +13,7 @@ import {
   orderBy,
   serverTimestamp
 } from 'firebase/firestore';
+import { getActivaId } from '../lib/empresaActiva';
 
 
 export const evaluarCliente = async (clienteId) => {
@@ -22,8 +23,8 @@ export const evaluarCliente = async (clienteId) => {
       return scoreResult;
     }
     
-    const { score, nivel, factores } = scoreResult;
-    const oferta = generarOferta(score, nivel);
+    const { score, nivel, factores } = scoreResult.data;
+    const oferta = generarOferta(score, nivel, scoreResult.data.stats?.avgOrder || 0);
     
     return {
       success: true,
@@ -40,30 +41,28 @@ export const evaluarCliente = async (clienteId) => {
   }
 };
 
-const generarOferta = (score, nivel) => {
+const generarOferta = (score, nivel, avgOrder = 0) => {
   const tasas = {
     'Excelente': 3,
     'Bueno': 5,
     'Regular': 8,
     'No aplica': null
   };
-  
-  const maximos = {
-    'Excelente': 50000,
-    'Bueno': 30000,
-    'Regular': 15000,
-    'No aplica': 0
-  };
-  
+
+  // Match Swift: montoMaximo = multiplier * avgOrder (not hardcoded)
+  const multipliers = { 'Excelente': 2.0, 'Bueno': 1.5, 'Regular': 1.0 };
+  const mult = multipliers[nivel] || 0;
+  const montoMaximo = nivel === 'No aplica' ? 0 : Math.round(mult * avgOrder / 100) * 100;
+
   const plazos = [
-    { semanas: 4, factor: 1 },
-    { semanas: 8, factor: 1.02 },
-    { semanas: 12, factor: 1.04 }
+    { semanas: 2, factor: 1 },
+    { semanas: 4, factor: 1.02 },
+    { semanas: 8, factor: 1.04 }
   ];
-  
+
   return {
     tasa: tasas[nivel],
-    montoMaximo: maximos[nivel],
+    montoMaximo,
     plazos,
     nivel
   };
@@ -71,71 +70,79 @@ const generarOferta = (score, nivel) => {
 
 const calcularScore = async (clienteId) => {
   try {
-    const ordenesRef = collection(db, 'ordenes');
     const fecha90Dias = new Date();
     fecha90Dias.setDate(fecha90Dias.getDate() - 90);
-    
-    const q = query(
-      ordenesRef,
-      where('clienteId', '==', clienteId),
-      where('createdAt', '>=', fecha90Dias)
-    );
-    
-    const snapshot = await getDocs(q);
+
+    const [ordenesSnap, creditosSnap] = await Promise.all([
+      getDocs(query(
+        collection(db, 'ordenes'),
+        where('clienteId', '==', clienteId),
+        where('createdAt', '>=', fecha90Dias)
+      )),
+      getDocs(query(
+        collection(db, 'creditos'),
+        where('clienteId', '==', clienteId),
+        orderBy('createdAt', 'desc')
+      )),
+    ]);
+
     const ordenes = [];
-    snapshot.forEach(doc => {
-      ordenes.push({ id: doc.id, ...doc.data() });
-    });
-    
-    if (ordenes.length === 0) {
-      return {
-        success: true,
-        data: { score: 0, nivel: 'No aplica', factores: { frecuencia: 0, consistencia: 0, monto: 0, historial: 0 } }
-      };
-    }
-    
+    ordenesSnap.forEach(d => ordenes.push({ id: d.id, ...d.data() }));
+    const creditos = [];
+    creditosSnap.forEach(d => creditos.push({ id: d.id, ...d.data() }));
+
     const diasUnicos = new Set();
-    const diasOrdenados = [];
     let gastoTotal = 0;
-    
+
     ordenes.forEach(orden => {
-      if (orden.createdAt && orden.createdAt.toDate) {
-        const fecha = orden.createdAt.toDate();
-        const dia = fecha.toISOString().split('T')[0];
+      if (orden.createdAt?.toDate) {
+        const dia = orden.createdAt.toDate().toISOString().split('T')[0];
         diasUnicos.add(dia);
-        diasOrdenados.push({ dia, total: orden.total || 0 });
         gastoTotal += orden.total || 0;
       }
     });
-    
-    const frecuencia = Math.min(30, diasUnicos.size * 3);
-    
+
+    const visitas = diasUnicos.size;
+    const avgOrder = ordenes.length > 0 ? gastoTotal / ordenes.length : 0;
+
+    // Frecuencia: threshold system (matches Swift CreditScoreEngine)
+    let frecuencia = 0;
+    if (visitas >= 8) frecuencia = 30;
+    else if (visitas >= 4) frecuencia = 20;
+    else if (visitas >= 2) frecuencia = 10;
+
+    // Consistencia: coefficient of variation (web-only, 25 pts max)
     let consistencia = 0;
-    if (diasOrdenados.length > 1) {
-      const promedios = [];
-      for (let i = 0; i < diasOrdenados.length; i++) {
-        promedios.push(diasOrdenados[i].total);
-      }
-      const media = gastoTotal / promedios.length;
-      const varianza = promedios.reduce((sum, val) => sum + Math.pow(val - media, 2), 0) / promedios.length;
+    const montos = ordenes.filter(o => o.createdAt?.toDate).map(o => o.total || 0);
+    if (montos.length > 1) {
+      const media = gastoTotal / montos.length;
+      const varianza = montos.reduce((s, v) => s + Math.pow(v - media, 2), 0) / montos.length;
       const desviacion = Math.sqrt(varianza);
-      consistencia = Math.max(0, 25 - (desviacion / media) * 25);
-    } else {
+      consistencia = media > 0 ? Math.max(0, 25 - (desviacion / media) * 25) : 12.5;
+    } else if (montos.length === 1) {
       consistencia = 12.5;
     }
-    
-    const montoPromedio = gastoTotal / ordenes.length;
+
+    // Monto: thresholds matching Swift ($2000/$1000/$500)
     let monto = 0;
-    if (montoPromedio >= 500) monto = 25;
-    else if (montoPromedio >= 300) monto = 20;
-    else if (montoPromedio >= 150) monto = 15;
-    else monto = 10;
-    
-    const historial = ordenes.length >= 10 ? 20 : ordenes.length * 2;
-    
+    if (avgOrder >= 2000) monto = 25;
+    else if (avgOrder >= 1000) monto = 18;
+    else if (avgOrder >= 500) monto = 10;
+    else if (ordenes.length > 0) monto = 5;
+
+    // Historial: based on credit state (matches Swift CreditScoreEngine)
+    let historial = 10; // sin_credito default (new customer, neutral)
+    if (creditos.length > 0) {
+      const ultimo = creditos[0];
+      if (ultimo.estado === 'pagado') historial = 20;       // pagado_tiempo
+      else if (ultimo.estado === 'activo') historial = 15;  // en curso, buen estado
+      else if (ultimo.estado === 'suspendido') historial = 5;
+      else if (ultimo.estado === 'vencido') historial = 0;
+    }
+
     const score = Math.round(frecuencia + consistencia + monto + historial);
     const nivel = score >= 80 ? 'Excelente' : score >= 60 ? 'Bueno' : score >= 40 ? 'Regular' : 'No aplica';
-    
+
     return {
       success: true,
       data: {
@@ -149,8 +156,8 @@ const calcularScore = async (clienteId) => {
         },
         stats: {
           totalOrdenes: ordenes.length,
-          diasVisitados: diasUnicos.size,
-          gastoPromedio: montoPromedio,
+          visitas,
+          avgOrder,
           gastoTotal
         }
       }
@@ -161,13 +168,14 @@ const calcularScore = async (clienteId) => {
   }
 };
 
-export const aprobarCredito = async (clienteId, monto, plazo, tasa) => {
+export const aprobarCredito = async (clienteId, monto, plazo, tasa, aprobadoPorUid = null) => {
   try {
     const creditoRef = doc(collection(db, 'creditos'));
     const fechaVencimiento = new Date();
     fechaVencimiento.setDate(fechaVencimiento.getDate() + plazo * 7);
-    
+
     await setDoc(creditoRef, {
+      empresaId: getActivaId(), // scoping multi-tenant
       clienteId,
       montoAprobado: monto,
       montoUsado: 0,
@@ -177,6 +185,7 @@ export const aprobarCredito = async (clienteId, monto, plazo, tasa) => {
       estado: 'activo',
       fechaAprobacion: serverTimestamp(),
       fechaVencimiento,
+      aprobadoPorUid, // auditoría: quién aprobó (biblia §3.9)
       transacciones: [],
       createdAt: serverTimestamp()
     });
@@ -246,17 +255,19 @@ export const registrarPago = async (creditoId, monto) => {
       fecha: new Date()
     });
     
+    const nuevoUsado = Math.max(0, (data.montoUsado || 0) - capital);
     const nuevoDisponible = Math.min(
-      data.montoDisponible + capital,
+      (data.montoDisponible || 0) + capital,
       data.montoAprobado
     );
-    
+
     let nuevoEstado = data.estado;
-    if (nuevoDisponible >= data.montoAprobado) {
+    if (nuevoUsado <= 0) {
       nuevoEstado = 'pagado';
     }
-    
+
     await updateDoc(creditoRef, {
+      montoUsado: nuevoUsado,
       montoDisponible: nuevoDisponible,
       transacciones,
       estado: nuevoEstado

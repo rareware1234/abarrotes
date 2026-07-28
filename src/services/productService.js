@@ -1,4 +1,6 @@
 import { db } from '../firebase.js';
+import { getActivaId, scopeProductos } from '../lib/empresaActiva';
+import tiendaService from './tiendaService';
 import {
 
   collection,
@@ -11,6 +13,7 @@ import {
   query,
   where,
   orderBy,
+  increment,
   serverTimestamp
 } from 'firebase/firestore';
 
@@ -52,6 +55,7 @@ export const create = async (producto) => {
   try {
     const productoRef = doc(collection(db, 'productos'));
     await setDoc(productoRef, {
+      empresaId: getActivaId(),
       ...producto,
       createdAt: serverTimestamp()
     });
@@ -103,11 +107,42 @@ export const fetchByCategory = async (categoria) => {
   }
 };
 
+/**
+ * Surte stock a una tienda (biblia §3.1/§4.1): incrementa
+ * `stockPorTienda.{tiendaId}` atómicamente y REACTIVA el producto (`activo:true`).
+ * `delta` puede ser negativo (descuento por venta).
+ */
+export const surtirEnTienda = async (productoId, tiendaId, delta) => {
+  try {
+    if (!productoId || !tiendaId) return { success: false, error: 'productoId y tiendaId requeridos' };
+    await updateDoc(doc(db, 'productos', productoId), {
+      [`stockPorTienda.${tiendaId}`]: increment(delta),
+      activo: true,
+      updatedAt: serverTimestamp(),
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error surtiendo en tienda:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/** Productos de la empresa activa: catálogo GLOBAL (empresaId propio O con stock
+ *  en una de sus tiendas). Réplica de Producto.fetchAllForActiveEmpresa (Swift). */
+export const fetchAllForActiveEmpresa = async () => {
+  const [pRes, tRes] = await Promise.all([fetchAll(), tiendaService.fetchAllForActiveEmpresa()]);
+  if (!pRes.success) return pRes;
+  const ids = new Set((tRes.success ? tRes.data : []).map((t) => t.id));
+  return { success: true, data: scopeProductos(pRes.data, ids, getActivaId()) };
+};
+
 export default {
   fetchAll,
+  fetchAllForActiveEmpresa,
   fetchByBarcode,
   create,
   update,
   remove,
-  fetchByCategory
+  fetchByCategory,
+  surtirEnTienda
 };

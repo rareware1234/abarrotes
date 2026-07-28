@@ -7,6 +7,12 @@ import cajaService from '../services/cajaService';
 import orderService from '../services/orderService';
 import PaymentModal from '../components/PaymentModal';
 import BarcodeScanner from '../components/BarcodeScanner';
+import sinImagen from '../assets/sin-imagen.png';
+import formatoPV from '../assets/formato-pv.png';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase.js';
+
+const normMarca = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
@@ -496,6 +502,7 @@ const Venta = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [cajaAbierta, setCajaAbierta] = useState(null);
+  const [marcaCustom, setMarcaCustom] = useState({});
 
   useEffect(() => {
     const handler = () => setShowCajaModal(true);
@@ -512,6 +519,19 @@ const Venta = () => {
 
   useEffect(() => { fetchProducts(); }, []);
   useEffect(() => { sincronizarPantallaCliente(); }, [items]);
+
+  // Colores de marca (mismo store que Productos/Proveedores) para los
+  // cards del carrusel "Más vendidos".
+  useEffect(() => {
+    getDocs(collection(db, 'marcaCustomizaciones')).then((snap) => {
+      const map = {};
+      snap.forEach((d) => {
+        const data = d.data();
+        if (typeof data.r === 'number') map[d.id] = [data.r, data.g, data.b];
+      });
+      setMarcaCustom(map);
+    }).catch(() => {});
+  }, []);
   
   useEffect(() => {
     const verificarCaja = async () => {
@@ -663,215 +683,249 @@ const Venta = () => {
     );
   }
 
+  const formatHora = (ts) => {
+    if (!ts) return '';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
+  };
+  const firstImgV = (p) => p.imagenUrl || p.imagenUrls?.[0] || p.imagen || null;
+  const to255 = (x) => Math.round(Math.max(0, Math.min(1, x)) * 255);
+  const brandStyleOf = (p) => {
+    const c = marcaCustom[normMarca(p.proveedor)];
+    if (c) {
+      const [r, g, b] = [to255(c[0]), to255(c[1]), to255(c[2])];
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      return { bg: `linear-gradient(135deg, rgba(${r},${g},${b},0.92), rgba(${r},${g},${b},0.7))`, text: lum > 186 ? '#1C1E21' : '#fff' };
+    }
+    return { bg: 'linear-gradient(135deg, var(--role-primary), var(--role-dark))', text: '#fff' };
+  };
+  // Badge de marca en thumb del carrito — solo color, mismo color que brandStyleOf
+  const brandBgOf = (proveedor) => {
+    const c = marcaCustom[normMarca(proveedor)];
+    if (c) {
+      const [r, g, b] = [to255(c[0]), to255(c[1]), to255(c[2])];
+      return `linear-gradient(135deg, rgba(${r},${g},${b},1), rgba(${r},${g},${b},0.78))`;
+    }
+    return 'linear-gradient(135deg, var(--role-primary), var(--role-dark))';
+  };
+  // Carrusel SIEMPRE muestra top 10 por vendidos — el search bar NO lo filtra
+  // (mismo comportamiento que posVM.topProductos en Swift)
+  const carouselItems = [...productsList].sort((a, b) => (b.vendidos || 0) - (a.vendidos || 0)).slice(0, 10);
+  const descuentoTotal = items.reduce((s, it) => s + Math.max(0, ((it.precioOriginal || it.precio || 0) - (it.precioFinal || it.precio || 0)) * (it.cantidad || 0)), 0);
+
   return (
     <>
       {!cajaAbierta && <BloqueoCaja onAbrirCaja={() => setShowAbrirCajaModal(true)} />}
-      
-      <div className={`venta-page-wrapper${cajaAbierta ? ' caja-abierta' : ''}`}>
+
+      <div className={`pos-mac-wrap${cajaAbierta ? ' caja-abierta' : ''}`}>
         {toast.show && (
-          <div className={`venta-toast venta-toast-${toast.type}`}>
-            {toast.message}
-          </div>
+          <div className={`venta-toast venta-toast-${toast.type}`}>{toast.message}</div>
         )}
 
-        {/* Header estándar como Sucursales */}
-        <div className="tiendas-header">
-          <div>
-            <h1>Venta</h1>
-            <div className="tiendas-subtitle">
-              {cajaAbierta ? `Caja abierta · ${cajaAbierta.empleadoNombre || 'Cajero'}` : ''}
+        {/* ── Header ── */}
+        <div className="pos-mac-hdr">
+          <div className="pos-mac-store">
+            <img src={formatoPV} alt="" className="pos-mac-icon" />
+            <div>
+              <div className="pos-mac-sname">
+                {cajaAbierta?.tiendaNombre || cajaAbierta?.empleadoNombre || empleado?.nombre || 'Punto Verde'}
+              </div>
+              {cajaAbierta && (
+                <div className="pos-mac-sstatus">
+                  <span className="pos-mac-sdot" />
+                  Caja abierta{formatHora(cajaAbierta.createdAt) ? ` — ${formatHora(cajaAbierta.createdAt)}` : ''}
+                </div>
+              )}
             </div>
           </div>
-          <div className="tiendas-header-actions">
-            <div className="venta-desktop-actions">
-              <button className="venta-desktop-btn-caja" onClick={() => setShowCajaModal(true)} title="Caja">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <rect x="2" y="6" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-                  <line x1="6" y1="14" x2="10" y2="14" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-              <button className="venta-desktop-btn-nueva" onClick={handleNewSale} disabled={isEmpty} title="Nueva Venta">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16" strokeLinecap="round"/><line x1="8" y1="12" x2="16" y2="12" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
+
+          <div className="pos-mac-mid">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            <span>Artículos {itemCount}</span>
           </div>
-        </div>
 
-        <div className="venta-container">
-        {/* === COLUMNA IZQUIERDA: Búsqueda + Carrito === */}
-        <div className="venta-left">
-
-          {/* Barra de búsqueda estilo Google */}
-          <div className="pos-search-bar" ref={searchBarRef}>
-            <div className="search-input-wrapper">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <div className="pos-mac-hdr-btns">
+            <button className="pos-mac-hbtn" onClick={() => setShowCajaModal(true)} title="Ver caja">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
               </svg>
-              <input
-                ref={searchRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                onFocus={handleSearchFocus}
-                onClick={handleSearchClick}
-                placeholder="Buscar producto o escanear código..."
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => { setSearchTerm(''); setShowSuggestions(false); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#6B7C93' }}
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              )}
-            </div>
-            {/* Dropdown de sugerencias */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="pos-suggestions">
-                <div className="pos-suggestions-header">{isTopProducts ? 'Más vendidos' : `Resultados (${suggestions.length})`}</div>
-                {suggestions.map(product => (
-                  <div key={product.id} className="pos-suggestion-item" onClick={() => handleSelectProduct(product)}>
-                    <div>
-                      <div className="pos-suggestion-name">{product.nombre}</div>
-                      <div style={{ fontSize: '12px', color: '#6B7C93' }}>{product.codigo}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div className="pos-suggestion-price">{formatCurrency(product.precioVenta)}</div>
-                      <div style={{ fontSize: '11px', color: product.stock > 5 ? '#1A7A48' : product.stock > 0 ? '#F59E0B' : '#EF4444' }}>
-                        Stock: {product.stock}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            </button>
+            <button className="pos-mac-hbtn" onClick={() => setShowScanner(true)} title="Escanear">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
+            </button>
+            <button className="pos-mac-hbtn" onClick={() => setShowCajaModal(true)} title="Estadísticas">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 17 9 11 13 15 21 7"/>
+                <polyline points="14 7 21 7 21 14"/>
+              </svg>
+            </button>
           </div>
+        </div>
 
-          {/* Carrito — siempre visible como card */}
-          <div className="pos-cart-card">
-            <div className="pos-cart-header">
-              <h5>Artículos</h5>
-              <span className="pos-cart-count">{itemCount} items</span>
-            </div>
-            {isEmpty ? (
-              <div className="pos-empty-cart">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        {/* ── Body ── */}
+        <div className="pos-mac-body">
+
+          {/* ── Main column ── */}
+          <div className="pos-mac-main">
+
+            {/* Search */}
+            <div className="pos-mac-searchbar" ref={searchBarRef}>
+              <div className="pos-mac-search-inner">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
-                <p>Agrega productos para comenzar</p>
+                <input
+                  ref={searchRef}
+                  className="pos-mac-search-input"
+                  type="search"
+                  placeholder="Buscar producto o código..."
+                  value={searchTerm}
+                  onChange={e => handleSearch(e.target.value)}
+                  onFocus={handleSearchFocus}
+                  onClick={handleSearchClick}
+                />
+                {loading && <div className="spinner-border spinner-border-sm pos-mac-spinner" role="status" />}
               </div>
-            ) : (
-              <div className="pos-cart-items">
-                {items.map(item => (
-                  <div key={item.id} className="pos-cart-item">
-                    <div className="pos-item-info">
-                      <div className="pos-item-name">{item.nombre}</div>
-                      <div className="pos-item-price">
-                        {formatCurrency(item.precioFinal || item.precio)} c/u
-                        {item.precioOriginal > (item.precioFinal || item.precio) && (
-                          <span style={{ textDecoration: 'line-through', marginLeft: '8px', color: '#EF4444' }}>
-                            {formatCurrency(item.precioOriginal)}
-                          </span>
-                        )}
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="pos-mac-suggestions">
+                  {isTopProducts && (
+                    <div className="pos-mac-suggestions-hdr">
+                      <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                      Más vendidos
+                    </div>
+                  )}
+                  {suggestions.map(p => (
+                    <button key={p.id} className="pos-mac-sug-row" onClick={() => handleSelectProduct(p)}>
+                      <img className="pos-mac-sug-thumb" src={firstImgV(p) || sinImagen} alt="" onError={e => { e.target.src = sinImagen; }} />
+                      <div className="pos-mac-sug-info">
+                        <span className="pos-mac-sug-name">{p.nombre}</span>
+                        <span className="pos-mac-sug-code">{p.codigo || '—'}</span>
                       </div>
-                    </div>
-                    <div className="pos-item-quantity">
-                      <button className="pos-qty-btn" onClick={() => handleQuantityChange(item.id, -1)}>−</button>
-                      <span className="pos-qty-value">{item.cantidad}</span>
-                      <button className="pos-qty-btn" onClick={() => handleQuantityChange(item.id, 1)}>+</button>
-                    </div>
-                    <div className="pos-item-total">
-                      {formatCurrency((item.precioFinal || item.precio) * item.cantidad)}
-                    </div>
-                    <button className="pos-item-delete" onClick={() => remove(item.id)}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
+                      <span className="pos-mac-sug-price">{formatCurrency(p.precioVenta)}</span>
                     </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Cart content / empty state */}
+            <div className="pos-mac-content">
+              {isEmpty ? (
+                <div className="pos-mac-empty">
+                  <img src={formatoPV} alt="Punto Verde" className="pos-mac-empty-icon" />
+                  <span className="pos-mac-empty-label">Esperando productos</span>
+                </div>
+              ) : (
+                <div className="pos-mac-items">
+                  {items.map(item => {
+                    const prod = productsList.find(p => p.id === item.id);
+                    const proveedor = prod?.proveedor || '';
+                    return (
+                      <div key={item.id} className="pos-mac-item">
+                        <div className="pos-mac-item-tw">
+                          <img className="pos-mac-item-thumb" src={firstImgV(prod) || item.imagen || sinImagen} alt="" onError={e => { e.target.src = sinImagen; }} />
+                          <div className="pos-mac-item-badge" style={{ background: brandBgOf(proveedor) }} />
+                        </div>
+                        <div className="pos-mac-item-info">
+                          <div className="pos-mac-item-name">{item.nombre}</div>
+                          {item.codigo && <div className="pos-mac-item-code">{item.codigo}</div>}
+                          <div className="pos-mac-item-each">{formatCurrency(item.precioFinal || item.precio)} c/u</div>
+                        </div>
+                        <div className="pos-mac-item-qty">
+                          <button className="pos-mac-qty-btn" onClick={() => handleQuantityChange(item.id, -1)}>−</button>
+                          <span className="pos-mac-qty-val">{item.cantidad}</span>
+                          <button className="pos-mac-qty-btn" onClick={() => handleQuantityChange(item.id, 1)}>+</button>
+                        </div>
+                        <div className="pos-mac-item-total">{formatCurrency((item.precioFinal || item.precio) * item.cantidad)}</div>
+                        <button className="pos-mac-item-del" onClick={() => remove(item.id)}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Más vendidos carousel */}
+            {carouselItems.length > 0 && (
+              <div className="pos-mac-mv">
+                <div className="pos-mac-mv-title">
+                  Más vendidos
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </div>
+                <div className="pos-mac-carousel">
+                  {carouselItems.map((p, i) => {
+                    const bs = brandStyleOf(p);
+                    return (
+                      <button key={p.id} className="pos-mac-pcard" style={{ background: bs.bg, color: bs.text }} onClick={() => handleSelectProduct(p)}>
+                        <span className="pos-mac-pcard-rank">{i === 0 ? '♛' : `${i + 1}`}</span>
+                        <img className="pos-mac-pcard-img" src={firstImgV(p) || sinImagen} alt="" onError={e => { e.target.src = sinImagen; }} />
+                        <div className="pos-mac-pcard-body">
+                          <span className="pos-mac-pcard-brand">PuntoVerde</span>
+                          <span className="pos-mac-pcard-name">{p.nombre}</span>
+                          <span className="pos-mac-pcard-code">{p.codigo || '—'}</span>
+                          <div className="pos-mac-pcard-foot">
+                            <span className="pos-mac-pcard-price">{formatCurrency(p.precioVenta)}</span>
+                            <span className="pos-mac-pcard-add">+</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
-        </div>
 
-        {/* === COLUMNA DERECHA: botones + cuadro resumen === */}
-        <div className="venta-right-col">
-
-          {/* Cuadro de resumen */}
-          <div className="venta-right">
-          <div className="pos-summary-panel">
-            <div className="pos-summary-header">
-              <h3>Resumen de Venta</h3>
+          {/* ── Summary panel ── */}
+          <div className="pos-mac-panel">
+            <div className="pos-mac-panel-title">Resumen</div>
+            <div className="pos-mac-panel-rows">
+              <div className="pos-mac-panel-row"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
+              <div className="pos-mac-panel-row"><span>Descuentos</span><span>-{formatCurrency(descuentoTotal)}</span></div>
+              <div className="pos-mac-panel-row"><span>IVA (16%)</span><span>{formatCurrency(iva)}</span></div>
             </div>
-            <div className="pos-summary-body">
-              <div className="pos-summary-row">
-                <span>Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="pos-summary-row">
-                <span>IVA (16%)</span>
-                <span>{formatCurrency(iva)}</span>
-              </div>
-              <div className="pos-summary-divider"></div>
-              <div className="pos-summary-total">
-                <span className="pos-summary-total-label">Total</span>
-                <span className="pos-summary-total-amount">{formatCurrency(total)}</span>
-              </div>
+            <div className="pos-mac-panel-div" />
+            <div className="pos-mac-panel-total">
+              <span>Total</span>
+              <span className="pos-mac-panel-total-amt">{formatCurrency(total)}</span>
             </div>
-
-            <div className="pos-summary-actions">
-              <button className="pos-checkout-btn" onClick={handleCobrarClick} disabled={isEmpty}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="2" />
-                  <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" strokeWidth="2" />
-                </svg>
-                Cobrar {!isEmpty && formatCurrency(total)}
-              </button>
-
-              {/* Nueva Venta — solo mobile (desktop usa la barra de arriba) */}
-              {!isEmpty && (
-                <button className="pos-new-sale-btn pos-new-sale-mobile" onClick={handleNewSale}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
-                  Nueva Venta
-                </button>
-              )}
-            </div>
+            <button className="pos-mac-cobrar" onClick={handleCobrarClick} disabled={isEmpty}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+              </svg>
+              {isEmpty ? 'Cobrar' : `Cobrar ${formatCurrency(total)}`}
+            </button>
           </div>
-        </div>
         </div>
 
         {showScanner && (
-          <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />
+          <BarcodeScanner onProductDetected={handleBarcodeScan} onClose={() => setShowScanner(false)} />
         )}
-
         {showPaymentModal && (
-          <PaymentModal
-            onClose={() => setShowPaymentModal(false)}
-            onSuccess={() => {
-              setShowPaymentModal(false);
-            }}
-          />
+          <PaymentModal onClose={() => setShowPaymentModal(false)} onSuccess={() => setShowPaymentModal(false)} />
         )}
-
         {showCajaModal && (
-          <CajaModal 
-            caja={cajaAbierta} 
+          <CajaModal
+            caja={cajaAbierta}
             ventas={items}
             allSales={[]}
-            onClose={() => setShowCajaModal(false)} 
+            onClose={() => setShowCajaModal(false)}
             onCerrarCaja={() => { setShowCajaModal(false); setShowCerrarCajaModal(true); }}
           />
         )}
-
         {showCerrarCajaModal && (
           <CerrarCajaModal
             caja={cajaAbierta}
@@ -879,12 +933,11 @@ const Venta = () => {
             onCerrarExitoso={handleCierreExitoso}
           />
         )}
-      </div>{/* /venta-container */}
-      </div>{/* /venta-page-wrapper */}
+      </div>
 
       {showAbrirCajaModal && (
-        <AbrirCajaModal 
-          onClose={() => setShowAbrirCajaModal(false)} 
+        <AbrirCajaModal
+          onClose={() => setShowAbrirCajaModal(false)}
           onAperturaExitosa={handleAperturaExitosa}
         />
       )}

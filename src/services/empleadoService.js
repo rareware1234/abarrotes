@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getActivaId, filterByActiveEmpresa } from '../lib/empresaActiva';
 import { auth, storage } from '../firebase.js';
 
 const generatePassword = () => {
@@ -84,6 +85,7 @@ export const create = async (empleado) => {
     
     const empleadoRef = doc(collection(db, 'empleados'));
     await setDoc(empleadoRef, {
+      empresaId: getActivaId(),
       ...empleado,
       uid,
       rol: empleado.rol || 'STAFF',
@@ -149,6 +151,13 @@ export const toggleActivo = async (uid) => {
   }
 };
 
+/** Empleados de la empresa activa (réplica de EmpleadoService.fetchAllForActiveEmpresa Swift). */
+export const fetchAllForActiveEmpresa = async () => {
+  const res = await fetchAll();
+  if (!res.success) return res;
+  return { success: true, data: filterByActiveEmpresa(res.data) };
+};
+
 export const fetchByNumEmpleado = async (numEmpleado) => {
   try {
     const empleadosRef = collection(db, 'empleados');
@@ -210,6 +219,7 @@ export const uploadAvatar = async (uid, file) => {
 
 export default {
   fetchAll,
+  fetchAllForActiveEmpresa,
   getById,
   create,
   update,

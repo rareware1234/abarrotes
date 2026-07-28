@@ -1,319 +1,176 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bar } from 'react-chartjs-2';
+import logoBlanco from '../assets/logo-blanco.png';
+import { useAuth } from '../context/AuthContext';
 import {
   Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
+  CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, ArcElement,
+  Filler, Tooltip, Legend,
 } from 'chart.js';
-import { useAuth } from '../context/AuthContext';
-import StatCard from '../components/StatCard';
-import BadgeEstado from '../components/BadgeEstado';
-import orderService from '../services/orderService';
-import productService from '../services/productService';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase.js';
+import { useInicioData } from '../hooks/useInicioData';
+import { VentasHoyCard, VentasMesCard, BalanceCard, MetodosPagoCard, MetaMesCard, VentasMesPasadoCard, Tendencia6MesesCard } from '../components/inicio/VentasCards';
+import { FormatosCard, EstadosCard, TopTiendasCard, PeoresTiendasCard, SucursalDelMesCard } from '../components/inicio/SucursalesCards';
+import { MasVendidosCard, MenosVendidosCard } from '../components/inicio/ProductosCards';
+import { TopEmpleadosCard, AlertaStaffCard, EmpleadoDelMesCard } from '../components/inicio/StaffCards';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale, LinearScale, BarElement,
+  PointElement, LineElement, ArcElement,
+  Filler, Tooltip, Legend,
+);
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
-};
+/** Carrusel horizontal con page-dots que reflejan la tarjeta centrada. */
+function Carousel({ children, tight = false }) {
+  const ref = useRef(null);
+  const [index, setIndex] = useState(0);
+  const count = React.Children.count(children);
 
-const formatDate = (date) => {
-  if (!date) return '';
-  const d = date.toDate ? date.toDate() : new Date(date);
-  return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(d);
-};
-
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const { hasPermission } = useAuth();
-  
-  const [loading, setLoading] = useState(true);
-  const [ventasHoy, setVentasHoy] = useState(0);
-  const [ordenesHoy, setOrdenesHoy] = useState(0);
-  const [totalProductos, setTotalProductos] = useState(0);
-  const [totalClientes, setTotalClientes] = useState(0);
-  const [ordenesRecientes, setOrdenesRecientes] = useState([]);
-  const [ventasSemana, setVentasSemana] = useState({});
-  const [creditosStats, setCreditosStats] = useState({ total: 0, porVencer: 0, tasaPromedio: 0 });
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      const hoy = new Date();
-      const ventasResult = await orderService.getVentasHoy();
-      if (ventasResult.success) {
-        setVentasHoy(ventasResult.data.total);
-        setOrdenesHoy(ventasResult.data.count);
-      }
-
-      const productosResult = await productService.fetchAll();
-      if (productosResult.success) {
-        setTotalProductos(productosResult.data.length);
-      }
-
-      const clientesRef = collection(db, 'clientes');
-      const clientesSnapshot = await getDocs(clientesRef);
-      setTotalClientes(clientesSnapshot.size);
-
-      const semanaResult = await orderService.getVentasSemana();
-      if (semanaResult.success) {
-        setVentasSemana(semanaResult.data);
-      }
-
-      const ordenesResult = await orderService.getOrdenes('hoy');
-      if (ordenesResult.success) {
-        setOrdenesRecientes(ordenesResult.data.slice(0, 5));
-      }
-
-      if (hasPermission('creditos_ver')) {
-        const creditosRef = collection(db, 'creditos');
-        const creditosQ = query(creditosRef, where('estado', '==', 'activo'));
-        const creditosSnapshot = await getDocs(creditosQ);
-        
-        let totalCredito = 0;
-        let porVencer = 0;
-        let sumaTasa = 0;
-        let countTasa = 0;
-        const now = new Date();
-        
-        creditosSnapshot.forEach(doc => {
-          const data = doc.data();
-          totalCredito += data.montoUsado || 0;
-          
-          if (data.fechaVencimiento) {
-            const vencimiento = data.fechaVencimiento.toDate ? data.fechaVencimiento.toDate() : new Date(data.fechaVencimiento);
-            const diasRestantes = Math.ceil((vencimiento - now) / (1000 * 60 * 60 * 24));
-            if (diasRestantes <= 7 && diasRestantes > 0) {
-              porVencer++;
-            }
-          }
-          
-          if (data.tasaMensual) {
-            sumaTasa += data.tasaMensual;
-            countTasa++;
-          }
-        });
-        
-        setCreditosStats({
-          total: totalCredito,
-          porVencer,
-          tasaPromedio: countTasa > 0 ? Math.round(sumaTasa / countTasa) : 0
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const chartData = {
-    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-    datasets: [
-      {
-        label: 'Ventas',
-        data: [
-          ventasSemana['Lunes'] || 0,
-          ventasSemana['Martes'] || 0,
-          ventasSemana['Miércoles'] || 0,
-          ventasSemana['Jueves'] || 0,
-          ventasSemana['Viernes'] || 0,
-          ventasSemana['Sábado'] || 0,
-          ventasSemana['Domingo'] || 0
-        ],
-        backgroundColor: 'rgba(26, 122, 72, 0.6)',
-        borderRadius: 6,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (context) => formatCurrency(context.raw)
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value) => formatCurrency(value)
-        }
-      }
-    }
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos días';
-    if (hour < 18) return 'Buenas tardes';
-    return 'Buenas noches';
-  };
-
-  const getTodayDate = () => {
-    return new Intl.DateTimeFormat('es-MX', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    }).format(new Date());
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    const first = el.firstElementChild;
+    if (!first) return;
+    const gap = parseFloat(getComputedStyle(el).columnGap || 16) || 16;
+    const step = first.offsetWidth + gap;
+    setIndex(Math.round(el.scrollLeft / step));
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, margin: 0 }}>
-            {getGreeting()} 👋
-          </h1>
-          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-            {getTodayDate()}
-          </p>
-        </div>
+    <>
+      <div ref={ref} className={`inicio-carousel${tight ? ' inicio-carousel--tight' : ''}`} onScroll={onScroll}>
+        {children}
       </div>
-
-      <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <StatCard 
-          titulo="Ventas Hoy" 
-          valor={formatCurrency(ventasHoy)} 
-          icono={<i className="bi bi-cash-stack"></i>}
-          color="var(--role-primary)"
-          loading={loading}
-        />
-        <StatCard 
-          titulo="Órdenes Hoy" 
-          valor={ordenesHoy} 
-          icono={<i className="bi bi-cart-check"></i>}
-          color="#2563EB"
-          loading={loading}
-        />
-        <StatCard 
-          titulo="Productos" 
-          valor={totalProductos} 
-          icono={<i className="bi bi-box-seam"></i>}
-          color="#F97316"
-          loading={loading}
-        />
-        <StatCard 
-          titulo="Clientes" 
-          valor={totalClientes} 
-          icono={<i className="bi bi-people"></i>}
-          color="#7C3AED"
-          loading={loading}
-        />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', marginBottom: '24px' }}>
-        <div className="card" style={{ padding: '20px' }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>Ventas de la Semana</h3>
-          <div style={{ height: '250px' }}>
-            <Bar data={chartData} options={chartOptions} />
-          </div>
-        </div>
-      </div>
-
-      {hasPermission('creditos_ver') && (
-        <div style={{ marginBottom: '24px' }}>
-          <div className="card" style={{ padding: '20px' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>Créditos</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--role-primary)' }}>
-                  {formatCurrency(creditosStats.total)}
-                </div>
-                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Total Activo</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: '#F59E0B' }}>
-                  {creditosStats.porVencer}
-                </div>
-                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Por Vencer (&lt;7 días)</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: '#2563EB' }}>
-                  {creditosStats.tasaPromedio}%
-                </div>
-                <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Tasa Promedio</div>
-              </div>
-            </div>
-          </div>
+      {count > 1 && (
+        <div className="inicio-dots">
+          {Array.from({ length: count }).map((_, i) => (
+            <span key={i} className={`inicio-dot${i === index ? ' active' : ''}`} />
+          ))}
         </div>
       )}
+    </>
+  );
+}
 
-      <div className="card" style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Órdenes Recientes</h3>
-          <button 
-            onClick={() => navigate('/pedidos')}
-            style={{ background: 'none', border: 'none', color: 'var(--role-primary)', cursor: 'pointer', fontSize: '14px' }}
-          >
-            Ver todas →
-          </button>
-        </div>
-        
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            <span className="spinner-border spinner-border-sm me-2"></span>
-            Cargando...
-          </div>
-        ) : ordenesRecientes.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            <i className="bi bi-inbox" style={{ fontSize: '48px', opacity: 0.5 }}></i>
-            <p>No hay órdenes hoy</p>
-          </div>
+function Section({ title, to, children, tight }) {
+  const navigate = useNavigate();
+  return (
+    <section className="inicio-section">
+      <div
+        className="inicio-section-head"
+        onClick={() => to && navigate(to)}
+        style={to ? { cursor: 'pointer' } : undefined}
+      >
+        <h2>{title}</h2>
+        {to && <i className="bi bi-chevron-right" />}
+      </div>
+      <Carousel tight={tight}>{children}</Carousel>
+    </section>
+  );
+}
+
+const Dashboard = () => {
+  const d = useInicioData();
+  const navigate = useNavigate();
+  const { empleado, roleTheme } = useAuth();
+  const [selectedCard, setSelectedCard] = useState(null); // { key, gradient, title }
+
+  const initial = empleado?.nombre ? empleado.nombre.charAt(0).toUpperCase() : '?';
+
+  useEffect(() => {
+    const appEl = document.querySelector('.app');
+    if (!appEl) return;
+    appEl.style.background = selectedCard?.gradient || '';
+    return () => { appEl.style.background = ''; };
+  }, [selectedCard]);
+
+  const openCard = (key, gradient, title) => setSelectedCard({ key, gradient, title });
+  const closeCard = () => setSelectedCard(null);
+
+  const renderDetailContent = (key) => {
+    switch (key) {
+      case 'ventas-hoy':       return <VentasHoyCard {...d} />;
+      case 'ventas-mes':       return <VentasMesCard {...d} />;
+      case 'ventas-mes-pasado':return <VentasMesPasadoCard {...d} />;
+      case 'tendencia':        return <Tendencia6MesesCard {...d} />;
+      case 'balance':          return <BalanceCard {...d} />;
+      case 'metodos-pago':     return <MetodosPagoCard {...d} />;
+      case 'meta-mes':         return <MetaMesCard {...d} />;
+      case 'formatos':         return <FormatosCard {...d} />;
+      case 'estados':          return <EstadosCard {...d} />;
+      case 'top-tiendas':      return <TopTiendasCard {...d} />;
+      case 'peores-tiendas':   return <PeoresTiendasCard {...d} />;
+      case 'sucursal-del-mes': return <SucursalDelMesCard {...d} />;
+      case 'mas-vendidos':     return <MasVendidosCard {...d} />;
+      case 'menos-vendidos':   return <MenosVendidosCard {...d} />;
+      case 'empleado-del-mes': return <EmpleadoDelMesCard {...d} />;
+      case 'top-empleados':    return <TopEmpleadosCard {...d} />;
+      case 'alerta-staff':     return <AlertaStaffCard {...d} />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className={`inicio-page${selectedCard ? ' inicio-card-open' : ''}`}>
+      <div className="inicio-inner">
+        {selectedCard ? (
+          <>
+            {/* ── Hero del card seleccionado ── */}
+            <div className="inicio-card-detail-hero" style={{ background: selectedCard.gradient }}>
+              <img src={logoBlanco} alt="" className="tb-formato-hero-watermark" />
+              <button className="tb-hero-back" onClick={closeCard} style={{ color: 'rgba(255,255,255,0.9)' }}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+              </button>
+              <div style={{ marginTop: 20, fontSize: 28, fontWeight: 800, color: 'rgba(255,255,255,0.97)', lineHeight: 1.2 }}>
+                {selectedCard.title}
+              </div>
+            </div>
+            {/* ── Contenido del card a pantalla completa ── */}
+            <div className="inicio-card-detail-body">
+              {renderDetailContent(selectedCard.key)}
+            </div>
+          </>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>ID</th>
-                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Método</th>
-                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Productos</th>
-                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Total</th>
-                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>
-                  <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ordenesRecientes.map((orden) => (
-                  <tr 
-                    key={orden.id} 
-                    onClick={() => navigate('/pedidos')}
-                    style={{ cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
-                  >
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{orden.id.slice(-8)}</td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>
-                      <i className={`bi ${orden.metodoPago === 'efectivo' ? 'bi-cash' : orden.metodoPago === 'tarjeta' ? 'bi-credit-card' : 'bi-wallet2'}`}></i>{' '}
-                      {orden.metodoPago}
-                    </td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{orden.productos?.length || 0}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>{formatCurrency(orden.total)}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>{formatDate(orden.createdAt)}</td>
-                    <td style={{ padding: '12px' }}>
-                      <BadgeEstado estado={orden.estado || orden.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <header className="inicio-header">
+              <h1>Inicio</h1>
+            </header>
+
+            {d.loading ? (
+              <div className="inicio-spinner" />
+            ) : (
+              <>
+                <Section title="Ventas" to="/pedidos">
+                  <VentasHoyCard {...d} onCardClick={(g) => openCard('ventas-hoy', g, 'Hoy')} />
+                  <VentasMesCard {...d} onCardClick={(g) => openCard('ventas-mes', g, 'Mes')} />
+                  <VentasMesPasadoCard {...d} onCardClick={(g) => openCard('ventas-mes-pasado', g, 'Mes anterior')} />
+                  <Tendencia6MesesCard {...d} onCardClick={(g) => openCard('tendencia', g, 'Tendencia 6 meses')} />
+                  <BalanceCard {...d} onCardClick={(g) => openCard('balance', g, 'Balance')} />
+                  <MetodosPagoCard {...d} onCardClick={(g) => openCard('metodos-pago', g, 'Métodos de pago')} />
+                  <MetaMesCard {...d} onCardClick={(g) => openCard('meta-mes', g, 'Meta del mes')} />
+                </Section>
+
+                <Section title="Sucursales" to="/tiendas" tight>
+                  <SucursalDelMesCard {...d} onCardClick={(g) => openCard('sucursal-del-mes', g, 'Sucursal del Mes')} />
+                  <FormatosCard {...d} onCardClick={(g) => openCard('formatos', g, 'Formatos')} />
+                  <EstadosCard {...d} onCardClick={(g) => openCard('estados', g, 'Estados')} />
+                  <TopTiendasCard {...d} onCardClick={(g) => openCard('top-tiendas', g, 'Mejor desempeño')} />
+                  <PeoresTiendasCard {...d} onCardClick={(g) => openCard('peores-tiendas', g, 'Peor desempeño')} />
+                </Section>
+
+                <Section title="Productos" to="/productos" tight>
+                  <MasVendidosCard {...d} onCardClick={(g) => openCard('mas-vendidos', g, 'Más vendidos')} />
+                  <MenosVendidosCard {...d} onCardClick={(g) => openCard('menos-vendidos', g, 'Menos vendidos')} />
+                </Section>
+
+                <Section title="Staff" to="/empleados" tight>
+                  <EmpleadoDelMesCard {...d} onCardClick={(g) => openCard('empleado-del-mes', g, 'Empleado del Mes')} />
+                  <TopEmpleadosCard {...d} onCardClick={(g) => openCard('top-empleados', g, 'Top empleados')} />
+                  <AlertaStaffCard {...d} onCardClick={(g) => openCard('alerta-staff', g, 'Alerta staff')} />
+                </Section>
+              </>
+            )}
+          </>
         )}
       </div>
     </div>

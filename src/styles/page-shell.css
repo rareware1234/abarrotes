@@ -1,0 +1,289 @@
+/* ============================================
+   SHELL DE DISEÑO — gradiente + título blanco
+   Aplica el lenguaje de Inicio/Productos/Sucursales
+   al resto de ventanas. Se importa al final para
+   ganar en cascada sobre los CSS de cada página.
+   ============================================ */
+
+/* ── POS (Venta) ── */
+.content-area:has(.venta-page-wrapper) {
+  background: transparent !important;
+}
+.venta-page-wrapper .tiendas-header {
+  background: transparent !important;
+}
+.venta-page-wrapper .tiendas-header h1 {
+  color: #fff !important;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.venta-page-wrapper .tiendas-subtitle {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* 1) Fondo: deja ver el gradiente único de .app en todas estas vistas. */
+.content-area:has(.orders-container),
+.content-area:has(.tareas-reminders),
+.content-area:has(.promociones-container),
+.content-area:has(.caja-container),
+.content-area:has(.credito-dashboard),
+.content-area:has(.horarios-container),
+.content-area:has(.empleados-container),
+.content-area:has(.perfil-page),
+.content-area:has(.config-page) {
+  background: transparent !important;
+}
+
+/* 2) Header transparente (las que usan .tiendas-header). */
+.orders-container .tiendas-header,
+.tareas-reminders .tiendas-header,
+.promociones-container .tiendas-header,
+.caja-container .tiendas-header,
+.config-page .tiendas-header {
+  background: transparent !important;
+}
+
+/* 3) Títulos de página en blanco (incluye los de color inline vía !important). */
+.orders-container .tiendas-header h1,
+.tareas-reminders .tiendas-header h1,
+.promociones-container .tiendas-header h1,
+.caja-container .tiendas-header h1,
+.credito-dashboard-header h1,
+.horarios-header h1,
+.config-page h1 {
+  color: #fff !important;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* 4) Subtítulos / labels translúcidos sobre el gradiente. */
+.orders-container .tiendas-subtitle,
+.tareas-reminders .tiendas-subtitle,
+.promociones-container .tiendas-subtitle,
+.caja-container .tiendas-subtitle,
+.config-page .tiendas-subtitle,
+.credito-dashboard-header p,
+.horarios-header .horarios-week-label {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 5) Botón "+" Liquid Glass. */
+.orders-container .tiendas-add-btn,
+.tareas-reminders .tiendas-add-btn,
+.promociones-container .tiendas-add-btn,
+.caja-container .tiendas-add-btn {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 6) Spinners de carga en blanco. */
+.orders-container .spinner-border,
+.tareas-reminders .spinner-border,
+.promociones-container .spinner-border,
+.caja-container .spinner-border,
+.credito-dashboard .spinner-border,
+.horarios-container .spinner-border,
+.empleados-container .spinner-border {
+  color: #fff !important;
+}
+
+/* 8) Staff (Empleados): panel/sidebar transparente → la lista flota como
+   card blanca sobre el gradiente; título "Staff" en blanco. */
+.empleados-container,
+.empleados-container .empleados-sidebar,
+.empleados-container .empleados-list-header {
+  background: transparent !important;
+}
+.empleados-container .empleados-list-scroll {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  margin: 0 10px 10px;
+}
+
+/* 9) Filtros sobre el gradiente — Pedidos y Promociones. */
+.orders-container .filter-chip,
+.promociones-container .filter-chip {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #fff !important;
+}
+.orders-container .filter-chip.active,
+.promociones-container .filter-chip.active {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: var(--role-primary) !important;
+}
+
+/* 7) Horarios: la navegación de semana (Hoy / flechas) sobre el gradiente. */
+.horarios-header .horarios-today-btn,
+.horarios-header .horarios-nav-btn {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* ============================================================
+   UNIFICACIÓN DE LAYOUT (desktop) — mismo patrón que Inicio
+   content-area: padding 0 → gradiente llega a los bordes.
+   Contenedor de página: 20px horizontal → iguala inicio-section.
+   Header: position static + padding 24px arriba → iguala
+           inicio-inner (16px) + inicio-header (8px) = 24px.
+   ============================================================ */
+@media (min-width: 1024px) {
+
+  /* A) Eliminar el padding-24px del content-area */
+  .content-area:has(.orders-container),
+  .content-area:has(.tareas-reminders),
+  .content-area:has(.promociones-container),
+  .content-area:has(.caja-container),
+  .content-area:has(.credito-dashboard),
+  .content-area:has(.horarios-container),
+  .content-area:has(.empleados-container),
+  .content-area:has(.perfil-page),
+  .content-area:has(.config-page) {
+    padding: 0 !important;
+  }
+
+  /* ── Tareas: scroll-area propio (igual que Products/Tiendas) ──
+     Tiendas.css la pone en flex-column; anulamos para que
+     content-area haga el scroll directamente. */
+  .content-area:has(.tareas-reminders) {
+    overflow-y: auto !important;
+    display: block !important;
+  }
+  .tareas-reminders {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    min-height: 100%;
+  }
+  .tareas-reminders .tiendas-header {
+    position: static !important;
+    padding: 60px 20px 0 !important;
+    margin-bottom: 24px !important;
+    background: transparent !important;
+  }
+  .tareas-reminders .tareas-scroll-area {
+    flex: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 16px 20px 40px !important;
+  }
+  .tareas-reminders .filter-chips-bar {
+    position: static !important;
+    background: transparent !important;
+  }
+
+  /* ── Pedidos, Promociones, Caja, Crédito, Configuración ──
+     Layout simple: el contenedor provee los 20px horizontales y
+     el header su propio top-padding de 24px. */
+  .orders-container,
+  .promociones-container,
+  .caja-container,
+  .credito-dashboard,
+  .config-page {
+    padding: 0 0 40px !important;
+    min-height: 100%;
+  }
+  .orders-container .tiendas-header,
+  .promociones-container .tiendas-header,
+  .caja-container .tiendas-header,
+  .credito-dashboard .tiendas-header,
+  .config-page .tiendas-header {
+    position: static !important;
+    padding: 60px 0 0 !important;
+    background: transparent !important;
+  }
+  .orders-container .filter-chips-bar,
+  .promociones-container .filter-chips-bar,
+  .caja-container .filter-chips-bar {
+    position: static !important;
+    background: transparent !important;
+  }
+
+  /* ── Turnos ── */
+  .horarios-container {
+    padding: 0 0 40px !important;
+    min-height: 100%;
+  }
+  .horarios-container .horarios-header {
+    position: static !important;
+    padding: 60px 0 12px !important;
+    background: transparent !important;
+  }
+  .horarios-container .horarios-scroll {
+    padding: 0 !important;
+  }
+
+  /* ── Empleados ── */
+  .empleados-container {
+    min-height: 100%;
+    padding-bottom: 40px !important;
+  }
+  .empleados-container .empleados-list-header {
+    padding: 60px 20px 12px !important;
+  }
+  .empleados-container .empleados-list-scroll {
+    margin: 0 20px 10px !important;
+  }
+
+  /* ── Mi Perfil ── */
+  .perfil-page {
+    padding: 24px 20px 40px !important;
+    min-height: 100%;
+  }
+
+  /* ── translateY(20px) en todos los títulos de página ──────────────────────
+     Iguala la posición visual con Inicio y Productos:
+     content(0) + header-padding(24) + translateY(20) = 44px desde el borde.
+     Sin este transform los títulos quedan 20px más arriba.
+     También se añade margin-bottom al header para que el contenido
+     siguiente no quede detrás del título desplazado. ── */
+  .orders-container .tiendas-header h1,
+  .tareas-reminders .tiendas-header h1,
+  .promociones-container .tiendas-header h1,
+  .caja-container .tiendas-header h1,
+  .credito-dashboard .tiendas-header h1,
+  .config-page .tiendas-header h1 {
+    transform: translateY(20px);
+  }
+  .horarios-header h1 {
+    transform: translateY(20px);
+  }
+  .empleados-container .empleados-list-header h1 {
+    transform: translateY(20px);
+  }
+
+  /* Espacio bajo el header (igual que Productos/Sucursales) */
+  .orders-container .tiendas-header,
+  .promociones-container .tiendas-header,
+  .caja-container .tiendas-header,
+  .credito-dashboard .tiendas-header,
+  .config-page .tiendas-header,
+  .horarios-container .horarios-header,
+  .empleados-container .empleados-list-header {
+    margin-bottom: 24px !important;
+  }
+}
+
+/* ============================================================
+   MOBILE — espacio para mobile-topbar + ocultar h1 de página
+   (el título lo muestra el topbar fijo de App.jsx)
+   ============================================================ */
+@media (max-width: 1023px) {
+  /* Tareas no usa inicio-inner, necesita su propio top-padding */
+  .content-area:has(.tareas-reminders) {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 52px) !important;
+  }
+  /* h1 de Tareas: visible, aparece debajo del botón flotante */
+  .tareas-reminders .tiendas-header h1 {
+    display: block;
+  }
+}

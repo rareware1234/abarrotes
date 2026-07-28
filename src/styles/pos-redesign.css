@@ -1,0 +1,1029 @@
+/* ============================================
+   Pill flotante (mini-player Apple Music) + hoja del POS
+   ============================================ */
+.pos-pill {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(92vw, 560px);
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+.pos-pill:hover { box-shadow: 0 16px 40px rgba(0, 0, 0, 0.26); }
+.pos-pill:active { transform: translateX(-50%) scale(0.985); }
+.pos-pill-cart { color: var(--role-primary); display: flex; flex-shrink: 0; }
+.pos-pill-info { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.pos-pill-total { font-size: 17px; font-weight: 800; color: var(--text-dark); }
+.pos-pill-count { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.pos-pill-cta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--role-primary);
+  white-space: nowrap;
+}
+
+/* En desktop la pill se centra sobre el área de contenido (no sobre la barra). */
+@media (min-width: 1024px) {
+  .pos-pill { left: calc(50% + 128px); }
+  .app.sidebar-collapsed .pos-pill { left: 50%; }
+}
+
+/* Hoja del POS — sube desde abajo, ocupa toda la pantalla. */
+.pos-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: var(--role-gradient);
+  display: flex;
+  flex-direction: column;
+  padding-top: 36px; /* espacio para el drag handle */
+  animation: posSheetUp 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes posSheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes posSheetDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+.pos-sheet-closing {
+  animation: posSheetDown 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+.pos-sheet .content-area {
+  flex: 1;
+  min-height: 0;
+  background: transparent !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Botón cerrar — círculo 16px con X */
+.pos-sheet-close-btn {
+  position: absolute;
+  top: 18px;
+  left: 32px;
+  z-index: 2100;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.pos-sheet-close-btn:hover { background: rgba(255, 255, 255, 0.32); }
+
+/* Drag handle capsule — misma cápsula blanca que Swift (44×5, opacity 0.55) */
+.pos-sheet-close {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2100;
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  padding: 0;
+}
+.pos-sheet-close:hover { background: rgba(255, 255, 255, 0.75); }
+
+/* ============================================
+   POS — Rediseño Swift (POSView): paneles glass
+   translúcidos sobre el gradiente, header con logo,
+   texto blanco. Importado al final → gana en cascada.
+   ============================================ */
+
+/* ---- Header con logo + tienda ---- */
+.pos-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+}
+.pos-header-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.pos-header-logo {
+  height: 26px;
+  object-fit: contain;
+  align-self: flex-start;
+}
+.pos-header-tienda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.88);
+}
+.pos-header-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d058;
+  box-shadow: 0 0 6px rgba(52, 208, 88, 0.7);
+  flex-shrink: 0;
+}
+.pos-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.pos-glass-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.pos-glass-btn:hover { background: rgba(255, 255, 255, 0.28); }
+.pos-glass-btn:active { transform: scale(0.94); }
+.pos-glass-btn:disabled { opacity: 0.4; cursor: default; }
+.pos-glass-btn.danger { color: #FECACA; }
+
+/* ---- Mixin glass para paneles ---- */
+.venta-page-wrapper .pos-cart-card,
+.venta-page-wrapper .pos-summary-panel {
+  background: rgba(255, 255, 255, 0.10) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 22px !important;
+  box-shadow: none !important;
+}
+/* contenedor blanco que envolvía el resumen → transparente */
+.venta-page-wrapper .venta-right {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* ---- Buscador glass ---- */
+.venta-page-wrapper .pos-search-bar {
+  background: rgba(255, 255, 255, 0.14) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+.venta-page-wrapper .pos-search-bar .search-input-wrapper svg,
+.venta-page-wrapper .pos-search-bar input { color: #fff !important; }
+.venta-page-wrapper .pos-search-bar input::placeholder { color: rgba(255, 255, 255, 0.65) !important; }
+.venta-page-wrapper .pos-search-bar input { background: transparent !important; }
+
+/* El dropdown de sugerencias SÍ se queda blanco (popover claro). */
+.venta-page-wrapper .pos-suggestions {
+  background: #fff !important;
+  color: var(--text-dark);
+}
+
+/* ---- Carrito glass — texto blanco, fila compacta igual que cartRow en Swift ---- */
+.venta-page-wrapper .pos-cart-items { background: transparent !important; }
+.venta-page-wrapper .pos-cart-item {
+  gap: 10px !important;
+  padding: 9px 12px !important;
+  border-bottom: none !important;
+  background: rgba(255,255,255,0.07) !important;
+  border-radius: 10px !important;
+  margin-bottom: 8px !important;
+}
+.venta-page-wrapper .pos-cart-item:last-child { margin-bottom: 0 !important; }
+.venta-page-wrapper .pos-item-name {
+  font-size: 14px !important; font-weight: 600 !important;
+  color: #fff !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.venta-page-wrapper .pos-item-code { color: rgba(255,255,255,0.78) !important; }
+.venta-page-wrapper .pos-item-total {
+  font-size: 14px !important; font-weight: 700 !important; color: #fff !important;
+  min-width: 56px !important;
+}
+.venta-page-wrapper .pos-qty-value {
+  font-size: 14px !important; font-weight: 800 !important; color: #fff !important; min-width: 18px !important;
+}
+.venta-page-wrapper .pos-qty-btn {
+  width: 26px !important; height: 26px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  border: none !important;
+  font-size: 13px !important; font-weight: 800 !important;
+}
+.venta-page-wrapper .pos-qty-btn:hover { background: rgba(255,255,255,0.28) !important; }
+.venta-page-wrapper .pos-item-quantity { margin: 0 !important; gap: 4px !important; }
+.venta-page-wrapper .pos-item-delete {
+  width: 26px !important; height: 26px !important;
+  border-radius: 50% !important;
+  background: rgba(255,255,255,0.10) !important;
+  color: rgba(255,255,255,0.65) !important;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: 0 !important; padding: 0 !important;
+}
+.venta-page-wrapper .pos-item-delete svg { width: 12px !important; height: 12px !important; }
+/* Carrito vacío — solo ícono centrado, sin texto (igual que emptyCartState en Swift) */
+.venta-page-wrapper .pos-empty-cart {
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  flex: 1 !important; padding: 0 !important;
+  color: transparent !important;
+}
+.venta-page-wrapper .pos-empty-cart svg {
+  width: 48px !important; height: 48px !important;
+  color: rgba(255,255,255,0.25) !important; opacity: 1 !important;
+}
+
+/* ---- Resumen (texto blanco) ---- */
+.venta-page-wrapper .pos-summary-header h3 { color: #fff !important; }
+.venta-page-wrapper .pos-summary-row { color: rgba(255, 255, 255, 0.82) !important; }
+.venta-page-wrapper .pos-summary-row span { color: rgba(255, 255, 255, 0.82) !important; }
+.venta-page-wrapper .pos-summary-divider { background: rgba(255, 255, 255, 0.2) !important; }
+.venta-page-wrapper .pos-summary-total-label { color: #fff !important; }
+.venta-page-wrapper .pos-summary-total-amount { color: #fff !important; }
+
+/* ---- Botón Cobrar — blanco sólido, texto del rol (resalta en el gradiente) ---- */
+.venta-page-wrapper .pos-checkout-btn {
+  background: #fff !important;
+  color: var(--role-primary) !important;
+  border: none !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18) !important;
+}
+.venta-page-wrapper .pos-checkout-btn:disabled {
+  background: rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: none !important;
+}
+.venta-page-wrapper .pos-new-sale-btn {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* ============================================
+   POS Now Playing — layout de una sola columna
+   ============================================ */
+.pos-np-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px 12px;
+  flex-shrink: 0;
+}
+.pos-np-emblem {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #0F4D2D, #09381E);
+  padding: 9px; object-fit: contain; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+.pos-np-tienda { min-width: 0; flex: 1; }
+.pos-np-name { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos-np-status { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.72); margin-top: 2px; }
+.pos-np-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d058; box-shadow: 0 0 6px rgba(52,208,88,0.7); }
+.pos-np-ventas {
+  display: flex; align-items: center; gap: 9px;
+  background: rgba(255,255,255,0.15);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 14px; padding: 8px 14px; color: #fff; cursor: pointer; flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.pos-np-ventas:hover { background: rgba(255,255,255,0.24); }
+.pos-np-ventas-txt { display: flex; flex-direction: column; line-height: 1.1; text-align: right; }
+.pos-np-ventas-total { font-size: 16px; font-weight: 800; }
+.pos-np-ventas-count { font-size: 10px; font-weight: 600; opacity: 0.8; }
+
+/* venta-page-wrapper en el pos-sheet: flex column para ocupar todo el alto */
+.pos-sheet .venta-page-wrapper,
+.pos-sheet .venta-page-wrapper.caja-abierta {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+/* En la ruta directa (/): también flex column para que funcione igual */
+.content-area:has(.pos-single) .venta-page-wrapper,
+.content-area:has(.pos-single) .venta-page-wrapper.caja-abierta {
+  display: flex !important;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Una sola columna */
+.venta-container.pos-single {
+  display: flex !important;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 24px 14px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.pos-single .pos-search-bar { flex-shrink: 0; margin-bottom: 0; }
+.pos-single .pos-cart-card {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; margin: 0;
+}
+.pos-single .pos-cart-items { flex: 1; min-height: 0; overflow-y: auto; }
+.pos-single .pos-empty-cart { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pos-single .pos-empty-cart svg { width: 64px; height: 64px; opacity: 0.4; }
+
+/* Carrusel "Más vendidos" */
+.pos-carousel { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: none; flex-shrink: 0; }
+.pos-carousel::-webkit-scrollbar { display: none; }
+.pos-prod-card {
+  flex: 0 0 auto; width: 200px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.22);
+  cursor: pointer; position: relative; text-align: left;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  transition: transform 0.1s ease;
+}
+.pos-prod-card:active { transform: scale(0.97); }
+.pos-prod-rank {
+  position: absolute; top: -6px; left: -6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; color: #1C1E21; font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.9);
+}
+.pos-prod-rank.crown { background: linear-gradient(135deg, #FFD95A, #F2B226); color: #5A3800; }
+.pos-prod-thumb { width: 40px; height: 40px; border-radius: 10px; background: #fff; object-fit: contain; padding: 3px; flex-shrink: 0; }
+.pos-prod-info { display: flex; flex-direction: column; min-width: 0; flex: 1; line-height: 1.15; }
+.pos-prod-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos-prod-code { font-size: 9px; font-weight: 800; letter-spacing: 0.4px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos-prod-price { font-size: 12px; font-weight: 800; }
+.pos-prod-add { flex-shrink: 0; display: flex; }
+
+/* Thumbnail + badge de marca en filas del carrito (productoThumb en Swift) */
+.pos-cart-thumb-wrap {
+  position: relative;
+  width: 40px; height: 40px;
+  flex-shrink: 0;
+}
+.pos-cart-thumb {
+  width: 40px; height: 40px;
+  border-radius: 9px;
+  background: #fff;
+  object-fit: contain;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.22);
+  display: block;
+}
+/* Badge de marca en esquina inferior-derecha — circle con color de marca */
+.pos-cart-thumb-badge {
+  position: absolute;
+  bottom: -4px; right: -4px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.55);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.30);
+}
+/* Código del producto en fila del carrito (10px heavy, mismo que Swift) */
+.pos-item-code {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.4px;
+  color: rgba(255,255,255,0.78); line-height: 1.2;
+}
+
+/* Resumen — tamaños exactos de Swift resumenVenta */
+.pos-np-summary { flex-shrink: 0; padding: 0 6px; }
+.pos-np-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; }
+.pos-np-row span:first-child { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.65); }
+.pos-np-row span:last-child { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.92); }
+.pos-np-divider { height: 0.5px; background: rgba(255,255,255,0.14); margin: 6px 0 2px; }
+.pos-np-total { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0 2px; }
+.pos-np-total span:first-child { font-size: 15px; font-weight: 700; color: #fff; }
+.pos-np-total span:last-child { font-size: 22px; font-weight: 800; color: #fff; }
+
+/* Cobrar full-width */
+.pos-np-cobrar {
+  flex-shrink: 0; width: 100%; height: 52px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 16px; font-size: 17px;
+}
+
+/* ============================================
+   POS — Rediseño macOS (.pos-mac-*)
+   ============================================ */
+
+.pos-mac-wrap { display: none; }
+.pos-mac-wrap.caja-abierta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #111111;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* Ensure it fills the pos-sheet */
+.pos-sheet .pos-mac-wrap.caja-abierta {
+  display: flex !important;
+}
+.content-area:has(.pos-mac-wrap) .pos-mac-wrap.caja-abierta {
+  height: 100%;
+}
+
+/* ── Header ── */
+.pos-mac-hdr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+}
+.pos-mac-store {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.pos-mac-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0F4D2D, #07291B);
+  padding: 7px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.pos-mac-sname {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pos-mac-sstatus {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.48);
+  margin-top: 1px;
+}
+.pos-mac-sdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d058;
+  box-shadow: 0 0 5px rgba(52, 208, 88, 0.7);
+  flex-shrink: 0;
+}
+.pos-mac-mid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+.pos-mac-hdr-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.pos-mac-hbtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.pos-mac-hbtn:hover { background: rgba(255, 255, 255, 0.16); }
+.pos-mac-hbtn:active { background: rgba(255, 255, 255, 0.05); }
+
+/* ── Body ── */
+.pos-mac-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Main column ── */
+.pos-mac-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 14px 16px 12px;
+  gap: 10px;
+}
+
+/* Search bar */
+.pos-mac-searchbar {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+.pos-mac-search-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 9px 14px;
+}
+.pos-mac-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-family: inherit;
+  min-width: 0;
+}
+.pos-mac-search-input::placeholder { color: rgba(255, 255, 255, 0.32); }
+.pos-mac-search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.pos-mac-spinner { color: rgba(255, 255, 255, 0.45); width: 14px !important; height: 14px !important; border-width: 2px !important; }
+
+/* Suggestions dropdown */
+.pos-mac-suggestions {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+.pos-mac-suggestions-hdr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.4);
+}
+.pos-mac-sug-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.pos-mac-sug-row:hover { background: rgba(255, 255, 255, 0.07); }
+.pos-mac-sug-thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+  object-fit: contain;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.pos-mac-sug-info { flex: 1; min-width: 0; }
+.pos-mac-sug-name { display: block; font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos-mac-sug-code { display: block; font-size: 11px; color: rgba(255, 255, 255, 0.42); margin-top: 1px; }
+.pos-mac-sug-price { font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.85); flex-shrink: 0; }
+
+/* ── Cart content area ── */
+.pos-mac-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: none;
+}
+
+/* Empty state */
+.pos-mac-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 14px;
+  user-select: none;
+}
+.pos-mac-empty-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #0F4D2D, #07291B);
+  padding: 18px;
+  object-fit: contain;
+  opacity: 0.5;
+}
+.pos-mac-empty-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Cart items list */
+.pos-mac-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 6px;
+}
+.pos-mac-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 13px;
+}
+.pos-mac-item-tw {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.pos-mac-item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.12);
+  object-fit: contain;
+  padding: 4px;
+  display: block;
+}
+.pos-mac-item-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+}
+.pos-mac-item-info { flex: 1; min-width: 0; }
+.pos-mac-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pos-mac-item-code {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.42);
+  letter-spacing: 0.3px;
+}
+.pos-mac-item-each {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 1px;
+}
+.pos-mac-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pos-mac-qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 17px;
+  font-weight: 300;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+}
+.pos-mac-qty-btn:hover { background: rgba(255, 255, 255, 0.22); }
+.pos-mac-qty-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  min-width: 20px;
+  text-align: center;
+}
+.pos-mac-item-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+  min-width: 64px;
+  text-align: right;
+}
+.pos-mac-item-del {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(230, 57, 70, 0.15);
+  border: none;
+  cursor: pointer;
+  color: rgba(230, 100, 110, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+}
+.pos-mac-item-del:hover { background: rgba(230, 57, 70, 0.28); }
+.pos-mac-item-del svg { width: 13px; height: 13px; }
+
+/* ── Más vendidos ── */
+.pos-mac-mv { flex-shrink: 0; }
+.pos-mac-mv-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.48);
+  margin-bottom: 8px;
+}
+.pos-mac-carousel {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.pos-mac-carousel::-webkit-scrollbar { display: none; }
+
+/* Product card */
+.pos-mac-pcard {
+  flex: 0 0 auto;
+  width: 195px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 8px;
+  border-radius: 18px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.pos-mac-pcard:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4); }
+.pos-mac-pcard:active { transform: scale(0.96); }
+.pos-mac-pcard-rank {
+  position: absolute;
+  top: 7px;
+  left: 9px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.65);
+}
+.pos-mac-pcard-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  object-fit: contain;
+  padding: 5px;
+  flex-shrink: 0;
+}
+.pos-mac-pcard-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+.pos-mac-pcard-brand {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.52);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pos-mac-pcard-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pos-mac-pcard-code {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.48);
+  letter-spacing: 0.3px;
+}
+.pos-mac-pcard-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+.pos-mac-pcard-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: inherit;
+}
+.pos-mac-pcard-add {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Summary panel ── */
+.pos-mac-panel {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 18px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+}
+.pos-mac-panel-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 18px;
+}
+.pos-mac-panel-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pos-mac-panel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.pos-mac-panel-row span:first-child {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.48);
+}
+.pos-mac-panel-row span:last-child {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.82);
+}
+.pos-mac-panel-div {
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 16px 0;
+}
+.pos-mac-panel-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 22px;
+}
+.pos-mac-panel-total span:first-child {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.82);
+}
+.pos-mac-panel-total-amt {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+}
+.pos-mac-cobrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 54px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition: opacity 0.15s ease;
+  background: var(--role-primary);
+  color: #fff;
+  margin-top: auto;
+}
+.pos-mac-cobrar:not(:disabled):hover { opacity: 0.88; }
+.pos-mac-cobrar:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+/* ── Mobile layout ── */
+@media (max-width: 1023px) {
+  .pos-mac-hdr { padding: 9px 14px; gap: 10px; }
+  .pos-mac-mid { display: none; }
+
+  .pos-mac-body { flex-direction: column; }
+
+  .pos-mac-main {
+    padding: 10px 12px 8px;
+    gap: 8px;
+  }
+
+  .pos-mac-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 14px max(env(safe-area-inset-bottom, 0px), 14px);
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .pos-mac-panel-title { display: none; }
+  .pos-mac-panel-rows { gap: 8px; }
+  .pos-mac-panel-row span:first-child { font-size: 11px; }
+  .pos-mac-panel-row span:last-child { font-size: 13px; }
+  .pos-mac-panel-div { margin: 8px 0; }
+  .pos-mac-panel-total { margin-bottom: 0; }
+  .pos-mac-panel-total-amt { font-size: 22px; }
+
+  .pos-mac-cobrar {
+    height: 48px;
+    font-size: 15px;
+    border-radius: 14px;
+    margin-top: 0;
+  }
+
+  .pos-mac-pcard { width: 175px; height: 100px; }
+  .pos-mac-pcard-img { width: 62px; height: 62px; }
+
+  .pos-mac-empty-icon { width: 76px; height: 76px; border-radius: 20px; padding: 14px; }
+}

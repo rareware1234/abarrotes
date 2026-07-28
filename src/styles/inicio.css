@@ -1,0 +1,525 @@
+/* ============================================
+   INICIO — port de InicioView.swift
+   Fondo con gradiente dinámico por rol/formato +
+   secciones con carruseles horizontales (Apple Music).
+   ============================================ */
+
+.inicio-page {
+  min-height: 100%;
+  width: 100%;
+}
+
+/* El gradiente vive en `.app` (un solo fondo continuo para toda la
+   ventana). Aquí anulamos el padding y el fondo gris del content-area
+   para que ese gradiente único se vea sin costuras. */
+.content-area:has(.inicio-page) {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.inicio-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 16px 0 40px;
+  min-height: 100%;
+}
+
+/* ── Card detail mode ── */
+.inicio-card-open .inicio-inner {
+  padding: 0;
+  gap: 0;
+}
+.inicio-card-detail-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 56px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+  flex-shrink: 0;
+}
+@media (max-width: 1023px) {
+  .inicio-card-detail-hero {
+    padding: calc(env(safe-area-inset-top, 0px) + 56px) 20px 24px;
+  }
+}
+.inicio-card-detail-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.inicio-card-detail-body .hero-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: none !important;
+  height: auto !important;
+  min-height: 280px;
+  border-radius: 20px;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.12) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+/* En móvil, espacio para el botón flotante del topbar. */
+@media (max-width: 1023px) {
+  .inicio-inner {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 52px);
+  }
+  .inicio-section-head { padding-left: 32px; }
+  .inicio-carousel    { padding-left: 32px; }
+}
+
+/* ---- Header ---- */
+.inicio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px 0;
+}
+
+@media (min-width: 1024px) {
+  .app.is-fullscreen .inicio-header      { padding-left: 32px; }
+  .app.is-fullscreen .inicio-section-head { padding-left: 32px; }
+  .app.is-fullscreen .inicio-carousel    { padding-left: 32px; }
+}
+
+
+.inicio-header h1 {
+  font-size: 34px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.inicio-header-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 2px;
+}
+
+
+/* ---- Sección ---- */
+.inicio-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inicio-section-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  cursor: pointer;
+  user-select: none;
+  align-self: flex-start;
+}
+
+.inicio-section-head h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.inicio-section-head i {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ---- Carrusel horizontal ---- */
+.inicio-carousel {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 20px;
+  scrollbar-width: none;
+}
+.inicio-carousel::-webkit-scrollbar { display: none; }
+.inicio-carousel > * { scroll-snap-align: center; }
+
+.inicio-carousel--tight { gap: 12px; }
+
+/* ---- Page dots ---- */
+.inicio-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 4px;
+}
+.inicio-dot {
+  height: 6px;
+  width: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.inicio-dot.active {
+  width: 18px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* ============================================
+   HERO CARD base
+   ============================================ */
+.hero-card {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 18px;
+  padding: 16px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.hero-card--ventas { flex: 0 0 100%; height: 300px; }
+.hero-card--sucursal { width: 260px; height: 320px; }
+.hero-card--wide { width: 320px; height: 236px; }
+
+.hero-card-emblem {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  height: 15px;
+  opacity: 0.95;
+  pointer-events: none;
+}
+.hero-card-emblem--lg { height: 16px; }
+
+.hero-card-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  max-width: 80%;
+}
+
+/* El título arranca DEBAJO del wordmark "Punto Verde" (esquina sup. der.),
+   igual que en macOS — no a la misma altura del logo. */
+.hero-card:not(.hero-card--wide) .hero-card-title {
+  margin-top: 20px;
+}
+
+/* Cards de Sucursales: doble espacio bajo el logo + título en UNA sola
+   línea (fuente un poco menor para que "Mejor desempeño" no se parta y
+   todos los títulos queden simétricos). */
+.hero-card.hero-card--sucursal .hero-card-title {
+  margin-top: 40px;
+  font-size: 19px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hero-card-title--lg { font-size: 24px; }
+
+.hero-card-value,
+.hero-main-value {
+  font-size: 34px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hero-sidebars {
+  display: flex;
+  gap: 16px;
+}
+.hero-sidebar-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+.hero-sidebar-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.hero-card-empty {
+  margin: auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+}
+
+.hero-chart {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* ---- Ranking rows ---- */
+.rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rank-row-body { display: flex; flex-direction: column; min-width: 0; }
+.rank-row-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rank-row-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rank-row .spacer { flex: 1; }
+
+.rank-units-num { font-size: 17px; font-weight: 900; color: #fff; line-height: 1; text-align: right; }
+.rank-units-suffix { font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.55); text-align: right; }
+
+/* ---- Avatar circular en rankings ---- */
+.rank-avatar {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.rank-avatar img { width: 70%; height: 70%; object-fit: contain; }
+.rank-avatar.product { background: #fff; }
+.rank-avatar.product img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+
+/* Badge de rango (esquina) */
+.rank-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 900;
+  color: #1f1300;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+.rank-badge.tl { top: -4px; left: -4px; }
+.rank-badge.br { bottom: -3px; right: -3px; }
+
+/* Burbuja con número/monto a la derecha */
+.number-bubble {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  white-space: nowrap;
+}
+.number-bubble--sm { width: 28px; height: 28px; font-size: 11px; }
+
+/* Emblema de marca pequeño en avatar de producto */
+.brand-emblem {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  border: 1.4px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.brand-emblem img { width: 80%; height: 80%; object-fit: contain; }
+
+/* ---- Métodos de pago lista ---- */
+.metodo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.metodo-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.metodo-name { font-size: 12px; font-weight: 800; color: #fff; text-transform: capitalize; }
+.metodo-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ---- Donut / ring centro ---- */
+.ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.ring-center-value { font-size: 30px; font-weight: 900; color: #fff; line-height: 1; }
+.ring-center-label { font-size: 9px; font-weight: 800; letter-spacing: 0.6px; color: rgba(255,255,255,0.7); }
+
+/* ---- Balance bar ---- */
+.balance-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+}
+.balance-bar .ingresos { background: rgba(255, 255, 255, 0.95); border-radius: 999px; }
+.balance-bar .egresos { background: rgba(255, 255, 255, 0.5); border-radius: 999px; flex: 1; }
+.balance-legend { display: flex; gap: 14px; }
+.balance-legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; color: #fff; }
+.balance-legend i { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+.balance-legend .muted i { background: rgba(255, 255, 255, 0.5); }
+
+/* ---- Meta stat rows ---- */
+.meta-stat-row { display: flex; align-items: center; gap: 8px; }
+.meta-stat-row .label { font-size: 12px; font-weight: 800; color: #fff; }
+.meta-stat-row .value {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ---- Formatos footer ---- */
+.formatos-footer {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 4px;
+}
+.formatos-footer .col { display: flex; flex-direction: column; align-items: center; }
+.formatos-footer .num { font-size: 26px; font-weight: 900; color: #fff; line-height: 1; }
+.formatos-footer .cap { font-size: 11px; font-weight: 800; letter-spacing: 0.6px; color: rgba(255,255,255,0.75); }
+
+/* ---- Utilidad de padding horizontal responsive ---- */
+/* Usado por contenedores no-carousel que necesitan el mismo alineamiento
+   que inicio-section-head / inicio-carousel (20px normal, 32px fullscreen). */
+.inicio-padded {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+@media (max-width: 1023px) { .inicio-padded { padding-left: 32px; } }
+@media (min-width: 1024px) { .app.is-fullscreen .inicio-padded { padding-left: 32px; } }
+
+/* spinner */
+.inicio-spinner {
+  margin: 60px auto;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ============================================
+   BRAND THEME sobre hero-card — réplica de
+   BrandCardChrome.swift (EmpresaTheme.swift).
+   El atributo [data-brand-theme] lo pone
+   EmpresaContext.jsx sobre <html> según la
+   empresa activa. `.original` no toca nada
+   (cada card conserva su color propio); los
+   otros dos temas SOBRESCRIBEN fondo/marco/
+   tipografía de TODOS los hero-card por igual,
+   igual que hace `.brandCardChrome()` en macOS.
+   ============================================ */
+
+/* ---- Elegante claro (Kaal) ---- */
+[data-brand-theme="elegantLight"] .hero-card {
+  background: linear-gradient(135deg, #F3F1EC 0%, #F1E6CA 50%, #E6D2A2 100%) !important;
+  border: 1.5px solid rgba(198, 160, 82, 0.55) !important;
+  box-shadow: none !important;
+  font-family: "Cinzel", Georgia, serif;
+}
+[data-brand-theme="elegantLight"] .hero-card-title,
+[data-brand-theme="elegantLight"] .hero-card-value,
+[data-brand-theme="elegantLight"] .hero-main-value,
+[data-brand-theme="elegantLight"] .hero-sidebar-value {
+  color: #1B1B1B;
+}
+[data-brand-theme="elegantLight"] .hero-sidebar-label,
+[data-brand-theme="elegantLight"] .hero-card-empty {
+  color: rgba(27, 27, 27, 0.62);
+}
+[data-brand-theme="elegantLight"] .hero-card-emblem {
+  filter: invert(1) brightness(0.25);
+}
+
+/* ---- Fiesta neón (Party Kids) ---- */
+[data-brand-theme="neonParty"] .hero-card {
+  border: 6px solid transparent !important;
+  background:
+    linear-gradient(135deg, #170F1F 0%, #0F0A14 50%, #0A080D 100%) padding-box,
+    conic-gradient(from 0deg, #FF2E8C, #00D4EB, #FFEB3B, #BD4CEB, #FF2E8C) border-box !important;
+  box-shadow: 0 0 5px rgba(255, 46, 140, 0.7), 0 0 20px rgba(255, 46, 140, 0.35) !important;
+  font-family: "Fredoka", system-ui, sans-serif;
+}
+[data-brand-theme="neonParty"] .hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 46, 140, 0.42) 0%, rgba(255, 46, 140, 0.18) 35%, transparent 60%);
+}
+[data-brand-theme="neonParty"] .hero-card-title,
+[data-brand-theme="neonParty"] .hero-card-value,
+[data-brand-theme="neonParty"] .hero-main-value,
+[data-brand-theme="neonParty"] .hero-sidebar-value {
+  color: rgba(255, 255, 255, 0.90);
+  text-shadow: 0 0 12px rgba(255, 46, 140, 0.55);
+}
+[data-brand-theme="neonParty"] .hero-card-emblem {
+  filter: drop-shadow(0 0 6px rgba(255, 46, 140, 0.85));
+}

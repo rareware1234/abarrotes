@@ -1,12 +1,9 @@
-// Configuración de Firebase para Abarrotes Digitales - Escritorio
-// Proyecto: abarrotes-digitales
-
+// Configuración de Firebase — Proyecto: punto-verde-7b743
 export const firebaseConfig = {
-  apiKey: "AIzaSyDbCx0vsgamfVTOr7nLd5BHddCyeDtJWqg",
-  authDomain: "abarrotes-digitales.firebaseapp.com",
-  projectId: "abarrotes-digitales",
-  storageBucket: "abarrotes-digitales.firebasestorage.app",
-  messagingSenderId: "953573955131",
-  appId: "1:953573955131:web:7a1e29db7e379542636e1e",
-  measurementId: "G-PJF7F7TC3V"
+  apiKey: "AIzaSyDNDZEstMK0eD6r0LkZ5Ce7kFCQfGR0bdc",
+  authDomain: "punto-verde-7b743.firebaseapp.com",
+  projectId: "punto-verde-7b743",
+  storageBucket: "punto-verde-7b743.firebasestorage.app",
+  messagingSenderId: "735728617383",
+  appId: "1:735728617383:web:950ee2df6844b6d2275882"
 };

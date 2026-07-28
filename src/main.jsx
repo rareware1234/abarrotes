@@ -5,6 +5,10 @@ import './index.css'
 import './responsive.css'
 import './styles/pos-layout.css'
 import App from './App.jsx'
+import './styles/page-shell.css'
+import './styles/pos-redesign.css'
+import './styles/inicio.css'
+import './styles/pv-polish.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

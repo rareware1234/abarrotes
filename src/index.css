@@ -34,6 +34,13 @@
   --warning: #F0A500;
   --success: #4ADE80;
 
+  /* === Escala de espaciado (UI_LAYOUT_SPEC §0) === */
+  --sp-xs: 4px; --sp-sm: 8px; --sp-md: 12px; --sp-base: 16px;
+  --sp-lg: 20px; --sp-xl: 24px; --sp-xxl: 32px;
+  /* === Escala de radios === */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-full: 999px;
+  --r-card: 18px; --r-panel: 22px;
+
   /* === Sombras (sincronizadas con macOS) === */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -134,23 +141,17 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Gradiente del rol en TODA la ventana — un solo fondo continuo detrás
+     del sidebar y del contenido (estilo macOS), sin costuras entre
+     columnas. El contenido de cada página lo cubre con su propio fondo. */
+  background: var(--role-gradient);
 }
 
 /* ============================================
    PREMIUM NAVBAR - FLEX LAYOUT
    ============================================ */
 .navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  min-height: 56px;
-  background: var(--role-nav-bg, #0F4D2E);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: env(safe-area-inset-top, 0px) 16px 0 16px;
-  z-index: 1050;
+  display: none !important;
 }
 
 
@@ -290,9 +291,16 @@ input:focus, select:focus, textarea:focus {
   overflow-y: auto;
   overflow-x: clip;
   overscroll-behavior: none;
-  padding: calc(56px + env(safe-area-inset-top, 0px) + 12px) 16px 16px 16px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 16px 16px;
   background: var(--bg);
 }
+
+.content-area:has(.proveedores-page) {
+  padding: 0 !important;
+  background: transparent !important;
+}
+.prov-hscroll { scrollbar-width: none; -ms-overflow-style: none; }
+.prov-hscroll::-webkit-scrollbar { display: none; }
 
 @media (min-width: 1024px) {
   .content-area {
@@ -328,6 +336,7 @@ input:focus, select:focus, textarea:focus {
   touch-action: none;
 }
 
+/* Sidebar claro estilo iPad/macOS — panel frosted translúcido. */
 .sidebar {
   position: fixed;
   top: 0;
@@ -335,9 +344,11 @@ input:focus, select:focus, textarea:focus {
   bottom: 0;
   width: 260px;
   max-width: 80vw;
-  background: var(--role-nav-bg, #0F4D2E);
-  overflow-y: auto;
-  overflow-x: hidden;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
   overscroll-behavior: contain;
   touch-action: pan-y;
   transform: translateX(-100%);
@@ -349,6 +360,86 @@ input:focus, select:focus, textarea:focus {
 
 .sidebar-wrapper.open .sidebar {
   transform: translateX(0);
+}
+
+/* Fila superior con el botón de ocultar (icono sidebar.leading). */
+.sidebar-top {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 10px 0;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle,
+.sidebar-reopen {
+  background: transparent;
+  border: none;
+  color: var(--text-dark);
+  width: auto;
+  height: auto;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+  opacity: 0.6;
+}
+
+/* Botón flotante para reabrir/abrir la barra lateral. */
+.sidebar-reopen {
+  display: none;
+}
+
+/* Móvil: mobile-topbar reemplaza el botón flotante */
+.mobile-topbar { display: none; }
+
+@media screen and (max-width: 1023px) {
+  /* Ocultar el botón desktop en mobile */
+  .sidebar-reopen { display: none !important; }
+
+  /* Barra fija transparente: botón sidebar + título de página */
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1200;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 18px 10px;
+    pointer-events: none;
+  }
+  .mobile-topbar > * { pointer-events: auto; }
+  .app.sidebar-menu-open .mobile-topbar { display: none !important; }
+
+  .mobile-topbar-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .mobile-topbar-title {
+    display: none;
+  }
+}
+
+/* Zona scrolleable de los links (la barra en sí no scrollea). */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 8px;
 }
 
 .sidebar-brand {
@@ -371,19 +462,33 @@ input:focus, select:focus, textarea:focus {
 .nav-section-label {
   font-size: 10px;
   font-weight: 700;
-  color: rgba(255,255,255,0.3);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding: 20px 16px 6px;
+  padding: 16px 22px 6px;
+}
+
+.nav-section-label small {
+  color: var(--text-muted);
 }
 
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  margin-top: auto;
+  padding: 12px 14px;
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.sidebar-user:hover {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .sidebar-user-avatar {
@@ -400,13 +505,30 @@ input:focus, select:focus, textarea:focus {
   border: 2px solid var(--role-active-tab);
 }
 
+/* Avatar circular — foto o iniciales. Siempre global porque
+   se usa en el sidebar independientemente de la página activa. */
+.inicio-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  font-weight: 800;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
 .sidebar-user-info {
   flex: 1;
   min-width: 0;
 }
 
 .sidebar-user-name {
-  color: white;
+  color: var(--text-dark);
   font-weight: 600;
   font-size: 13px;
   white-space: nowrap;
@@ -415,42 +537,46 @@ input:focus, select:focus, textarea:focus {
 }
 
 .sidebar-user-role {
-  color: var(--role-active-tab);
+  color: var(--role-primary);
   font-size: 11px;
+  font-weight: 600;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  color: rgba(255,255,255,0.65);
-  font-size: 14px;
+  gap: 12px;
+  padding: 9px 14px;
+  color: var(--text-dark);
+  font-size: 15px;
   font-weight: 500;
-  border-radius: 8px;
-  margin: 2px 8px;
+  border-radius: 12px;
+  margin: 1px 10px;
   transition: all 0.15s ease;
   text-decoration: none;
-  border-left: 3px solid transparent;
-}
-
-.nav-link:hover {
-  color: white;
-  background: rgba(0,0,0,0.15);
-}
-
-.nav-link.active {
-  color: white;
-  font-weight: 600;
-  background: rgba(0,0,0,0.25);
-  border-left: 3px solid white;
 }
 
 .nav-link i, .nav-link svg {
   font-size: 18px;
   width: 24px;
   text-align: center;
-  color: inherit;
+  color: var(--text-muted);
+}
+
+.nav-link:hover {
+  color: var(--text-dark);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-link.active {
+  color: var(--role-primary);
+  font-weight: 600;
+  background: var(--role-tinted-bg);
+}
+
+.nav-link.active i,
+.nav-link.active svg {
+  color: var(--role-primary);
 }
 
 .sidebar-footer {
@@ -962,25 +1088,117 @@ input:focus, select:focus, textarea:focus {
 
   .sidebar-wrapper {
     position: relative !important;
-    width: 240px !important;
+    width: 256px !important;
     flex-shrink: 0 !important;
     /* height:100% en lugar de 100vh para igualar al padre (.app usa 100dvh) */
     height: 100% !important;
     visibility: visible !important;
     pointer-events: all !important;
+    transition: width 0.25s ease;
+    /* Transparente: deja ver el gradiente único de `.app` detrás del
+       panel flotante, continuo con el contenido (sin costura). */
+    background: transparent;
   }
 
   .overlay {
     display: none !important;
   }
 
+  /* Panel flotante estilo macOS — vidrio esmerilado claro. */
   .sidebar {
     transform: translateX(0) !important;
+    opacity: 1;
     position: relative !important;
-    height: 100% !important;
-    width: 240px !important;
-    /* Inset inferior: empuja el último ítem del nav fuera del home indicator */
+    height: calc(100% - 20px) !important;
+    width: 232px !important;
+    margin: 6px 0 14px 12px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    backdrop-filter: blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+  }
+
+  /* Texto oscuro sobre el vidrio claro */
+  .sidebar .nav-link { color: rgba(0, 0, 0, 0.72); }
+  .sidebar .nav-link i, .sidebar .nav-link svg { color: rgba(0, 0, 0, 0.45); }
+  .sidebar .nav-link:hover { color: rgba(0, 0, 0, 0.9); background: rgba(0, 0, 0, 0.07); }
+  .sidebar .nav-link.active {
+    color: rgba(0, 0, 0, 0.92); font-weight: 600;
+    background: rgba(0, 0, 0, 0.1);
+  }
+  .sidebar .nav-link.active i, .sidebar .nav-link.active svg { color: var(--role-primary, #1A7A48); }
+  .sidebar .nav-section-label { color: rgba(0, 0, 0, 0.38); }
+  .sidebar .sidebar-toggle { color: rgba(0, 0, 0, 0.45); }
+  .sidebar .sidebar-toggle:hover { color: rgba(0, 0, 0, 0.8); opacity: 1; }
+  .sidebar .sidebar-user { border-top-color: rgba(0, 0, 0, 0.08); }
+  .sidebar .sidebar-user:hover { background: rgba(0, 0, 0, 0.05); }
+  .sidebar .sidebar-user-name { color: rgba(0, 0, 0, 0.85); }
+  .sidebar .sidebar-user-role { color: var(--role-primary, #1A7A48); }
+
+  /* --- Colapso del sidebar --- */
+  .app.sidebar-collapsed .sidebar-wrapper {
+    width: 0 !important;
+  }
+
+  .app.sidebar-collapsed .sidebar {
+    transform: translateX(-120%) !important;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Mismo punto que el toggle dentro del sidebar (margin-left:12px + padding:10px = 22px). */
+  .app.sidebar-collapsed .sidebar-reopen {
+    display: flex;
+    position: fixed;
+    top: 3px;
+    left: 22px;
+    z-index: 1200;
+    width: 40px;
+    height: 36px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: #fff;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  }
+
+  /* Fullscreen: desaparece al scrollear. */
+  .app.sidebar-collapsed.is-fullscreen:not(.is-at-top) .sidebar-reopen {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .app.sidebar-collapsed .sidebar-reopen:hover {
+    opacity: 0.6;
+  }
+
+  /* Espacio reservado para el botón de reabrir sidebar (arriba a la izq.).
+     El título queda siempre en la misma posición, con o sin sidebar. */
+  .inicio-header {
+    padding-top: 112px;
+  }
+
+  .inicio-header h1 {
+    transform: translateY(20px);
+  }
+
+  /* Iguala la altura REAL del título de Inicio (~44px desde el tope):
+     Inicio = content(0) + inner(16) + header(8) + translateY(20) = 44.
+     Productos = content(24) + header(0) + translateY(20) = 44. */
+  .products-container .tiendas-header {
+    padding-top: 0;
+  }
+
+  /* Mismo estilo que Inicio: baja solo el título (no las acciones). */
+  .products-container .tiendas-header h1 {
+    transform: translateY(20px);
   }
 
   .content-area {
@@ -1039,11 +1257,11 @@ input:focus, select:focus, textarea:focus {
 .w-100 { width: 100% !important; }
 
 /* ============================================
-   SCROLLBAR
+   SCROLLBAR — mínima, casi invisible
    ============================================ */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 3px;
+  height: 3px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1051,16 +1269,18 @@ input:focus, select:focus, textarea:focus {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.2);
-  border-radius: 4px;
+  background: rgba(255,255,255,0.22);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0,0,0,0.3);
+  background: rgba(255,255,255,0.38);
 }
 
-.sidebar::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
 
 /* ============================================

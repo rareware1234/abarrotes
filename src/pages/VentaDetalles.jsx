@@ -1,180 +1,296 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axiosConfig';
+import { useSearchParams } from 'react-router-dom';
+import orderService from '../services/orderService';
+
+const fmt = (n) =>
+  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n || 0);
+
+const fmtDate = (v) => {
+  if (!v) return '—';
+  const d = v.toDate ? v.toDate() : new Date(v);
+  return d.toLocaleString('es-MX', {
+    day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+};
+
+const METODO_LABEL = {
+  efectivo: 'Efectivo',
+  tarjeta: 'Tarjeta',
+  mercadopago: 'MercadoPago',
+  codi: 'CoDi',
+  transferencia: 'Transferencia',
+  credito: 'Crédito',
+};
+
+const METODO_ICON = {
+  efectivo: 'bi-cash-coin',
+  tarjeta: 'bi-credit-card',
+  mercadopago: 'bi-qr-code',
+  codi: 'bi-phone',
+  transferencia: 'bi-bank',
+  credito: 'bi-credit-card-2-front',
+};
 
 const VentaDetalles = () => {
-  const [venta, setVenta] = useState(null);
-  const [ticket, setTicket] = useState(null);
+  const [params] = useSearchParams();
+  const id = params.get('uuid') || params.get('id');
+
+  const [orden, setOrden] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Obtener el UUID de la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const uuid = urlParams.get('uuid');
-    
-    if (uuid) {
-      // Buscar la venta por UUID usando el servicio de facturación
-      // Nota: En una implementación real, el servicio de facturación tendría un endpoint
-      // que busque por UUID y devuelva los datos de la venta y el ticket
-      // Por ahora, usaremos datos de ejemplo para demostrar la funcionalidad
-      
-      // Simulación de datos para demostración
-      setTimeout(() => {
-        setVenta({
-          items: [
-            { nombre: "Leche Entera", quantity: 2, subtotal: 40.00 },
-            { nombre: "Pan de Caja", quantity: 1, subtotal: 25.00 },
-            { nombre: "Huevos Carta", quantity: 12, subtotal: 36.00 }
-          ],
-          subtotal: 101.00,
-          totalImpuestos: 16.16,
-          total: 117.16,
-          formaPago: "01"
-        });
-        setTicket({
-          uuid: uuid,
-          fechaEmision: new Date().toISOString()
-        });
-        setLoading(false);
-      }, 1000);
-    } else {
-      // Si no hay UUID, mostrar mensaje
-      setError('No se especificó un UUID de venta');
+    if (!id) {
+      setError('No se especificó un ID de venta.');
       setLoading(false);
+      return;
     }
-  }, []);
-
-  const handleImprimir = () => {
-    window.print();
-  };
-
-  const handleClose = () => {
-    window.close();
-  };
+    orderService.getById(id).then((res) => {
+      if (!res.success) {
+        setError('Error al cargar la venta. Intenta de nuevo.');
+      } else if (!res.data) {
+        setError(`No se encontró la venta con ID: ${id}`);
+      } else {
+        setOrden(res.data);
+      }
+      setLoading(false);
+    });
+  }, [id]);
 
   if (loading) {
     return (
-      <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-        <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-          <div className="text-center">
-            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-              <span className="visually-hidden">Cargando...</span>
-            </div>
-            <p className="text-muted mt-3">Cargando detalles de venta...</p>
-          </div>
+      <div style={styles.page}>
+        <div style={styles.center}>
+          <div className="spinner-border text-success" style={{ width: 40, height: 40 }} role="status" />
+          <p style={{ color: '#6B7C93', marginTop: 16 }}>Cargando recibo...</p>
         </div>
       </div>
     );
   }
 
-  if (error || !venta) {
+  if (error || !orden) {
     return (
-      <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-        <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-          <div className="text-center">
-            <div className="alert alert-warning" role="alert" style={{ maxWidth: '400px' }}>
-              <i className="bi bi-exclamation-triangle me-2"></i> {error || 'No hay detalles de venta disponibles'}
-            </div>
-            <button className="btn btn-primary mt-3" onClick={handleClose}>
-              <i className="bi bi-x-circle me-2"></i> Cerrar Ventana
-            </button>
-          </div>
+      <div style={styles.page}>
+        <div style={styles.center}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🧾</div>
+          <p style={{ color: '#6B7C93', maxWidth: 320, textAlign: 'center' }}>
+            {error || 'No hay datos de venta disponibles.'}
+          </p>
+          <button style={styles.btnPrimary} onClick={() => window.close()}>Cerrar</button>
         </div>
       </div>
     );
   }
+
+  const metodo = (orden.metodoPago || '').toLowerCase();
+  const shortId = (orden.id || id || '').slice(-8).toUpperCase();
+  const cambio = orden.cambio || 0;
 
   return (
-    <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
+    <div style={styles.page}>
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center px-4 py-3 bg-white shadow-sm">
-        <div className="d-flex align-items-center">
-          <img src="/src/assets/logo.png" alt="Logo" style={{ height: '40px', marginRight: '15px' }} />
-          <h4 className="mb-0 fw-bold text-dark">Detalles de Venta</h4>
-        </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-outline-secondary rounded-pill" onClick={handleClose}>
-            <i className="bi bi-x-circle me-2"></i> Cerrar
+      <div style={styles.header}>
+        <span style={styles.logo}>Punto Verde</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={styles.btnSecondary} onClick={() => window.print()}>
+            <i className="bi bi-printer" /> Imprimir
+          </button>
+          <button style={styles.btnSecondary} onClick={() => window.close()}>
+            <i className="bi bi-x-lg" /> Cerrar
           </button>
         </div>
       </div>
 
-      {/* Contenido Principal */}
-      <div className="flex-grow-1 d-flex justify-content-center align-items-center p-4">
-        <div className="card shadow-lg" style={{ maxWidth: '600px', width: '100%' }}>
-          <div className="card-header text-white" style={{ backgroundColor: '#006241' }}>
-            <h5 className="mb-0">
-              <i className="bi bi-receipt me-2"></i> Comprobante de Venta
-            </h5>
+      {/* Recibo */}
+      <div style={styles.receipt}>
+        {/* ID y fecha */}
+        <div style={styles.receiptHead}>
+          <div style={styles.badge}>Venta #{shortId}</div>
+          <div style={{ fontSize: 13, color: '#6B7C93', marginTop: 4 }}>
+            {fmtDate(orden.createdAt)}
           </div>
-          <div className="card-body">
-            {/* Información del Ticket */}
-            {ticket && (
-              <div className="text-center mb-4 pb-3 border-bottom">
-                <h6 className="text-muted mb-1">UUID del Comprobante</h6>
-                <p className="fw-bold mb-0" style={{ fontFamily: 'monospace', fontSize: '0.9rem', wordBreak: 'break-all' }}>
-                  {ticket.uuid}
-                </p>
-                <small className="text-muted">
-                  Fecha: {new Date(ticket.fechaEmision).toLocaleString()}
-                </small>
-              </div>
-            )}
-
-            {/* Resumen de la Venta */}
-            <div className="mb-4">
-              <h6 className="fw-bold mb-3" style={{ color: '#006241' }}>Resumen de la Venta</h6>
-              <ul className="list-group list-group-flush">
-                {venta.items.map((item, index) => (
-                  <li key={index} className="list-group-item d-flex justify-content-between px-0">
-                    <div>
-                      <span className="fw-medium">{item.nombre}</span>
-                      <br />
-                      <small className="text-muted">Cantidad: {item.quantity}</small>
-                    </div>
-                    <span className="fw-bold">${(item.subtotal * 1.16).toFixed(2)}</span>
-                  </li>
-                ))}
-              </ul>
+          {orden.nombreEmpleado && (
+            <div style={{ fontSize: 13, color: '#6B7C93', marginTop: 2 }}>
+              Atendido por: <strong>{orden.nombreEmpleado}</strong>
             </div>
-
-            {/* Totales */}
-            <div className="bg-light p-3 rounded">
-              <div className="d-flex justify-content-between mb-2">
-                <span>Subtotal:</span>
-                <span>${(venta.subtotal * 1.16).toFixed(2)}</span>
-              </div>
-              <div className="d-flex justify-content-between mb-2">
-                <span>IVA (16% incl.):</span>
-                <span>${(venta.totalImpuestos * 1.16).toFixed(2)}</span>
-              </div>
-              <div className="d-flex justify-content-between fw-bold fs-5" style={{ color: '#006241' }}>
-                <span>Total:</span>
-                <span>${(venta.total * 1.16).toFixed(2)}</span>
-              </div>
+          )}
+          {orden.tiendaNombre && (
+            <div style={{ fontSize: 13, color: '#6B7C93', marginTop: 2 }}>
+              Sucursal: <strong>{orden.tiendaNombre}</strong>
             </div>
+          )}
+        </div>
 
-            {/* Forma de Pago */}
-            <div className="mt-4 text-center">
-              <span className="badge bg-secondary fs-6">
-                {venta.formaPago === '01' && 'Efectivo'}
-                {venta.formaPago === '03' && 'Tarjeta'}
-                {venta.formaPago === '04' && 'Transferencia'}
-              </span>
-            </div>
+        <hr style={{ borderColor: '#E5E7EB', margin: '16px 0' }} />
+
+        {/* Productos */}
+        <h3 style={styles.sectionTitle}>Productos</h3>
+        <table style={styles.table}>
+          <thead>
+            <tr style={{ background: '#F9FAFB' }}>
+              <th style={{ ...styles.th, textAlign: 'left' }}>Producto</th>
+              <th style={{ ...styles.th, textAlign: 'center', width: 60 }}>Cant.</th>
+              <th style={{ ...styles.th, textAlign: 'right', width: 90 }}>P. Unit.</th>
+              <th style={{ ...styles.th, textAlign: 'right', width: 90 }}>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(orden.productos || []).map((item, i) => {
+              const unitario = item.precioFinal ?? item.precioUnitario ?? item.precio ?? 0;
+              const subtotalItem = unitario * (item.cantidad || 1);
+              return (
+                <tr key={i} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                  <td style={styles.td}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{item.nombre}</div>
+                    {item.categoria && (
+                      <div style={{ fontSize: 11, color: '#9CA3AF' }}>{item.categoria}</div>
+                    )}
+                  </td>
+                  <td style={{ ...styles.td, textAlign: 'center' }}>×{item.cantidad}</td>
+                  <td style={{ ...styles.td, textAlign: 'right' }}>{fmt(unitario)}</td>
+                  <td style={{ ...styles.td, textAlign: 'right', fontWeight: 600 }}>{fmt(subtotalItem)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        <hr style={{ borderColor: '#E5E7EB', margin: '16px 0' }} />
+
+        {/* Totales */}
+        <div style={styles.totals}>
+          <div style={styles.totalRow}>
+            <span style={{ color: '#6B7C93' }}>Subtotal</span>
+            <span>{fmt(orden.subtotal)}</span>
           </div>
-          <div className="card-footer bg-white text-center py-3">
-            <button className="btn btn-primary me-2" style={{ backgroundColor: '#006241', borderColor: '#006241' }} onClick={handleImprimir}>
-              <i className="bi bi-printer me-2"></i> Imprimir
-            </button>
-            <button className="btn btn-outline-primary" style={{ borderColor: '#006241', color: '#006241' }} onClick={handleClose}>
-              <i className="bi bi-x-circle me-2"></i> Cerrar
-            </button>
+          <div style={styles.totalRow}>
+            <span style={{ color: '#6B7C93' }}>IVA (16%)</span>
+            <span>{fmt(orden.iva)}</span>
           </div>
+          <div style={{ ...styles.totalRow, ...styles.totalFinal }}>
+            <span>Total</span>
+            <span>{fmt(orden.total)}</span>
+          </div>
+          {orden.montoPagado > 0 && (
+            <div style={styles.totalRow}>
+              <span style={{ color: '#6B7C93' }}>Pagado</span>
+              <span>{fmt(orden.montoPagado)}</span>
+            </div>
+          )}
+          {cambio > 0 && (
+            <div style={{ ...styles.totalRow, color: '#059669' }}>
+              <span>Cambio</span>
+              <span>{fmt(cambio)}</span>
+            </div>
+          )}
+        </div>
+
+        <hr style={{ borderColor: '#E5E7EB', margin: '16px 0' }} />
+
+        {/* Método de pago */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <i className={`bi ${METODO_ICON[metodo] || 'bi-credit-card'}`} style={{ fontSize: 18, color: '#1A7A48' }} />
+          <span style={{ fontWeight: 600, fontSize: 15 }}>
+            {METODO_LABEL[metodo] || orden.metodoPago || '—'}
+          </span>
+        </div>
+
+        {/* Referencia / crédito */}
+        {orden.referencia && (
+          <div style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: '#9CA3AF' }}>
+            Ref: {orden.referencia}
+          </div>
+        )}
+
+        {/* ID completo de Firestore */}
+        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 11, color: '#CBD5E1', wordBreak: 'break-all' }}>
+          ID: {orden.id || id}
         </div>
       </div>
+
+      <style>{`
+        @media print {
+          body { background: white !important; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
     </div>
   );
+};
+
+const styles = {
+  page: {
+    minHeight: '100vh',
+    background: '#F5F5F7',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  center: {
+    display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    minHeight: '100vh',
+  },
+  header: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '14px 24px',
+    background: '#fff',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    className: 'no-print',
+  },
+  logo: {
+    fontSize: 18, fontWeight: 800, color: '#1A7A48',
+  },
+  receipt: {
+    maxWidth: 580, margin: '32px auto', padding: '28px',
+    background: '#fff', borderRadius: 16,
+    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+  },
+  receiptHead: {
+    textAlign: 'center',
+  },
+  badge: {
+    display: 'inline-block',
+    background: '#ECFDF5', color: '#059669',
+    padding: '4px 14px', borderRadius: 20,
+    fontWeight: 700, fontSize: 14,
+  },
+  sectionTitle: {
+    fontSize: 13, fontWeight: 700, color: '#9CA3AF',
+    letterSpacing: '0.06em', textTransform: 'uppercase',
+    margin: '0 0 10px 0',
+  },
+  table: {
+    width: '100%', borderCollapse: 'collapse',
+  },
+  th: {
+    padding: '8px 10px', fontSize: 12, fontWeight: 600,
+    color: '#6B7280', borderBottom: '1px solid #E5E7EB',
+  },
+  td: {
+    padding: '10px', fontSize: 14, verticalAlign: 'middle',
+  },
+  totals: {
+    display: 'flex', flexDirection: 'column', gap: 8,
+  },
+  totalRow: {
+    display: 'flex', justifyContent: 'space-between',
+    fontSize: 14,
+  },
+  totalFinal: {
+    fontSize: 18, fontWeight: 700, color: '#1A7A48',
+    paddingTop: 8, borderTop: '1px solid #E5E7EB',
+  },
+  btnPrimary: {
+    background: '#1A7A48', color: '#fff',
+    border: 'none', borderRadius: 10, padding: '10px 24px',
+    fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 16,
+  },
+  btnSecondary: {
+    background: '#F3F4F6', color: '#374151',
+    border: 'none', borderRadius: 8, padding: '8px 16px',
+    fontSize: 14, fontWeight: 600, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', gap: 6,
+  },
 };
 
 export default VentaDetalles;

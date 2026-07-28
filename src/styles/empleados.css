@@ -155,7 +155,7 @@
     background: white;
     border-bottom: 1px solid #E4E6EA;
     overflow: visible;
-    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 52px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
@@ -193,7 +193,7 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     background: #F4F5F7;
-    padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 52px);
   }
 
   .emp-stats-grid,

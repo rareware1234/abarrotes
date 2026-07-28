@@ -1,346 +1,396 @@
-import React, { useState, useEffect } from 'react';
-import api from '../api/axiosConfig';
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useEmpresa } from '../context/EmpresaContext';
+import { useNavigate } from 'react-router-dom';
+import logoColor from '../assets/logo-color.png';
+import empresaService from '../services/empresaService';
+import { AppScreen, Card, Row, Divider, ToggleRow, Button } from '../components/ui/AppKit';
+import { ColorPalette, BrightnessSlider, COLOR_PALETTE } from './Empresas';
+import { TOGGLEABLE_MODULES } from '../lib/empresaTheme';
+import './Configuracion.css';
 
-const Configuracion = () => {
-  const [config, setConfig] = useState({
-    clabeInterbancaria: '',
-    nombreEmpresa: '',
-    banco: '',
-    regimenFiscal: '612',
-    lugarExpedicion: '06000',
-    rfcEmpresa: '',
-    direccionEmpresa: '',
-    bannerUrl: '',
-    bannerText: ''
-  });
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState({ type: '', text: '' });
+const MODULE_LABELS = {
+  pos: 'Punto de venta', products: 'Productos', proveedores: 'Proveedores',
+  orders: 'Pedidos', pagos: 'Pagos', caja: 'Caja', tareas: 'Tareas',
+  empleados: 'Staff', tiendas: 'Sucursales', horarios: 'Horarios',
+  promociones: 'Promociones', creditos: 'Crédito', stock: 'Inventario',
+};
 
-  useEffect(() => {
-    // Cargar configuración existente
-    loadConfig();
-  }, []);
+/* ── Helpers de persistencia de toggles ───────────────────────────────────── */
+const getSetting = (key, def) => {
+  try { const v = localStorage.getItem('pv_setting_' + key); return v === null ? def : JSON.parse(v); }
+  catch { return def; }
+};
+const setSetting = (key, val) => {
+  try { localStorage.setItem('pv_setting_' + key, JSON.stringify(val)); } catch {}
+};
 
-  const loadConfig = async () => {
-    try {
-      setLoading(true);
-      // En producción, esto sería una llamada a la API
-      // Por ahora, usamos datos de ejemplo o localStorage
-      const savedConfig = localStorage.getItem('sistemaConfig');
-      if (savedConfig) {
-        setConfig(JSON.parse(savedConfig));
-      } else {
-        // Configuración por defecto
-        setConfig({
-          clabeInterbancaria: '044185002754631919',
-          nombreEmpresa: 'Abarrotes Digitales',
-          banco: 'BBVA',
-          regimenFiscal: '612',
-          lugarExpedicion: '06000',
-          rfcEmpresa: 'AAD980314XXX',
-          direccionEmpresa: 'Av. Principal #123, Col. Centro, CDMX',
-          bannerUrl: 'https://via.placeholder.com/800x400/006241/ffffff?text=¡Bienvenido+a+Abarrotes+Digitales!',
-          bannerText: '¡Bienvenido a Abarrotes Digitales!'
-        });
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading config:', error);
-      setMessage({ type: 'error', text: 'Error al cargar la configuración' });
-      setLoading(false);
-    }
-  };
+/* ── Secciones (mismas que SettingsWindowView.swift) ───────────────────────── */
+const SECTIONS = [
+  { id: 'general',        label: 'General',        icon: 'bi-gear-fill',        color: '#6B7280' },
+  { id: 'cuenta',         label: 'Cuenta',         icon: 'bi-person-circle',    color: '#3B82F6' },
+  { id: 'apariencia',     label: 'Apariencia',     icon: 'bi-paintbrush-fill',  color: '#8B5CF6' },
+  { id: 'marca',          label: 'Configurar marca', icon: 'bi-palette-fill',   color: '#8B5CF6', soloRoles: ['manager', 'admin'] },
+  { id: 'funcionalidades', label: 'Funcionalidades', icon: 'bi-toggles',        color: '#F97316', soloRoles: ['manager', 'admin'] },
+  { id: 'impresora',      label: 'Impresora',      icon: 'bi-printer-fill',     color: '#F97316' },
+  { id: 'notificaciones', label: 'Notificaciones', icon: 'bi-bell-fill',        color: '#EF4444' },
+  { id: 'acerca',         label: 'Acerca de',      icon: 'bi-info-circle-fill', color: '#10B981' },
+];
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setConfig(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+/* ── Sub-componentes — ahora sobre el AppKit reutilizable (mismo diseño en toda
+   la app). SettingsGroup=Card, SettingsRow=Row, SettingsToggle=ToggleRow. ──── */
+function SettingsGroup({ title, children }) {
+  return <Card title={title}>{children}</Card>;
+}
 
-  const handleFileUpload = (e) => {
-    setMessage({ type: 'info', text: 'Por favor, sube la imagen a Google Drive y pega el enlace en el campo de URL' });
-    setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-  };
+function SettingsRow(props) {
+  return <Row {...props} />;
+}
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    try {
-      // En producción, esto sería una llamada a la API del backend
-      // api.post('/api/configuracion', config)
-      
-      // Por ahora, guardamos en localStorage
-      localStorage.setItem('sistemaConfig', JSON.stringify(config));
-      
-      setMessage({ type: 'success', text: 'Configuración guardada exitosamente' });
-      
-      // Limpiar mensaje después de 3 segundos
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-    } catch (error) {
-      console.error('Error saving config:', error);
-      setMessage({ type: 'error', text: 'Error al guardar la configuración' });
-    }
-  };
+function SettingsToggle({ label, subtitle, settingKey, defaultVal }) {
+  const [on, setOn] = useState(() => getSetting(settingKey, defaultVal));
+  return (
+    <ToggleRow
+      label={label} subtitle={subtitle} checked={on}
+      onChange={(v) => { setOn(v); setSetting(settingKey, v); }}
+    />
+  );
+}
 
-  if (loading) {
-    return (
-      <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-        <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-          <div className="text-center">
-            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-              <span className="visually-hidden">Cargando...</span>
-            </div>
-            <p className="text-muted mt-3">Cargando configuración...</p>
-          </div>
-        </div>
+/* ── Secciones de contenido ──────────────────────────────────────────────── */
+function SectionGeneral() {
+  return (
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-gear-fill" style={{ color: '#6B7280' }} />
+        <h2>General</h2>
       </div>
-    );
-  }
+      <SettingsGroup title="Punto de Venta">
+        <SettingsToggle label="Confirmar antes de cobrar" subtitle="Mostrar resumen antes de procesar el pago" settingKey="confirmar_cobro" defaultVal={true} />
+        <Divider />
+        <SettingsToggle label="Sonido al escanear" subtitle="Reproducir sonido al agregar un producto" settingKey="sonido_scan" defaultVal={true} />
+        <Divider />
+        <SettingsToggle label="Abrir cajón automáticamente" subtitle="Abrir cajón de efectivo al completar venta" settingKey="cajon_auto" defaultVal={false} />
+      </SettingsGroup>
+      <SettingsGroup title="Pantalla de Cliente">
+        <SettingsToggle label="Abrir en pantalla completa" subtitle="La pantalla de cliente se abre en fullscreen" settingKey="cliente_fullscreen" defaultVal={true} />
+        <Divider />
+        <SettingsRow label="Intervalo de banners" detail="45 segundos" />
+      </SettingsGroup>
+    </div>
+  );
+}
+
+function SectionCuenta({ navigate }) {
+  const { empleado } = useAuth();
+  return (
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-person-circle" style={{ color: '#3B82F6' }} />
+        <h2>Cuenta</h2>
+      </div>
+      <SettingsGroup title="Información del empleado">
+        <SettingsRow label="Nombre" detail={empleado?.nombre || '—'} />
+        <Divider />
+        <SettingsRow label="No. Empleado" detail={empleado?.numEmpleado ? `EMP-${empleado.numEmpleado}` : '—'} />
+        <Divider />
+        <SettingsRow label="Email" detail={empleado?.email || '—'} />
+        <Divider />
+        <SettingsRow label="Teléfono" detail={empleado?.telefono || '—'} />
+        <Divider />
+        <SettingsRow label="Rol" detail={{ staff: 'Staff', manager: 'Manager', admin: 'Administrador' }[empleado?.rol] || empleado?.rol || '—'} />
+      </SettingsGroup>
+      <SettingsGroup title="Seguridad">
+        <SettingsRow label="Cambiar contraseña" chevron onClick={() => navigate('/cambiar-password')} />
+        <Divider />
+        <SettingsToggle label="Recordar sesión" subtitle="Mantener sesión iniciada en este equipo" settingKey="recordar_sesion" defaultVal={true} />
+      </SettingsGroup>
+    </div>
+  );
+}
+
+function SectionApariencia() {
+  const { empleado, roleTheme } = useAuth();
+  return (
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-paintbrush-fill" style={{ color: '#8B5CF6' }} />
+        <h2>Apariencia</h2>
+      </div>
+      <SettingsGroup title="Tema">
+        <SettingsRow label="Perfil activo" detail={empleado?.rol || 'Staff'} />
+        <Divider />
+        <div className="cfg-row">
+          <span className="cfg-row-label">Color de acento</span>
+          <span className="cfg-row-detail" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 14, height: 14, borderRadius: '50%', background: roleTheme?.primary || '#1A7A48', display: 'inline-block' }} />
+            {roleTheme?.primary || '#1A7A48'}
+          </span>
+        </div>
+      </SettingsGroup>
+      <SettingsGroup title="Interfaz">
+        <SettingsToggle label="Animaciones" subtitle="Activar transiciones y animaciones de la interfaz" settingKey="animaciones" defaultVal={true} />
+        <Divider />
+        <SettingsToggle label="Mostrar precios con IVA" subtitle="Todos los precios incluyen IVA (16%)" settingKey="precios_iva" defaultVal={true} />
+      </SettingsGroup>
+    </div>
+  );
+}
+
+function SectionImpresora() {
+  const [testing, setTesting] = useState(false);
+  const testPrint = () => { setTesting(true); window.print(); setTimeout(() => setTesting(false), 1500); };
+  return (
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-printer-fill" style={{ color: '#F97316' }} />
+        <h2>Impresora</h2>
+      </div>
+      <SettingsGroup title="Configuración de impresión">
+        <SettingsRow label="Impresora de tickets" detail="No configurada" chevron />
+        <Divider />
+        <SettingsToggle label="Imprimir ticket automáticamente" subtitle="Imprimir al completar cada venta" settingKey="auto_print" defaultVal={false} />
+        <Divider />
+        <SettingsRow label="Tamaño de papel" detail="80 mm" />
+      </SettingsGroup>
+      <SettingsGroup title="Prueba">
+        <div className="cfg-row">
+          <button className="cfg-link-btn" onClick={testPrint} disabled={testing}>
+            {testing ? 'Imprimiendo...' : 'Imprimir ticket de prueba'}
+          </button>
+        </div>
+      </SettingsGroup>
+    </div>
+  );
+}
+
+function SectionNotificaciones() {
+  return (
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-bell-fill" style={{ color: '#EF4444' }} />
+        <h2>Notificaciones</h2>
+      </div>
+      <SettingsGroup title="Alertas">
+        <SettingsToggle label="Stock bajo" subtitle="Notificar cuando un producto tenga stock bajo" settingKey="notif_stock_bajo" defaultVal={true} />
+        <Divider />
+        <SettingsToggle label="Producto agotado" subtitle="Notificar cuando un producto se agote" settingKey="notif_agotado" defaultVal={true} />
+        <Divider />
+        <SettingsToggle label="Cierre de caja pendiente" subtitle="Recordar hacer cierre de caja al final del turno" settingKey="notif_cierre_caja" defaultVal={false} />
+      </SettingsGroup>
+    </div>
+  );
+}
+
+/* ── Marca (§9 guía branding): colores, tema, color de fuente, info ───────── */
+function SectionMarca() {
+  const { empresaActiva, reload } = useEmpresa();
+  const [form, setForm] = useState(() => ({
+    nombre: empresaActiva?.nombre || '',
+    giro: empresaActiva?.giro || '',
+    tagline: empresaActiva?.tagline || '',
+    colorR: empresaActiva?.colorR ?? 0.059,
+    colorG: empresaActiva?.colorG ?? 0.302,
+    colorB: empresaActiva?.colorB ?? 0.176,
+    brightness: empresaActiva?.brightness ?? 0,
+    theme: empresaActiva?.theme || 'original',
+    textColorMode: empresaActiva?.textColorMode || 'auto',
+  }));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const setColor = (c) => setForm(f => ({ ...f, colorR: c.r, colorG: c.g, colorB: c.b }));
+
+  const handleSave = async () => {
+    if (!empresaActiva?.id || saving) return;
+    setSaving(true);
+    setSaved(false);
+    const data = { ...form };
+    if (data.theme === 'original') delete data.theme;
+    if (data.textColorMode === 'auto') delete data.textColorMode;
+    await empresaService.update(empresaActiva.id, data);
+    await reload();
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
-    <div className="container-fluid p-0 d-flex flex-column" style={{ backgroundColor: '#f5f5f7', minHeight: '100vh' }}>
-      <div className="tiendas-header">
-        <div>
-          <h1>Configuración</h1>
-          <div className="tiendas-subtitle">Ajustes del sistema</div>
-        </div>
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-palette-fill" style={{ color: '#8B5CF6' }} />
+        <h2>Configurar marca</h2>
       </div>
+      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: -6, marginBottom: 16 }}>
+        Empresa activa: <strong>{empresaActiva?.nombre || '—'}</strong>
+      </p>
 
-      {/* Contenido Principal */}
-      <div className="flex-grow-1 p-4">
-        <div className="row justify-content-center">
-          <div className="col-md-8">
-            {/* Mensaje de resultado */}
-            {message.text && (
-              <div className={`alert alert-${message.type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`} role="alert">
-                {message.text}
-                <button type="button" className="btn-close" onClick={() => setMessage({ type: '', text: '' })}></button>
-              </div>
-            )}
-
-            <div className="card shadow">
-              <div className="card-header" style={{ backgroundColor: '#006241', color: 'white' }}>
-                <h5 className="mb-0">
-                  <i className="bi bi-gear me-2"></i> Configuración de Facturación
-                </h5>
-              </div>
-              <div className="card-body">
-                <form onSubmit={handleSave}>
-                  {/* Sección de CLABE Interbancaria */}
-                  <h6 className="fw-bold mb-3" style={{ color: '#006241' }}>
-                    <i className="bi bi-qr-code me-2"></i> Información Bancaria
-                  </h6>
-                  
-                  <div className="row mb-4">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">CLABE Interbancaria</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="clabeInterbancaria"
-                        value={config.clabeInterbancaria}
-                        onChange={handleInputChange}
-                        placeholder="18 dígitos"
-                        maxLength="18"
-                        pattern="[0-9]{18}"
-                        required
-                      />
-                      <small className="text-muted">CLABE de 18 dígitos para transferencias</small>
-                    </div>
-                    
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Banco</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="banco"
-                        value={config.banco}
-                        onChange={handleInputChange}
-                        placeholder="Nombre del banco"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="col-12 mb-3">
-                      <label className="form-label">Nombre del Beneficiario</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="nombreEmpresa"
-                        value={config.nombreEmpresa}
-                        onChange={handleInputChange}
-                        placeholder="Nombre de la empresa o persona"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <hr className="my-4" />
-
-                  {/* Sección de Información Fiscal */}
-                  <h6 className="fw-bold mb-3" style={{ color: '#006241' }}>
-                    <i className="bi bi-file-earmark-text me-2"></i> Información Fiscal
-                  </h6>
-                  
-                  <div className="row mb-4">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">RFC de la Empresa</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="rfcEmpresa"
-                        value={config.rfcEmpresa}
-                        onChange={handleInputChange}
-                        placeholder="AAA990101XXX"
-                        maxLength="13"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Régimen Fiscal</label>
-                      <select 
-                        className="form-select" 
-                        name="regimenFiscal"
-                        value={config.regimenFiscal}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="601">601 - General de Ley Personas Morales</option>
-                        <option value="603">603 - Personas Morales con Fines no Lucrativos</option>
-                        <option value="605">605 - Sueldos y Salarios</option>
-                        <option value="606">606 - Arrendamiento</option>
-                        <option value="608">608 - Demás ingresos</option>
-                        <option value="610">610 - Actividades Agrícolas, Ganaderas, Silvícolas</option>
-                        <option value="611">611 - Ingresos por Dividendos</option>
-                        <option value="612">612 - Personas Físicas con Actividades Empresariales</option>
-                        <option value="614">614 - Ingresos por Intereses</option>
-                        <option value="615">615 - Secundaria de Actividades Empresariales</option>
-                        <option value="616">616 - Sin obligaciones fiscales</option>
-                        <option value="620">620 - Sociedades Cooperativas de Producción</option>
-                        <option value="621">621 - Incorporación Fiscal</option>
-                        <option value="622">622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras</option>
-                        <option value="623">623 - Opcional para Grupos de Sociedades</option>
-                        <option value="624">624 - Coordinados</option>
-                        <option value="625">625 - Régimen de Enajenación o Adquisición de Bienes</option>
-                        <option value="626">626 - De los Notarios Públicos</option>
-                        <option value="627">627 - De los Enajenantes de Bienes Inmuebles</option>
-                        <option value="628">628 - De los Enajenantes de Bienes Muebles</option>
-                        <option value="629">629 - De los Enajenantes de Bienes Inmuebles</option>
-                      </select>
-                    </div>
-                    
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Lugar de Expedición (Código Postal)</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="lugarExpedicion"
-                        value={config.lugarExpedicion}
-                        onChange={handleInputChange}
-                        placeholder="06000"
-                        maxLength="5"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="col-12 mb-3">
-                      <label className="form-label">Dirección Fiscal</label>
-                      <textarea 
-                        className="form-control" 
-                        name="direccionEmpresa"
-                        value={config.direccionEmpresa}
-                        onChange={handleInputChange}
-                        placeholder="Dirección completa de la empresa"
-                        rows="2"
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <hr className="my-4" />
-
-                  {/* Sección de Banner de Pantalla del Cliente */}
-                  <h6 className="fw-bold mb-3" style={{ color: '#006241' }}>
-                    <i className="bi bi-image me-2"></i> Banner de Pantalla del Cliente
-                  </h6>
-                  
-                  <div className="row mb-4">
-                    <div className="col-12 mb-3">
-                      <label className="form-label">URL de la Imagen del Banner</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="bannerUrl"
-                        value={config.bannerUrl}
-                        onChange={handleInputChange}
-                        placeholder="https://i.imgur.com/ABC1234.jpg"
-                      />
-                      <small className="text-muted">
-                        <i className="bi bi-info-circle me-1"></i> 
-                        Usa una imagen de Imgur para mejor compatibilidad
-                      </small>
-                    </div>
-                    
-                    <div className="col-12 mb-3">
-                      <label className="form-label">Texto del Banner</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        name="bannerText"
-                        value={config.bannerText}
-                        onChange={handleInputChange}
-                        placeholder="¡Bienvenido a nuestra tienda!"
-                      />
-                      <small className="text-muted">Texto que se mostrará debajo del banner</small>
-                    </div>
-                    
-                    {/* Instrucciones para Imgur */}
-                    <div className="col-12">
-                      <div className="alert alert-info">
-                        <h6 className="alert-heading"><i className="bi bi-image me-2"></i>Cómo usar imágenes de Imgur:</h6>
-                        <ol className="mb-0 small">
-                          <li>Ve a <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer">imgur.com/upload</a></li>
-                          <li>Sube tu imagen de banner</li>
-                          <li>Haz clic derecho en la imagen {"&gt;"} "Copiar dirección de la imagen"</li>
-                          <li>Pega la URL completa en el campo de arriba</li>
-                        </ol>
-                        <hr />
-                        <p className="mb-0 small">
-                          <strong>Ejemplo de URL:</strong> <code>https://i.imgur.com/ABC1234.jpg</code>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-end">
-                    <button type="submit" className="btn btn-primary btn-lg" style={{ backgroundColor: '#006241', borderColor: '#006241' }}>
-                      <i className="bi bi-save me-2"></i> Guardar Configuración
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-
-            {/* Información adicional */}
-            <div className="card shadow mt-4">
-              <div className="card-body">
-                <h6 className="fw-bold mb-3">
-                  <i className="bi bi-info-circle me-2"></i> Información
-                </h6>
-                <ul className="text-muted small mb-0">
-                  <li>La CLABE interbancaria se mostrará en un código QR cuando los clientes seleccionen "Transferencia" como método de pago.</li>
-                  <li>La información fiscal se utiliza para generar los CFDIs (Comprobantes Fiscales Digitales).</li>
-                  <li>Esta configuración se almacena localmente en este dispositivo. En producción, se recomienda almacenarla en una base de datos.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+      <SettingsGroup title="Información">
+        <div className="cfg-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8, padding: '12px 16px' }}>
+          <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Nombre" className="form-control" style={{ marginBottom: 8 }} />
+          <input value={form.giro} onChange={e => setForm(f => ({ ...f, giro: e.target.value }))} placeholder="Giro" className="form-control" style={{ marginBottom: 8 }} />
+          <input value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} placeholder="Tagline" className="form-control" />
         </div>
+      </SettingsGroup>
+
+      <SettingsGroup title="Colores">
+        <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <ColorPalette colorR={form.colorR} colorG={form.colorG} colorB={form.colorB} onChange={setColor} />
+          <BrightnessSlider value={form.brightness} onChange={v => setForm(f => ({ ...f, brightness: v }))} />
+        </div>
+      </SettingsGroup>
+
+      <SettingsGroup title="Tema">
+        <div style={{ padding: '12px 16px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { id: 'original', label: 'Original (Punto Verde)' },
+            { id: 'elegantLight', label: 'Elegante claro (Kaal)' },
+            { id: 'neonParty', label: 'Neón fiesta (Party Kids)' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setForm(f => ({ ...f, theme: t.id }))}
+              className="btn"
+              style={{
+                borderRadius: 10, padding: '8px 14px', fontSize: 13,
+                border: form.theme === t.id ? '2px solid #8B5CF6' : '1.5px solid rgba(255,255,255,0.15)',
+                background: form.theme === t.id ? 'rgba(139,92,246,0.18)' : 'transparent',
+                color: 'white',
+              }}
+            >{t.label}</button>
+          ))}
+        </div>
+      </SettingsGroup>
+
+      <SettingsGroup title="Color de la fuente">
+        <div style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
+          {[
+            { id: 'auto', label: 'Automático' },
+            { id: 'light', label: 'Blanca' },
+            { id: 'dark', label: 'Negra' },
+          ].map(o => (
+            <button
+              key={o.id}
+              onClick={() => setForm(f => ({ ...f, textColorMode: o.id }))}
+              className="btn"
+              style={{
+                borderRadius: 10, padding: '8px 14px', fontSize: 13,
+                border: form.textColorMode === o.id ? '2px solid #8B5CF6' : '1.5px solid rgba(255,255,255,0.15)',
+                background: form.textColorMode === o.id ? 'rgba(139,92,246,0.18)' : 'transparent',
+                color: 'white',
+              }}
+            >{o.label}</button>
+          ))}
+        </div>
+      </SettingsGroup>
+
+      <div style={{ padding: '4px 0 24px' }}>
+        <button className="cfg-link-btn" onClick={handleSave} disabled={saving}>
+          {saving ? 'Guardando…' : saved ? '✓ Guardado' : 'Guardar cambios de marca'}
+        </button>
       </div>
     </div>
   );
-};
+}
 
-export default Configuracion;
+/* ── Funcionalidades (§6 guía branding): feature toggles por módulo ───────── */
+function SectionFuncionalidades() {
+  const { empresaActiva, reload } = useEmpresa();
+  const disabled = new Set(empresaActiva?.disabledModules || []);
+
+  const toggleModule = async (moduleId) => {
+    if (!empresaActiva?.id) return;
+    const next = new Set(empresaActiva.disabledModules || []);
+    if (next.has(moduleId)) next.delete(moduleId); else next.add(moduleId);
+    await empresaService.update(empresaActiva.id, { disabledModules: [...next] });
+    await reload();
+  };
+
+  return (
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-toggles" style={{ color: '#F97316' }} />
+        <h2>Funcionalidades</h2>
+      </div>
+      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: -6, marginBottom: 16 }}>
+        Apaga módulos para <strong>{empresaActiva?.nombre || 'esta empresa'}</strong>. No borra datos.
+      </p>
+      <SettingsGroup title="Módulos">
+        {[...TOGGLEABLE_MODULES].map((id, i, arr) => (
+          <div key={id}>
+            <div className="cfg-row cfg-toggle-row">
+              <span className="cfg-row-label">{MODULE_LABELS[id] || id}</span>
+              <div className={`cfg-toggle ${!disabled.has(id) ? 'on' : ''}`} onClick={() => toggleModule(id)}>
+                <div className="cfg-toggle-thumb" />
+              </div>
+            </div>
+            {i < arr.length - 1 && <Divider />}
+          </div>
+        ))}
+      </SettingsGroup>
+    </div>
+  );
+}
+
+function SectionAcerca() {
+  return (
+    <div className="cfg-content">
+      <div className="cfg-section-header">
+        <i className="bi bi-info-circle-fill" style={{ color: '#10B981' }} />
+        <h2>Acerca de</h2>
+      </div>
+      <div className="cfg-about-card">
+        <img src={logoColor} alt="Punto Verde" className="cfg-about-logo" />
+        <h3 className="cfg-about-name">PuntoVerde POS</h3>
+        <p className="cfg-about-version">Versión 1.0.0</p>
+        <p className="cfg-about-desc">
+          Sistema de Punto de Venta para tiendas de abarrotes.<br />
+          Desarrollado con React + Firebase.
+        </p>
+      </div>
+      <SettingsGroup title="Legal">
+        <SettingsRow label="Términos y condiciones" chevron />
+        <Divider />
+        <SettingsRow label="Política de privacidad" chevron />
+        <Divider />
+        <SettingsRow label="Licencias de terceros" chevron />
+      </SettingsGroup>
+    </div>
+  );
+}
+
+/* ── Componente principal ─────────────────────────────────────────────────── */
+export default function Configuracion() {
+  const navigate = useNavigate();
+  const { empleado } = useAuth();
+
+  const visibleSections = SECTIONS.filter(
+    s => !s.soloRoles || s.soloRoles.includes(empleado?.rol)
+  );
+
+  const renderSection = (id) => {
+    switch (id) {
+      case 'general':        return <SectionGeneral />;
+      case 'cuenta':         return <SectionCuenta navigate={navigate} />;
+      case 'apariencia':     return <SectionApariencia />;
+      case 'marca':          return <SectionMarca />;
+      case 'funcionalidades': return <SectionFuncionalidades />;
+      case 'impresora':      return <SectionImpresora />;
+      case 'notificaciones': return <SectionNotificaciones />;
+      case 'acerca':         return <SectionAcerca />;
+      default:               return null;
+    }
+  };
+
+  // Single-column apilado (como Inicio / ajustes de iOS) — sin sidebar, para que
+  // se vea igual que el resto de ventanas.
+  return (
+    <AppScreen title="Configuración" subtitle="Ajustes del sistema" className="config-page">
+      <div className="cfg-stack">
+        {visibleSections.map(s => (
+          <div key={s.id} className="cfg-block">{renderSection(s.id)}</div>
+        ))}
+      </div>
+    </AppScreen>
+  );
+}

@@ -1,0 +1,146 @@
+.content-area:has(.buscar-page) {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.buscar-page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Barra de búsqueda y grid: misma sangría que inicio-header (20px) ---- */
+.buscar-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 7px 14px;
+  margin: 0 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  width: fit-content;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.buscar-search-icon {
+  width: 13px;
+  height: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  flex-shrink: 0;
+}
+
+.buscar-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  min-width: 0;
+}
+.buscar-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.50);
+}
+.buscar-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* ---- Grid de cards ---- */
+.buscar-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 20px 140px;
+}
+
+/* ---- Card individual ---- */
+.buscar-card {
+  position: relative;
+  height: 96px;
+  border-radius: 16px;
+  border: none;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  box-shadow: 0 6px 18px var(--card-shadow, rgba(0,0,0,0.25));
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+  /* Subtle white border like Apple Music */
+  outline: 0.5px solid rgba(255, 255, 255, 0.12);
+  outline-offset: -0.5px;
+}
+
+.buscar-card:active {
+  transform: scale(0.94);
+  box-shadow: 0 2px 8px var(--card-shadow, rgba(0,0,0,0.2));
+}
+
+/* ---- Icono: top-centered, bottom ~40% clipped ---- */
+.buscar-card-icon {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Etiqueta en la esquina inferior izquierda ---- */
+.buscar-card-label {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -0.1px;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+
+/* ---- Desktop ---- */
+@media (min-width: 1024px) {
+  .buscar-search-bar {
+    margin: 0 20px;
+  }
+
+  .buscar-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    padding: 0 20px 40px;
+  }
+
+  .buscar-card {
+    height: 130px;
+  }
+
+  .buscar-card-icon {
+    width: 148px;
+    height: 148px;
+    top: 4px;
+  }
+
+  .buscar-card-label {
+    font-size: 17px;
+    bottom: 36px;
+    left: 16px;
+  }
+
+  .buscar-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px var(--card-shadow, rgba(0,0,0,0.3));
+  }
+
+  .buscar-card:active {
+    transform: scale(0.97);
+  }
+}

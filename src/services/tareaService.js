@@ -145,6 +145,92 @@ export const eliminarPlantilla = async (id) => {
   }
 };
 
+// Generates tasks for the current week from active plantillas.
+// Skips duplicates (same plantillaId + vencimiento date already exists).
+export const generarTareasSemanales = async () => {
+  try {
+    const [plantillasRes, tareasRes] = await Promise.all([
+      fetchPlantillas(),
+      fetchTodas(),
+    ]);
+    if (!plantillasRes.success) return { success: false, error: plantillasRes.error };
+
+    const plantillas = plantillasRes.data;
+    const tareasExistentes = tareasRes.success ? tareasRes.data : [];
+
+    const existing = new Set(
+      tareasExistentes
+        .filter(t => t.plantillaId && t.vencimiento)
+        .map(t => `${t.plantillaId}::${t.vencimiento}`)
+    );
+
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d;
+    });
+
+    const toDateStr = (d) => d.toISOString().split('T')[0];
+    const created = [];
+
+    for (const plantilla of plantillas) {
+      let targetDays = [];
+
+      if (plantilla.frecuencia === 'diaria') {
+        targetDays = weekDays.filter(d => d.getDay() !== 0); // Mon–Sat
+      } else if (plantilla.frecuencia === 'semanal') {
+        if (plantilla.diasSemana && plantilla.diasSemana.length > 0) {
+          targetDays = weekDays.filter(d => {
+            const idx = (d.getDay() + 6) % 7; // JS Sun=0 → Mon=0
+            return plantilla.diasSemana.includes(idx);
+          });
+        } else {
+          targetDays = weekDays.filter(d => d.getDay() === 5); // Friday by default
+        }
+      } else if (plantilla.frecuencia === 'quincenal') {
+        const weekNum = Math.ceil(monday.getDate() / 7);
+        if (weekNum % 2 === 1) targetDays = [weekDays[0]]; // odd weeks, Monday
+      } else if (plantilla.frecuencia === 'mensual') {
+        if (monday.getDate() <= 7) targetDays = [weekDays[0]]; // first week of month
+      }
+
+      for (const day of targetDays) {
+        const fechaStr = toDateStr(day);
+        const key = `${plantilla.id}::${fechaStr}`;
+        if (existing.has(key)) continue;
+
+        const tareaRef = doc(collection(db, 'tareas'));
+        await setDoc(tareaRef, {
+          titulo: plantilla.nombre,
+          notas: plantilla.notas || '',
+          prioridad: plantilla.prioridad || 'media',
+          asignadoA: plantilla.asignadoA || null,
+          vencimiento: fechaStr,
+          hora: '',
+          recurrente: true,
+          frecuencia: plantilla.frecuencia,
+          plantillaId: plantilla.id,
+          estado: 'pendiente',
+          createdAt: serverTimestamp(),
+        });
+        created.push(tareaRef.id);
+        existing.add(key);
+      }
+    }
+
+    return { success: true, created: created.length };
+  } catch (error) {
+    console.error('Error generating weekly tasks:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   fetchTodas,
   fetchPorEmpleado,
@@ -154,5 +240,6 @@ export default {
   remove,
   fetchPlantillas,
   crearPlantilla,
-  eliminarPlantilla
+  eliminarPlantilla,
+  generarTareasSemanales,
 };

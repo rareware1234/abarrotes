@@ -10,17 +10,34 @@ import {
   where,
   orderBy,
   limit,
+  writeBatch,
+  increment,
   serverTimestamp
 } from 'firebase/firestore';
+import { emit, ORDEN_CREADA } from '../lib/appEvents';
+import { scopeOrdenes, getActivaId } from '../lib/empresaActiva';
+import tiendaService from './tiendaService';
 
 
 export const create = async (orden) => {
   try {
     const ordenRef = doc(collection(db, 'ordenes'));
-    await setDoc(ordenRef, {
-      ...orden,
-      createdAt: serverTimestamp()
-    });
+    const tiendaId = orden.tiendaId || null;
+
+    // Batch: escribe la orden y descuenta stockPorTienda.{tiendaId} por producto
+    // (DATA_LAYER_SPEC §OrderService). Sin tiendaId (legacy) solo escribe la orden.
+    const batch = writeBatch(db);
+    batch.set(ordenRef, { ...orden, createdAt: serverTimestamp() });
+    if (tiendaId) {
+      for (const p of orden.productos || []) {
+        if (!p.id || !p.cantidad) continue;
+        batch.update(doc(db, 'productos', p.id), {
+          [`stockPorTienda.${tiendaId}`]: increment(-p.cantidad),
+        });
+      }
+    }
+    await batch.commit();
+    emit(ORDEN_CREADA, { id: ordenRef.id, tiendaId }); // ≈ notificación productosActualizados
     return { success: true, id: ordenRef.id };
   } catch (error) {
     console.error('Error creating order:', error);
@@ -178,11 +195,41 @@ export const getVentasSemana = async () => {
   }
 };
 
+export const getByDateRange = async (desde, hasta) => {
+  try {
+    const ordenesRef = collection(db, 'ordenes');
+    const q = query(
+      ordenesRef,
+      where('createdAt', '>=', desde),
+      where('createdAt', '<=', hasta),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    const ordenes = [];
+    snapshot.forEach(doc => { ordenes.push({ id: doc.id, ...doc.data() }); });
+    return { success: true, data: ordenes };
+  } catch (error) {
+    console.error('Error fetching orders by date range:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/** Órdenes de la empresa activa: por tiendas de la empresa (legacy sin tiendaId
+ *  solo en default). Réplica de Orden.fetchAllForActiveEmpresa (Swift). */
+export const fetchAllForActiveEmpresa = async (filtro = 'todas') => {
+  const [oRes, tRes] = await Promise.all([getOrdenes(filtro), tiendaService.fetchAllForActiveEmpresa()]);
+  if (!oRes.success) return oRes;
+  const ids = new Set((tRes.success ? tRes.data : []).map((t) => t.id));
+  return { success: true, data: scopeOrdenes(oRes.data, ids, getActivaId()) };
+};
+
 export default {
   create,
   getOrdenes,
+  fetchAllForActiveEmpresa,
   getById,
   getByEmpleado,
+  getByDateRange,
   getVentasHoy,
   getVentasSemana
 };

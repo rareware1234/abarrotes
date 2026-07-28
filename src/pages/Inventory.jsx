@@ -1,420 +1,317 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import api from '../api/axiosConfig';
-import { useDropzone } from 'react-dropzone';
+import React, { useState, useEffect } from 'react';
+import productService from '../services/productService';
+
+const fmt = (n) =>
+  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n || 0);
+
+const stockStatus = (stock, minimo = 5) => {
+  if (stock <= 0)       return { label: 'Sin stock',  color: '#EF4444', bg: '#FEF2F2' };
+  if (stock <= minimo)  return { label: 'Stock bajo', color: '#F97316', bg: '#FFF7ED' };
+  return                       { label: 'Normal',     color: '#22C55E', bg: '#F0FDF4' };
+};
 
 const Inventory = () => {
-  const [inventory, setInventory] = useState([]);
-  const [filteredInventory, setFilteredInventory] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [showModal, setShowModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  
-  // Estado para el formulario de recepción
-  const [formData, setFormData] = useState({
-    productId: '',
-    quantity: '',
-    unitCost: '',
-    expiryDate: ''
-  });
+  const [formData, setFormData] = useState({ quantity: '', unitCost: '', expiryDate: '' });
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  // URL de imagen genérica de leche con fondo transparente
-  const genericMilkImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/White_Milk.jpg/1200px-White_Milk.jpg';
-
-  useEffect(() => {
-    fetchInventory();
-    fetchProducts();
-  }, []);
-
-  // Efecto para filtrar inventario cuando cambie el término de búsqueda o la lista
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredInventory(inventory);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    const res = await productService.fetchAll();
+    if (res.success) {
+      setProducts(res.data);
+      setFiltered(res.data);
     } else {
-      const term = searchTerm.toLowerCase();
-      const filtered = inventory.filter(item =>
-        item.name.toLowerCase().includes(term) ||
-        item.sku.toLowerCase().includes(term) ||
-        item.category.toLowerCase().includes(term)
-      );
-      setFilteredInventory(filtered);
+      setError('Error al cargar productos de Firestore.');
     }
-  }, [searchTerm, inventory]);
-
-  const fetchInventory = async () => {
-    try {
-      // Como no hay un endpoint único para todo el inventario, 
-      // vamos a obtener los productos y calcular el stock disponible para cada uno.
-      const response = await api.get('/api/products');
-      
-      // Para cada producto, obtenemos el stock disponible
-      const inventoryData = await Promise.all(
-        response.data.map(async (product) => {
-          try {
-            const stockResponse = await api.get(`/api/inventory/stock/${product.id}`);
-            return {
-              ...product,
-              availableStock: stockResponse.data
-            };
-          } catch (error) {
-            return {
-              ...product,
-              availableStock: 0
-            };
-          }
-        })
-      );
-      
-      setInventory(inventoryData);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error al cargar inventario:", error);
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
-  const fetchProducts = async () => {
-    try {
-      const response = await api.get('/api/products');
-      setProducts(response.data);
-    } catch (error) {
-      console.error("Error al cargar productos:", error);
-    }
-  };
+  useEffect(() => { load(); }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
+  useEffect(() => {
+    const term = search.toLowerCase().trim();
+    if (!term) { setFiltered(products); return; }
+    setFiltered(products.filter(p =>
+      (p.nombre || '').toLowerCase().includes(term) ||
+      (p.codigo || p.sku || '').toLowerCase().includes(term) ||
+      (p.categoria || '').toLowerCase().includes(term) ||
+      (p.proveedor || '').toLowerCase().includes(term)
+    ));
+  }, [search, products]);
 
-  const handleSubmitReception = async (e) => {
-    e.preventDefault();
-    try {
-      // Construir la URL con query parameters como espera el backend
-      const params = new URLSearchParams({
-        productId: formData.productId,
-        quantity: formData.quantity,
-        unitCost: formData.unitCost,
-        expiryDate: formData.expiryDate + 'T00:00:00' // Añadir hora para formato correcto
-      });
-
-      await api.post(`/api/inventory/receive?${params.toString()}`);
-      alert('Entrada de inventario registrada exitosamente');
-      setShowModal(false);
-      fetchInventory(); // Recargar lista
-      setFormData({ productId: '', quantity: '', unitCost: '', expiryDate: '' });
-    } catch (error) {
-      console.error("Error al registrar entrada:", error);
-      alert('Error al registrar la entrada. Revisa la consola.');
-    }
-  };
-
-  // Función para manejar la subida de imágenes
-  const handleImageUpload = async () => {
-    if (!selectedProduct || !imagePreview) return;
-    
-    setUploading(true);
-    try {
-      // En producción, aquí subiríamos la imagen al servidor
-      // Por ahora, guardamos en localStorage
-      const productImages = JSON.parse(localStorage.getItem('productImages') || '{}');
-      productImages[selectedProduct.id] = imagePreview;
-      localStorage.setItem('productImages', JSON.stringify(productImages));
-      
-      alert('Imagen guardada exitosamente');
-      setShowImageModal(false);
-      setImagePreview(null);
-      setSelectedProduct(null);
-      fetchInventory(); // Recargar lista para mostrar la nueva imagen
-    } catch (error) {
-      console.error('Error al subir imagen:', error);
-      alert('Error al subir la imagen');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // Configuración de Dropzone
-  const onDrop = useCallback((acceptedFiles) => {
-    if (acceptedFiles && acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
-    },
-    multiple: false,
-    maxSize: 5242880 // 5MB
-  });
-
-  // Función para abrir modal de imagen
-  const openImageModal = (product) => {
+  const openEntrada = (product) => {
     setSelectedProduct(product);
-    setShowImageModal(true);
-    // Cargar imagen existente si la hay
-    const productImages = JSON.parse(localStorage.getItem('productImages') || '{}');
-    if (productImages[product.id]) {
-      setImagePreview(productImages[product.id]);
+    setFormData({ quantity: '', unitCost: '', expiryDate: '' });
+    setShowModal(true);
+  };
+
+  const handleEntrada = async (e) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+    const qty = parseInt(formData.quantity);
+    if (!qty || qty <= 0) return;
+
+    setSaving(true);
+    const nuevoStock = (selectedProduct.stock || 0) + qty;
+    const update = {
+      stock: nuevoStock,
+      ...(formData.unitCost && { precioCompra: parseFloat(formData.unitCost) }),
+      ...(formData.expiryDate && { fechaCaducidad: formData.expiryDate }),
+    };
+
+    const res = await productService.update(selectedProduct.id, update);
+    setSaving(false);
+
+    if (res.success) {
+      setToast({ message: `+${qty} unidades agregadas a ${selectedProduct.nombre}`, type: 'success' });
+      setShowModal(false);
+      load();
     } else {
-      setImagePreview(null);
+      setToast({ message: 'Error al actualizar stock', type: 'error' });
     }
+    setTimeout(() => setToast(null), 3000);
   };
 
-  // Función para obtener la imagen del producto
-  const getProductImage = (productId) => {
-    const productImages = JSON.parse(localStorage.getItem('productImages') || '{}');
-    return productImages[productId] || genericMilkImage;
+  const stats = {
+    total: products.length,
+    sinStock: products.filter(p => (p.stock || 0) <= 0).length,
+    bajo: products.filter(p => (p.stock || 0) > 0 && (p.stock || 0) <= (p.stockMinimo || 5)).length,
+    valorTotal: products.reduce((s, p) => s + ((p.precioCompra || 0) * (p.stock || 0)), 0),
   };
-
-  if (loading) return <div className="p-4">Cargando inventario...</div>;
 
   return (
-    <div className="container-fluid p-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Gestión de Inventario</h2>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <i className="bi bi-box-arrow-in-down"></i> Registrar Entrada
+    <div style={{ padding: '20px 24px' }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 20, right: 20, zIndex: 9999,
+          padding: '12px 20px', borderRadius: 12,
+          background: toast.type === 'success' ? '#ECFDF5' : '#FEF2F2',
+          color: toast.type === 'success' ? '#065F46' : '#991B1B',
+          border: `1px solid ${toast.type === 'success' ? '#A7F3D0' : '#FECACA'}`,
+          fontWeight: 600, fontSize: 14, boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+        }}>
+          {toast.message}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Inventario</h1>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+            {loading ? 'Cargando...' : `${products.length} productos`}
+          </div>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            background: 'var(--role-primary)', color: '#fff',
+            border: 'none', borderRadius: 12, padding: '10px 20px',
+            fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+          }}
+        >
+          <i className="bi bi-box-arrow-in-down" /> Registrar Entrada
         </button>
       </div>
 
-      {/* Barra de Búsqueda */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body">
-          <div className="input-group">
-            <span className="input-group-text bg-white">
-              <i className="bi bi-search"></i>
-            </span>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Buscar por nombre, SKU o categoría..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              autoComplete="new-password"
-              style={{
-                backgroundColor: 'white',
-                color: '#212529'
-              }}
-            />
-            {searchTerm && (
-              <button className="btn btn-outline-secondary" onClick={() => setSearchTerm('')}>
-                <i className="bi bi-x-lg"></i>
-              </button>
-            )}
+      {/* KPI chips */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
+        {[
+          { label: 'Total productos', value: stats.total, color: '#2563EB' },
+          { label: 'Sin stock', value: stats.sinStock, color: stats.sinStock > 0 ? '#EF4444' : '#9CA3AF' },
+          { label: 'Stock bajo', value: stats.bajo, color: stats.bajo > 0 ? '#F97316' : '#9CA3AF' },
+          { label: 'Valor inventario', value: fmt(stats.valorTotal), color: '#059669', wide: true },
+        ].map(k => (
+          <div key={k.label} style={{ background: '#fff', border: '1px solid var(--border, #E5E7EB)', borderRadius: 12, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)', marginBottom: 4 }}>{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: k.color }}>{k.value}</div>
           </div>
-        </div>
+        ))}
       </div>
 
-      {/* Tabla de Inventario */}
-      <div className="card border-0 shadow-sm">
-        <div className="table-responsive">
-          <table className="table table-hover mb-0">
-            <thead className="table-light text-primary">
-              <tr>
-                <th style={{ width: '80px' }}>Imagen</th>
-                <th>Producto</th>
-                <th>Categoría</th>
-                <th className="text-end">Stock Disponible</th>
-                <th className="text-end">Stock Mínimo</th>
-                <th className="text-end">Stock Máximo</th>
-                <th className="text-center">Estado</th>
-                <th className="text-center">Acciones</th>
+      {/* Búsqueda */}
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <i className="bi bi-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+        <input
+          type="text"
+          placeholder="Buscar por nombre, código, categoría o proveedor..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            width: '100%', height: 44, paddingLeft: 40, paddingRight: search ? 36 : 14,
+            border: '1px solid var(--border, #E5E7EB)', borderRadius: 12,
+            fontSize: 14, outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 0 }}>
+            <i className="bi bi-x-lg" />
+          </button>
+        )}
+      </div>
+
+      {/* Tabla */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+          <div className="spinner-border" role="status" />
+          <p style={{ marginTop: 16 }}>Cargando inventario...</p>
+        </div>
+      ) : error ? (
+        <div style={{ textAlign: 'center', padding: 40, color: '#EF4444' }}>{error}</div>
+      ) : (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--border, #E5E7EB)', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#F9FAFB' }}>
+                {['Producto', 'Categoría', 'Stock', 'Mínimo', 'Costo compra', 'Estado', ''].map(h => (
+                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6B7280', borderBottom: '1px solid var(--border, #E5E7EB)' }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filteredInventory.map((item) => (
-                <tr key={item.id}>
-                  <td className="text-center">
-                    <img 
-                      src={getProductImage(item.id)} 
-                      alt={item.name}
-                      style={{ 
-                        width: '50px', 
-                        height: '50px', 
-                        objectFit: 'cover',
-                        borderRadius: '8px',
-                        border: '1px solid #dee2e6'
-                      }}
-                      onError={(e) => {
-                        e.target.src = genericMilkImage;
-                      }}
-                    />
-                  </td>
-                  <td>
-                    <strong>{item.name}</strong><br/>
-                    <small className="text-muted">SKU: {item.sku}</small>
-                  </td>
-                  <td>{item.category}</td>
-                  <td className="text-end fw-bold">{item.availableStock}</td>
-                  <td className="text-end">{item.minStock}</td>
-                  <td className="text-end">{item.maxStock}</td>
-                  <td className="text-center">
-                    {item.availableStock < item.minStock ? (
-                      <span className="badge bg-danger">Stock Bajo</span>
-                    ) : (
-                      <span className="badge bg-success">Normal</span>
-                    )}
-                  </td>
-                  <td className="text-center">
-                    <button 
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => openImageModal(item)}
-                      title="Subir imagen"
-                    >
-                      <i className="bi bi-image"></i>
-                    </button>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                    {search ? 'Sin resultados para esta búsqueda' : 'No hay productos'}
                   </td>
                 </tr>
-              ))}
+              ) : filtered.map(p => {
+                const img = p.imagenUrl || p.imagenes?.[0] || null;
+                const st = stockStatus(p.stock || 0, p.stockMinimo || 5);
+                return (
+                  <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        {img ? (
+                          <img src={img} alt={p.nombre} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                        ) : (
+                          <div style={{ width: 40, height: 40, borderRadius: 8, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <i className="bi bi-box" style={{ color: '#9CA3AF' }} />
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{p.nombre}</div>
+                          {(p.codigo || p.sku) && (
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{p.codigo || p.sku}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{p.categoria || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 15, color: st.color }}>{p.stock ?? 0}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{p.stockMinimo ?? 5}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13 }}>{p.precioCompra ? fmt(p.precioCompra) : '—'}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 12, background: st.bg, color: st.color }}>
+                        {st.label}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <button
+                        onClick={() => openEntrada(p)}
+                        title="Registrar entrada"
+                        style={{ background: 'none', border: '1px solid var(--border, #E5E7EB)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: 'var(--role-primary)' }}
+                      >
+                        <i className="bi bi-box-arrow-in-down" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Contador de items */}
-      <div className="mt-2 text-muted small">
-        Mostrando {filteredInventory.length} de {inventory.length} productos
-      </div>
-
-      {/* Modal para Registrar Entrada */}
-      {showModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title">Registrar Entrada de Inventario</h5>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
-              </div>
-              <form onSubmit={handleSubmitReception}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Producto</label>
-                    <select className="form-select" name="productId" value={formData.productId} onChange={handleInputChange} required>
-                      <option value="">Seleccionar producto...</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="row g-3">
-                    <div className="col-6">
-                      <label className="form-label">Cantidad</label>
-                      <input type="number" className="form-control" name="quantity" value={formData.quantity} onChange={handleInputChange} required />
-                    </div>
-                    <div className="col-6">
-                      <label className="form-label">Costo Unitario ($)</label>
-                      <input type="number" step="0.01" className="form-control" name="unitCost" value={formData.unitCost} onChange={handleInputChange} required />
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">Fecha de Caducidad</label>
-                      <input type="date" className="form-control" name="expiryDate" value={formData.expiryDate} onChange={handleInputChange} required />
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary">Registrar Entrada</button>
-                </div>
-              </form>
-            </div>
+          <div style={{ padding: '10px 16px', fontSize: 12, color: 'var(--text-muted)', borderTop: '1px solid #F3F4F6' }}>
+            Mostrando {filtered.length} de {products.length} productos
           </div>
         </div>
       )}
 
-      {/* Modal para Subir Imagen */}
-      {showImageModal && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title">
-                  <i className="bi bi-image me-2"></i> Subir Imagen - {selectedProduct?.name}
-                </h5>
-                <button type="button" className="btn-close btn-close-white" onClick={() => setShowImageModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                {/* Vista previa de la imagen actual */}
-                {imagePreview && (
-                  <div className="text-center mb-3">
-                    <p className="text-muted small mb-2">Vista previa:</p>
-                    <img 
-                      src={imagePreview} 
-                      alt="Vista previa"
-                      style={{ 
-                        maxWidth: '200px', 
-                        maxHeight: '200px',
-                        borderRadius: '8px',
-                        border: '2px solid #dee2e6'
-                      }}
-                    />
-                  </div>
-                )}
+      {/* Modal entrada de inventario */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+                {selectedProduct ? `Entrada: ${selectedProduct.nombre}` : 'Registrar Entrada'}
+              </h3>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#6B7C93' }}>×</button>
+            </div>
 
-                {/* Área de Dropzone */}
-                <div 
-                  {...getRootProps()} 
-                  className={`border-2 rounded p-4 text-center ${isDragActive ? 'border-primary bg-light' : 'border-secondary'}`}
-                  style={{ 
-                    borderStyle: 'dashed',
-                    cursor: 'pointer',
-                    backgroundColor: isDragActive ? '#f8f9fa' : '#fafafa'
-                  }}
+            {!selectedProduct && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Producto</label>
+                <select
+                  onChange={e => setSelectedProduct(products.find(p => p.id === e.target.value) || null)}
+                  style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid var(--border, #E5E7EB)', padding: '0 12px', fontSize: 14 }}
                 >
-                  <input {...getInputProps()} />
-                  <i className="bi bi-cloud-arrow-up display-4 text-muted mb-2"></i>
-                  <p className="mb-0">
-                    {isDragActive 
-                      ? 'Suelta la imagen aquí...' 
-                      : 'Arrastra y suelta una imagen aquí, o haz clic para seleccionar'}
-                  </p>
-                  <small className="text-muted">PNG, JPG, GIF hasta 5MB</small>
-                </div>
+                  <option value="">Seleccionar...</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                </select>
+              </div>
+            )}
 
-                {/* Información del producto */}
-                <div className="mt-3 p-2 bg-light rounded">
-                  <p className="mb-1"><strong>Producto:</strong> {selectedProduct?.name}</p>
-                  <p className="mb-0"><strong>SKU:</strong> {selectedProduct?.sku}</p>
+            <form onSubmit={handleEntrada}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Cantidad *</label>
+                  <input
+                    type="number" min="1" required
+                    value={formData.quantity}
+                    onChange={e => setFormData(f => ({ ...f, quantity: e.target.value }))}
+                    style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid var(--border, #E5E7EB)', padding: '0 12px', fontSize: 14, boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Costo unitario</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={formData.unitCost}
+                    placeholder="$0.00"
+                    onChange={e => setFormData(f => ({ ...f, unitCost: e.target.value }))}
+                    style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid var(--border, #E5E7EB)', padding: '0 12px', fontSize: 14, boxSizing: 'border-box' }}
+                  />
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowImageModal(false)}>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Fecha de caducidad</label>
+                <input
+                  type="date"
+                  value={formData.expiryDate}
+                  onChange={e => setFormData(f => ({ ...f, expiryDate: e.target.value }))}
+                  style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid var(--border, #E5E7EB)', padding: '0 12px', fontSize: 14, boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {selectedProduct && (
+                <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#065F46' }}>
+                  Stock actual: <strong>{selectedProduct.stock ?? 0}</strong>
+                  {formData.quantity && <> → <strong>{(selectedProduct.stock || 0) + parseInt(formData.quantity || 0)}</strong></>}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" onClick={() => setShowModal(false)}
+                  style={{ flex: 1, height: 46, background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}>
                   Cancelar
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary" 
-                  onClick={handleImageUpload}
-                  disabled={!imagePreview || uploading}
-                >
-                  {uploading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2"></span>
-                      Subiendo...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-upload me-2"></i>
-                      Guardar Imagen
-                    </>
-                  )}
+                <button type="submit" disabled={saving || !selectedProduct}
+                  style={{ flex: 1, height: 46, background: 'var(--role-primary)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                  {saving ? 'Guardando...' : 'Registrar'}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

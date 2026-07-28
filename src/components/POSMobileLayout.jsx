@@ -1,5 +1,69 @@
-import React, { useRef, useEffect } from 'react';
-import { FaBarcode, FaCamera, FaTrash, FaShoppingCart } from 'react-icons/fa';
+import React, { useRef, useEffect, useState } from 'react';
+import { FaBarcode, FaCamera, FaTrash, FaShoppingCart, FaTimes } from 'react-icons/fa';
+import { useBarcodeScanner } from '../hooks/useBarcodeScanner';
+
+function CameraScannerModal({ onDetected, onClose }) {
+  const videoRef = useRef(null);
+  const { isScanning, error, startScanner, stopScanner } = useBarcodeScanner((barcode) => {
+    stopScanner();
+    onDetected(barcode);
+    onClose();
+  });
+
+  useEffect(() => {
+    if (videoRef.current) startScanner(videoRef.current);
+    return () => stopScanner();
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.92)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 20, padding: 24
+    }}>
+      <div style={{ width: '100%', maxWidth: 360, position: 'relative' }}>
+        <video
+          ref={videoRef}
+          autoPlay playsInline muted
+          style={{ width: '100%', borderRadius: 16, background: '#000', display: 'block' }}
+        />
+        {/* scan line */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '10%', right: '10%',
+          height: 2, background: 'rgba(0,200,100,0.8)',
+          boxShadow: '0 0 10px rgba(0,200,100,0.6)',
+          animation: 'scanLine 2s linear infinite',
+        }} />
+        <style>{`
+          @keyframes scanLine {
+            0%  { top: 20%; }
+            50% { top: 80%; }
+            100%{ top: 20%; }
+          }
+        `}</style>
+      </div>
+
+      {error && (
+        <p style={{ color: '#ff6b6b', fontSize: 14, textAlign: 'center', margin: 0 }}>{error}</p>
+      )}
+      {!error && isScanning && (
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, margin: 0 }}>
+          Apunta al código de barras...
+        </p>
+      )}
+
+      <button onClick={() => { stopScanner(); onClose(); }} style={{
+        height: 48, padding: '0 28px', borderRadius: 12,
+        background: 'rgba(255,255,255,0.12)', color: 'white',
+        border: '1px solid rgba(255,255,255,0.25)', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 8
+      }}>
+        <FaTimes size={14} /> Cancelar
+      </button>
+    </div>
+  );
+}
 
 const POSMobileLayout = ({
   cart,
@@ -13,9 +77,11 @@ const POSMobileLayout = ({
   onSearch,
   onAddProduct,
   onSelectSuggestion,
+  addProductByBarcode,
   employeeName
 }) => {
   const inputRef = useRef(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   const subtotal = cart.reduce((s, i) => s + (i.price || 0) * i.quantity, 0);
   const iva = subtotal * 0.16;
@@ -101,7 +167,7 @@ const POSMobileLayout = ({
           />
 
           <button
-            onClick={() => alert('Cámara en desarrollo')}
+            onClick={() => setShowCamera(true)}
             style={{
               width: 44, height: 46,
               border: 'none',
@@ -163,12 +229,12 @@ const POSMobileLayout = ({
                 }}
               >
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#1a2b3c', marginBottom: 2 }}>
-                  {p.nombreProducto || p.name}
+                  {p.nombre || p.nombreProducto || p.name}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'monospace' }}>{p.sku}</span>
+                  <span style={{ fontSize: 12, color: '#9ca3af', fontFamily: 'monospace' }}>{p.codigo || p.sku}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#00843D' }}>
-                    ${(p.precio || p.price || 0).toFixed(2)}
+                    ${(p.precioConIVA || p.precioVenta || p.precio || p.price || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -373,6 +439,13 @@ const POSMobileLayout = ({
         </div>
 
       </div>
+
+      {showCamera && addProductByBarcode && (
+        <CameraScannerModal
+          onDetected={addProductByBarcode}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </>
   );
 };

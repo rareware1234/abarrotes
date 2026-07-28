@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useEmpresa } from '../context/EmpresaContext';
+import { filterByActiveEmpresa } from '../lib/empresaActiva';
 import empleadoService from '../services/empleadoService';
 import tiendaService from '../services/tiendaService';
+import registroActividadService from '../services/registroActividadService';
 import '../styles/empleados.css';
 import empLogoDark  from '../assets/logo-dark.png';
 import empLogoLight from '../assets/logo-light.png';
@@ -210,6 +213,24 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
         faltasSnap.forEach(doc => faltas.push({ id: doc.id, ...doc.data() }));
 
         const inicioSemanaActual = getInicioSemanaActual();
+        const weekStart = inicioSemanaActual;
+        const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
+        const weekStartStr = weekStart.toISOString().split('T')[0];
+        const weekEndStr = weekEnd.toISOString().split('T')[0];
+
+        // Query turnos for the whole month (for monthly calendar) — then extract week client-side
+        const mesStartStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const mesEndStr = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().split('T')[0];
+        const turnosRef2 = collection(db, 'turnos');
+        const turnosQ = query(turnosRef2, where('fecha', '>=', mesStartStr), where('fecha', '<', mesEndStr));
+        const turnosSnap = await getDocs(turnosQ);
+        const turnosMes = [];
+        turnosSnap.forEach(d => { const t = { id: d.id, ...d.data() }; if (t.empleadoId === uid) turnosMes.push(t); });
+        const turnosSemana = turnosMes.filter(t => t.fecha >= weekStartStr && t.fecha < weekEndStr);
+        const faltasSemana = faltas.filter(f => {
+          const fd = f.fecha?.toDate ? f.fecha.toDate() : new Date(f.fecha || 0);
+          return fd >= weekStart && fd < weekEnd;
+        });
         const inicioSemanaPasada = getInicioSemanaPasada();
         const finSemanaPasada = new Date(inicioSemanaActual);
         finSemanaPasada.setDate(finSemanaPasada.getDate() - 1);
@@ -233,10 +254,11 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
           : 100;
 
         const mesActual = new Date(now.getFullYear(), now.getMonth(), 1);
-        const faltasMes = faltas.filter(f => {
+        const faltasMesArr = faltas.filter(f => {
           const fecha = f.fecha?.toDate ? f.fecha.toDate() : new Date(f.fecha);
           return fecha >= mesActual;
-        }).length;
+        });
+        const faltasMes = faltasMesArr.length;
 
         const asistencia = diasHabilesTranscurridos > 0
           ? Math.max(0, ((diasHabilesTranscurridos - faltasMes) / diasHabilesTranscurridos) * 100)
@@ -256,6 +278,10 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
           asistencia,
           faltasMes,
           vacacionInfo,
+          turnosSemana,
+          faltasSemana,
+          turnosMes,
+          faltasMesArr,
         });
       } catch (error) {
         console.error('Error fetching metricas:', error);
@@ -282,6 +308,8 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
     montoActual: 0, montoPasado: 0,
     puntualidad: 100, asistencia: 100, faltasMes: 0,
     vacacionInfo: { años: 0, dias: 0 },
+    turnosSemana: [], faltasSemana: [],
+    turnosMes: [], faltasMesArr: [],
   };
 
   const ticketPromedio = m.ventasMesCount > 0
@@ -566,6 +594,129 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
             </div>
           </div>
 
+          {/* ── Weekly attendance visualization ── */}
+          <div style={{ background: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 12, fontWeight: 'bold', color: '#1C1E21', marginBottom: 10 }}>Asistencia esta semana</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              {['L','M','X','J','V','S','D'].map((dayLabel, idx) => {
+                const dayDate = new Date(getInicioSemanaActual());
+                dayDate.setDate(dayDate.getDate() + idx);
+                const dateStr = dayDate.toISOString().split('T')[0];
+                const hoyStr = new Date().toISOString().split('T')[0];
+                const isFuture = dateStr > hoyStr;
+                const isToday = dateStr === hoyStr;
+                const turno = (m.turnosSemana || []).find(t => t.fecha === dateStr);
+                const falta = (m.faltasSemana || []).find(f => {
+                  const fd = f.fecha?.toDate ? f.fecha.toDate() : new Date(f.fecha || 0);
+                  return fd.toISOString().split('T')[0] === dateStr;
+                });
+                let bg, symbol;
+                if (isFuture)                              { bg = '#E5E7EB'; symbol = null; }
+                else if (turno?.tipo === 'descanso')       { bg = '#94A3B8'; symbol = '—'; }
+                else if (falta?.tipo === 'injustificada')  { bg = '#EF4444'; symbol = '✕'; }
+                else if (falta)                            { bg = '#F97316'; symbol = '!'; }
+                else if (turno)                            { bg = '#22C55E'; symbol = '✓'; }
+                else                                       { bg = '#D1D5DB'; symbol = null; }
+                return (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: '50%', background: bg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: isToday ? `2px solid ${themePrimary}` : '2px solid transparent',
+                      boxSizing: 'border-box',
+                    }}>
+                      {symbol && <span style={{ color: 'white', fontSize: 12, fontWeight: 800, lineHeight: 1 }}>{symbol}</span>}
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: isToday ? 800 : 500, color: isToday ? themePrimary : '#9CA3AF' }}>{dayLabel}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+              {[['#22C55E','Presente'],['#F97316','Justificada'],['#EF4444','Injustificada'],['#94A3B8','Descanso']].map(([c, l]) => (
+                <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
+                  <span style={{ fontSize: 10, color: '#9CA3AF' }}>{l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Monthly attendance calendar ── */}
+          {(() => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const todayNum = now.getDate();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            // JS getDay() returns 0=Sun…6=Sat; we want 0=Mon…6=Sun
+            const firstDow = new Date(year, month, 1).getDay();
+            const firstColOffset = firstDow === 0 ? 6 : firstDow - 1;
+            const hoyStr = now.toISOString().split('T')[0];
+            // Build lookup maps
+            const turnoByDate = {};
+            (m.turnosMes || []).forEach(t => { turnoByDate[t.fecha] = t; });
+            const faltaByDate = {};
+            (m.faltasMesArr || []).forEach(f => {
+              const fd = f.fecha?.toDate ? f.fecha.toDate() : new Date(f.fecha || 0);
+              const ds = fd.toISOString().split('T')[0];
+              faltaByDate[ds] = f;
+            });
+            const dayNums = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            const MONTH_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            return (
+              <div style={{ background: 'white', borderRadius: 14, padding: '12px 14px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize: 12, fontWeight: 'bold', color: '#1C1E21', marginBottom: 10 }}>
+                  Asistencia — {MONTH_LABELS[month]}
+                </div>
+                {/* Day-of-week header */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
+                  {['L','M','X','J','V','S','D'].map(d => (
+                    <div key={d} style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase' }}>{d}</div>
+                  ))}
+                </div>
+                {/* Day grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                  {/* Empty offset cells */}
+                  {Array.from({ length: firstColOffset }).map((_, i) => (
+                    <div key={`e${i}`} />
+                  ))}
+                  {dayNums.map(day => {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const isFuture = day > todayNum;
+                    const isToday = day === todayNum;
+                    const dowJs = new Date(year, month, day).getDay();
+                    const isWeekend = dowJs === 0 || dowJs === 6;
+                    const turno = turnoByDate[dateStr];
+                    const falta = faltaByDate[dateStr];
+                    let bg, txt;
+                    if (isFuture)                              { bg = '#F1F5F9'; txt = null; }
+                    else if (turno?.tipo === 'descanso')       { bg = '#94A3B8'; txt = '—'; }
+                    else if (falta?.tipo === 'injustificada')  { bg = '#EF4444'; txt = '✕'; }
+                    else if (falta)                            { bg = '#F97316'; txt = '!'; }
+                    else if (turno)                            { bg = '#22C55E'; txt = '✓'; }
+                    else if (isWeekend)                        { bg = '#CBD5E1'; txt = null; }
+                    else                                       { bg = '#E2E8F0'; txt = null; }
+                    return (
+                      <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <div style={{
+                          width: 26, height: 26, borderRadius: '50%',
+                          background: bg,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: isToday ? `2px solid ${themePrimary}` : '2px solid transparent',
+                          boxSizing: 'border-box',
+                          fontSize: txt ? 9 : 8, fontWeight: 800, color: 'white',
+                        }}>
+                          {txt || <span style={{ color: isFuture ? '#CBD5E1' : '#94A3B8', fontSize: 9, fontWeight: 600 }}>{day}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="emp-mini-stats">
             <div style={{ background: 'white', borderRadius: 12, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
               <i className="bi bi-hourglass-split" style={{ fontSize: 15, color: m.puntualidad >= 90 ? '#4ADE80' : m.puntualidad >= 75 ? '#F0A500' : '#E63946' }}></i>
@@ -588,6 +739,76 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
               <div style={{ fontSize: 10, color: '#6B7C93', textAlign: 'center' }}>Vacaciones</div>
             </div>
           </div>
+
+          {/* ── iOS Contacts-style info cards ── */}
+          {[
+            {
+              title: 'Contacto', icon: 'bi-telephone-fill',
+              rows: [
+                empleado.telefono && { icon: 'bi-telephone', label: 'Teléfono', value: empleado.telefono },
+                empleado.email && { icon: 'bi-envelope', label: 'Email', value: empleado.email },
+              ].filter(Boolean),
+            },
+            {
+              title: 'Trabajo', icon: 'bi-briefcase-fill',
+              rows: [
+                tienda?.nombre && { icon: 'bi-shop', label: 'Sucursal', value: tienda.nombre },
+                empleado.rol && { icon: 'bi-person-badge', label: 'Rol', value: getRolShortName(empleado.rol) },
+                empleado.tipoContrato && { icon: 'bi-file-earmark-text', label: 'Contrato', value: empleado.tipoContrato },
+                empleado.numEmpleado && { icon: 'bi-hash', label: 'N° empleado', value: formatNumEmpleado(empleado.numEmpleado) },
+                empleado.fechaIngreso && { icon: 'bi-calendar-event', label: 'Ingreso', value: formatDateShort(empleado.fechaIngreso) },
+              ].filter(Boolean),
+            },
+            {
+              title: 'Personal', icon: 'bi-person-lines-fill',
+              rows: [
+                empleado.fechaNacimiento && { icon: 'bi-cake2', label: 'Nacimiento', value: formatDateShort(empleado.fechaNacimiento) },
+                empleado.sexo && { icon: 'bi-gender-ambiguous', label: 'Sexo', value: empleado.sexo },
+                empleado.estadoCivil && { icon: 'bi-people', label: 'Est. civil', value: empleado.estadoCivil },
+                empleado.tipoSangre && { icon: 'bi-droplet-half', label: 'Tipo sangre', value: empleado.tipoSangre },
+                empleado.nivelEstudios && { icon: 'bi-mortarboard', label: 'Estudios', value: empleado.nivelEstudios },
+                empleado.nacionalidad && { icon: 'bi-globe-americas', label: 'Nacion.', value: empleado.nacionalidad },
+              ].filter(Boolean),
+            },
+            {
+              title: 'Documentos', icon: 'bi-file-earmark-person-fill',
+              rows: [
+                empleado.curp && { icon: 'bi-card-text', label: 'CURP', value: empleado.curp },
+                empleado.rfc && { icon: 'bi-file-earmark-ruled', label: 'RFC', value: empleado.rfc },
+                empleado.nss && { icon: 'bi-shield-check', label: 'NSS', value: empleado.nss },
+              ].filter(Boolean),
+            },
+            {
+              title: 'Nómina', icon: 'bi-cash-stack',
+              rows: [
+                empleado.salarioDiario && { icon: 'bi-currency-dollar', label: 'Salario diario', value: `$${Number(empleado.salarioDiario).toLocaleString('es-MX')}` },
+                empleado.banco && { icon: 'bi-bank', label: 'Banco', value: empleado.banco },
+                empleado.clabe && { icon: 'bi-upc-scan', label: 'CLABE', value: empleado.clabe },
+              ].filter(Boolean),
+            },
+            {
+              title: 'Contacto de emergencia', icon: 'bi-heart-pulse-fill',
+              rows: [
+                empleado.contactoEmergenciaNombre && { icon: 'bi-person', label: 'Nombre', value: empleado.contactoEmergenciaNombre },
+                empleado.contactoEmergenciaTelefono && { icon: 'bi-telephone', label: 'Teléfono', value: empleado.contactoEmergenciaTelefono },
+                empleado.contactoEmergenciaParentesco && { icon: 'bi-people', label: 'Parentesco', value: empleado.contactoEmergenciaParentesco },
+              ].filter(Boolean),
+            },
+          ].filter(sec => sec.rows.length > 0).map(sec => (
+            <div key={sec.title} style={{ background:'white', borderRadius:14, overflow:'hidden', boxShadow:'0 2px 6px rgba(0,0,0,0.04)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderBottom:'1px solid #F1F3F5', background:'#FAFBFC' }}>
+                <i className={`bi ${sec.icon}`} style={{ fontSize:12, color:themePrimary }} />
+                <span style={{ fontSize:11, fontWeight:800, color:themePrimary, textTransform:'uppercase', letterSpacing:0.8 }}>{sec.title}</span>
+              </div>
+              {sec.rows.map((row, ri) => (
+                <div key={ri} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', borderBottom: ri < sec.rows.length - 1 ? '1px solid #F1F3F5' : 'none' }}>
+                  <i className={`bi ${row.icon}`} style={{ fontSize:14, color:'#9CA3AF', width:18, textAlign:'center', flexShrink:0 }} />
+                  <div style={{ fontSize:12, color:'#9CA3AF', width:90, flexShrink:0 }}>{row.label}</div>
+                  <div style={{ fontSize:13, fontWeight:500, color:'#1C1E21', flex:1 }}>{row.value}</div>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
     </div>
   );
@@ -595,9 +816,12 @@ const EmpleadoDetalle = ({ empleado, tiendas = [], onEdit, onNuevaTarea, onBack 
 
 const Empleados = () => {
   const { empleado: currentUser } = useAuth();
+  const { activaId } = useEmpresa();
   const [empleados, setEmpleados] = useState([]);
   const [tiendas, setTiendas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState('');
+  const showToast = (msg, ms = 3000) => { setToast(msg); setTimeout(() => setToast(''), ms); };
   const [selectedEmpleado, setSelectedEmpleado] = useState(null);
   const [selectedTienda, setSelectedTienda] = useState(null);
   const [searchText, setSearchText] = useState('');
@@ -638,7 +862,8 @@ const Empleados = () => {
       tiendaService.fetchTodas(),
     ]);
     if (empResult.success) {
-      let lista = empResult.data;
+      // Filtro multi-tenant por empresa activa (legacy sin empresaId → default).
+      let lista = filterByActiveEmpresa(empResult.data, activaId);
 
       // Managers solo ven staff de sus tiendas asignadas o que ellos crearon
       if (currentUser?.rol === 'manager') {
@@ -653,7 +878,7 @@ const Empleados = () => {
 
       setEmpleados(lista);
     }
-    if (tiendaResult.success) setTiendas(tiendaResult.data);
+    if (tiendaResult.success) setTiendas(filterByActiveEmpresa(tiendaResult.data, activaId));
     setLoading(false);
   };
 
@@ -684,12 +909,18 @@ const Empleados = () => {
   const groupedEmpleados = useMemo(() => {
     const grouped = {};
     filteredEmpleados.forEach(emp => {
-      const letter = (emp.nombre || '?')[0].toUpperCase();
+      // Group by apellidoPaterno first letter (matching Swift), fallback to nombre
+      const sortKey = emp.apellidoPaterno || emp.nombre || '?';
+      const letter = sortKey[0].toUpperCase();
       if (!grouped[letter]) grouped[letter] = [];
       grouped[letter].push(emp);
     });
     Object.keys(grouped).forEach(key => {
-      grouped[key].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      grouped[key].sort((a, b) => {
+        const ka = (a.apellidoPaterno || a.nombre || '').toLowerCase();
+        const kb = (b.apellidoPaterno || b.nombre || '').toLowerCase();
+        return ka.localeCompare(kb);
+      });
     });
     return grouped;
   }, [filteredEmpleados]);
@@ -719,7 +950,38 @@ const Empleados = () => {
     setContextMenu(null);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (emp) => {
+    setEditingEmpleado(emp);
+    const parts = emp?.nombre ? emp.nombre.split(' ') : [];
+    const nombrePrimero = emp?.nombrePrimero || (parts.length >= 3 ? parts.slice(0, parts.length - 2).join(' ') : parts[0] || '');
+    const apellidoPaterno = emp?.apellidoPaterno || (parts.length >= 2 ? parts[parts.length - 2] : parts[1] || '') || '';
+    const apellidoMaterno = emp?.apellidoMaterno || (parts.length >= 3 ? parts[parts.length - 1] : '') || '';
+    setFormData({
+      nombrePrimero,
+      apellidoPaterno,
+      apellidoMaterno,
+      numEmpleado: emp?.numEmpleado || '',
+      telefono: emp?.telefono || '',
+      rol: emp?.rol || 'STAFF',
+      tiendaAsignada: emp?.tiendaAsignada || emp?.tiendaId || '',
+      fechaNacimiento: emp?.fechaNacimiento || '',
+      sexo: emp?.sexo || '',
+      estadoCivil: emp?.estadoCivil || '',
+      tipoSangre: emp?.tipoSangre || '',
+      nacionalidad: emp?.nacionalidad || 'Mexicana',
+      lugarNacimiento: emp?.lugarNacimiento || '',
+      nivelEstudios: emp?.nivelEstudios || '',
+      curp: emp?.curp || '',
+      rfc: emp?.rfc || '',
+      nss: emp?.nss || '',
+      tipoContrato: emp?.tipoContrato || '',
+      salarioDiario: emp?.salarioDiario != null ? String(emp.salarioDiario) : '',
+      banco: emp?.banco || '',
+      clabe: emp?.clabe || '',
+      contactoEmergenciaNombre: emp?.contactoEmergenciaNombre || '',
+      contactoEmergenciaTelefono: emp?.contactoEmergenciaTelefono || '',
+      contactoEmergenciaParentesco: emp?.contactoEmergenciaParentesco || '',
+    });
     setShowNuevoEmpleado(true);
     setContextMenu(null);
   };
@@ -770,34 +1032,87 @@ const Empleados = () => {
     contactoEmergenciaNombre: '', contactoEmergenciaTelefono: '', contactoEmergenciaParentesco: '',
   };
   const [formData, setFormData] = useState(FORM_EMPTY);
+  const [editingEmpleado, setEditingEmpleado] = useState(null);
   const fd = (key, val) => setFormData(f => ({ ...f, [key]: val }));
 
   const handleSave = async () => {
     if (!formData.nombrePrimero || !formData.apellidoPaterno || !formData.numEmpleado) {
-      alert('Nombre(s), apellido paterno y número de empleado son requeridos');
+      showToast('Nombre(s), apellido paterno y número de empleado son requeridos');
       return;
     }
 
     const nombre = [formData.nombrePrimero, formData.apellidoPaterno, formData.apellidoMaterno]
       .filter(Boolean).join(' ');
     const tiendaSeleccionada = tiendas.find(t => t.id === formData.tiendaAsignada);
-    const result = await empleadoService.create({
-      ...formData,
-      nombre,
-      salarioDiario: formData.salarioDiario ? parseFloat(formData.salarioDiario) : null,
-      tiendaNombre: tiendaSeleccionada?.nombre || '',
-      creadoPorUid: currentUser?.uid,
-      creadoPorNombre: currentUser?.nombre,
-    });
-    if (result.success && result.tempPassword) {
-      setTempPassword(result.tempPassword);
+    const closeModal = () => {
       setShowNuevoEmpleado(false);
-      fetchData();
-    } else if (result.success) {
-      setShowNuevoEmpleado(false);
-      fetchData();
+      setEditingEmpleado(null);
+      setFormData(FORM_EMPTY);
+    };
+
+    if (editingEmpleado) {
+      const result = await empleadoService.update(editingEmpleado.uid, {
+        ...formData,
+        nombre,
+        salarioDiario: formData.salarioDiario ? parseFloat(formData.salarioDiario) : null,
+        tiendaNombre: tiendaSeleccionada?.nombre || '',
+      });
+      if (result.success) {
+        closeModal();
+        fetchData();
+        if (selectedEmpleado?.uid === editingEmpleado.uid) {
+          setSelectedEmpleado(prev => ({
+            ...prev, ...formData, nombre,
+            salarioDiario: formData.salarioDiario ? parseFloat(formData.salarioDiario) : null,
+            tiendaNombre: tiendaSeleccionada?.nombre || '',
+          }));
+        }
+        registroActividadService.registrar({
+          tiendaId: formData.tiendaAsignada || '',
+          tiendaNombre: tiendaSeleccionada?.nombre || '',
+          accion: 'empleado_editado',
+          descripcion: `Empleado "${nombre}" actualizado`,
+          realizadoPor: currentUser?.nombre || 'Sistema',
+          realizadoPorId: currentUser?.uid || '',
+        });
+      } else {
+        showToast('Error: ' + result.error);
+      }
     } else {
-      alert('Error: ' + result.error);
+      const result = await empleadoService.create({
+        ...formData,
+        nombre,
+        salarioDiario: formData.salarioDiario ? parseFloat(formData.salarioDiario) : null,
+        tiendaNombre: tiendaSeleccionada?.nombre || '',
+        creadoPorUid: currentUser?.uid,
+        creadoPorNombre: currentUser?.nombre,
+      });
+      if (result.success && result.tempPassword) {
+        setTempPassword(result.tempPassword);
+        closeModal();
+        fetchData();
+        registroActividadService.registrar({
+          tiendaId: formData.tiendaAsignada || '',
+          tiendaNombre: tiendaSeleccionada?.nombre || '',
+          accion: 'empleado_creado',
+          descripcion: `Empleado "${nombre}" creado con rol ${formData.rol}`,
+          realizadoPor: currentUser?.nombre || 'Sistema',
+          realizadoPorId: currentUser?.uid || '',
+        });
+      } else if (result.success) {
+        closeModal();
+        fetchData();
+        registroActividadService.registrar({
+          tiendaId: formData.tiendaAsignada || '',
+          tiendaNombre: tiendaSeleccionada?.nombre || '',
+          accion: 'empleado_creado',
+          descripcion: `Empleado "${nombre}" creado con rol ${formData.rol}`,
+          realizadoPor: currentUser?.nombre || 'Sistema',
+          realizadoPorId: currentUser?.uid || '',
+        });
+      } else {
+        showToast('Error: ' + result.error);
+      }
     }
   };
 
@@ -810,13 +1125,13 @@ const Empleados = () => {
 
   const handleGuardarTarea = async () => {
     if (!tareaData.titulo) {
-      alert('El título es requerido');
+      showToast('El título es requerido');
       return;
     }
 
     try {
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-      
+
       await addDoc(collection(db, 'tareas'), {
         titulo: tareaData.titulo,
         notas: tareaData.notas,
@@ -832,10 +1147,10 @@ const Empleados = () => {
 
       setShowNuevaTarea(false);
       setTareaData({ titulo: '', notas: '', prioridad: 'media', fechaLimite: '' });
-      alert('Tarea creada');
+      showToast('Tarea creada');
     } catch (error) {
       console.error('Error creando tarea:', error);
-      alert('Error al crear tarea');
+      showToast('Error al crear tarea');
     }
   };
 
@@ -852,106 +1167,80 @@ const Empleados = () => {
     <div className="empleados-container">
       <div className={`empleados-sidebar${selectedEmpleado ? ' has-selection' : ''}`}>
         <div className="empleados-list-header">
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1C1E21', margin: 0 }}>Empleados</h1>
-          {canEdit && (
-            <button
-              onClick={() => { setFormData(FORM_EMPTY); setShowNuevoEmpleado(true); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              <i className="bi bi-plus-circle-fill" style={{ fontSize: 20, color: 'var(--role-primary)' }}></i>
-            </button>
-          )}
+          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', margin: 0 }}>Staff</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {canEdit && (
+              <button
+                onClick={() => { setFormData(FORM_EMPTY); setEditingEmpleado(null); setShowNuevoEmpleado(true); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                <i className="bi bi-plus-circle-fill" style={{ fontSize: 22, color: '#fff' }}></i>
+              </button>
+            )}
+            {currentUser?.fotoUrl ? (
+              <img src={currentUser.fotoUrl} alt="" onClick={() => window.location.hash = '#/perfil'}
+                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer', border: '2px solid rgba(255,255,255,0.5)' }} />
+            ) : (
+              <div onClick={() => window.location.hash = '#/perfil'}
+                style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }}>
+                {currentUser?.nombre?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="mobile-sticky-header empleados-sticky">
-          <div style={{ padding: '8px 12px' }}>
-            <div className="search-input-wrapper">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input
-                type="text"
-                placeholder="Buscar empleado..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              {searchText && (
-                <button onClick={() => setSearchText('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#6B7C93', display: 'flex', alignItems: 'center' }}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              )}
-            </div>
+        {/* Search input */}
+        <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 10, padding: '0 10px', height: 34 }}>
+            <i className="bi bi-search" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }} />
+            <input
+              type="text"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              placeholder="Buscar empleado..."
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: 13 }}
+            />
+            {searchText && <button onClick={() => setSearchText('')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 15, lineHeight: 1 }}>×</button>}
           </div>
-
-          <div style={{
-            padding: '0 12px 10px',
-            display: 'flex',
-            gap: 6,
-            overflowX: 'auto',
-            flexWrap: 'nowrap',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}>
-            {/* Chips de rol */}
-            {getRolFilter()?.map(opt => (
-              <button
-                key={`rol-${opt.value}`}
-                onClick={() => setFiltroRol(opt.value)}
-                style={{
-                  flexShrink: 0,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  height: 26,
-                  padding: '0 10px',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                  borderRadius: 13,
-                  border: 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  backgroundColor: filtroRol === opt.value ? 'var(--role-primary)' : '#EAECF0',
-                  color: filtroRol === opt.value ? 'white' : '#6B7C93',
-                }}
-              >
-                {opt.label}
+          {/* Rol filter chips */}
+          <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
+            {[
+              { key: 'todos', label: 'Todos' },
+              { key: 'staff', label: 'Staff' },
+              { key: 'manager', label: 'Manager' },
+              { key: 'admin', label: 'Admin' },
+            ].map(f => (
+              <button key={f.key}
+                onClick={() => setFiltroRol(f.key)}
+                style={{ padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.3)', background: filtroRol === f.key ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.1)', color: filtroRol === f.key ? '#1C1E21' : 'rgba(255,255,255,0.85)' }}>
+                {f.label}
               </button>
             ))}
-
-            {/* Chips de sucursal — solo para admin */}
-            {currentUser?.rol === 'admin' && getSucursalFilters().length > 1 && (
-              <div style={{ flexShrink: 0, width: 1, height: 26, background: '#D1D5DB', alignSelf: 'center', margin: '0 2px' }} />
-            )}
-            {currentUser?.rol === 'admin' && getSucursalFilters().map(opt => (
-              <button
-                key={`suc-${opt.value}`}
-                onClick={() => setFiltroSucursal(opt.value)}
-                style={{
-                  flexShrink: 0,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  height: 26,
-                  padding: '0 10px',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                  borderRadius: 13,
-                  border: 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  backgroundColor: filtroSucursal === opt.value ? 'var(--role-primary)' : '#EAECF0',
-                  color: filtroSucursal === opt.value ? 'white' : '#6B7C93',
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>{/* /chips */}
-        </div>{/* /mobile-sticky-header */}
+          </div>
+        </div>
 
         <div className="empleados-list-scroll">
+          {/* Pinned current user at top */}
+          {currentUser && filtroRol === 'todos' && !searchText && (() => {
+            const yo = empleados.find(e => e.uid === currentUser.uid);
+            if (!yo) return null;
+            const isSelected = selectedEmpleado?.uid === yo.uid;
+            return (
+              <div>
+                <div style={{ padding: '3px 16px', fontSize: 11, fontWeight: 700, color: 'var(--role-primary, #1A7A48)', backgroundColor: 'rgba(0,0,0,0.02)', borderBottom: '1px solid #E4E6EA' }}>
+                  Yo
+                </div>
+                <div onClick={() => handleSelect(yo)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', cursor: 'pointer', backgroundColor: isSelected ? '#F4F5F7' : 'white' }}>
+                  <EmpleadoAvatar empleado={yo} size={42} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#1C1E21' }}>{yo.nombre}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{(yo.rol || '').toLowerCase()}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center' }}><span className="spinner-border spinner-border-lg"></span></div>
           ) : Object.keys(groupedEmpleados).length === 0 ? (
@@ -1101,7 +1390,7 @@ const Empleados = () => {
         const canSave = formData.nombrePrimero && formData.apellidoPaterno && formData.numEmpleado;
 
         return (
-          <div className="modal-overlay" onClick={() => setShowNuevoEmpleado(false)}>
+          <div className="modal-overlay" onClick={() => { setShowNuevoEmpleado(false); setEditingEmpleado(null); setFormData(FORM_EMPTY); }}>
             <div onClick={e => e.stopPropagation()} style={{
               background: 'white', borderRadius: 20,
               width: '92%', maxWidth: 560, maxHeight: '92vh',
@@ -1118,15 +1407,15 @@ const Empleados = () => {
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
-                      Nuevo registro
+                      {editingEmpleado ? 'Editar empleado' : 'Nuevo registro'}
                     </div>
                     <div style={{ fontSize: 20, fontWeight: 800, color: 'white', lineHeight: 1.2 }}>
                       {formData.nombrePrimero || formData.apellidoPaterno
                         ? [formData.nombrePrimero, formData.apellidoPaterno].filter(Boolean).join(' ')
-                        : 'Nuevo Empleado'}
+                        : editingEmpleado ? 'Editar Empleado' : 'Nuevo Empleado'}
                     </div>
                   </div>
-                  <button onClick={() => setShowNuevoEmpleado(false)} style={{
+                  <button onClick={() => { setShowNuevoEmpleado(false); setEditingEmpleado(null); setFormData(FORM_EMPTY); }} style={{
                     background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 10,
                     width: 32, height: 32, cursor: 'pointer', color: 'white', fontSize: 16,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -1244,7 +1533,7 @@ const Empleados = () => {
                 background: 'white',
                 display: 'flex', gap: 10,
               }}>
-                <button onClick={() => setShowNuevoEmpleado(false)} style={{
+                <button onClick={() => { setShowNuevoEmpleado(false); setEditingEmpleado(null); setFormData(FORM_EMPTY); }} style={{
                   flex: 1, padding: '11px 0', border: '1.5px solid #E5E7EB', borderRadius: 12,
                   background: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151',
                 }}>
@@ -1260,7 +1549,7 @@ const Empleados = () => {
                   transition: 'opacity .15s',
                 }}>
                   <i className="bi bi-check2-circle" style={{ marginRight: 7 }} />
-                  Guardar empleado
+                  {editingEmpleado ? 'Guardar cambios' : 'Guardar empleado'}
                 </button>
               </div>
             </div>
@@ -1278,19 +1567,25 @@ const Empleados = () => {
               <div>
                 <label style={{ fontSize: 12, color: '#6B7C93', marginBottom: 4, display: 'block' }}>Prioridad</label>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  {['baja', 'media', 'alta'].map(p => (
+                  {[
+                    { key: 'baja', color: '#3B82F6' },
+                    { key: 'media', color: '#F0A500' },
+                    { key: 'alta', color: '#E63946' },
+                    { key: 'urgente', color: '#B91C1C' },
+                  ].map(({ key: p, color }) => (
                     <button
                       key={p}
                       onClick={() => setTareaData({...tareaData, prioridad: p})}
                       style={{
                         flex: 1,
                         padding: 8,
-                        border: '1px solid var(--border)',
+                        border: `1px solid ${tareaData.prioridad === p ? color : 'var(--border)'}`,
                         borderRadius: 6,
-                        background: tareaData.prioridad === p ? (p === 'alta' ? '#E63946' : p === 'media' ? '#F0A500' : '#6B7C93') : 'white',
+                        background: tareaData.prioridad === p ? color : 'white',
                         color: tareaData.prioridad === p ? 'white' : '#6B7C93',
                         cursor: 'pointer',
                         textTransform: 'capitalize',
+                        fontSize: 12,
                       }}
                     >
                       {p}
@@ -1305,6 +1600,17 @@ const Empleados = () => {
               <button onClick={handleGuardarTarea} className="btn btn-primary" style={{ flex: 1, background: 'var(--role-primary)' }}>Crear tarea</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          background: '#1e293b', color: 'white', padding: '10px 20px',
+          borderRadius: 10, fontSize: 14, fontWeight: 500,
+          zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.25)', whiteSpace: 'nowrap'
+        }}>
+          {toast}
         </div>
       )}
 

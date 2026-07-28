@@ -1,16 +1,24 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged
 } from 'firebase/auth';
 import {
   collection,
   getDocs,
+  getDoc,
+  doc,
+  updateDoc,
   query,
   where
 } from 'firebase/firestore';
 import { db, auth } from '../firebase.js';
+
+// Abre la conexión WebSocket de Firestore en background para que las
+// primeras queries de otras páginas no tengan el cold-start delay.
+const warmFirestore = () => getDoc(doc(db, '_warmup', 'ping')).catch(() => {});
 
 const AuthContext = createContext();
 
@@ -73,6 +81,15 @@ const ROL_MAP = {
   'DIRECTOR': 'admin', 'ADMIN': 'admin'
 };
 
+const setThemeColor = (color) => {
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.remove();
+  meta = document.createElement('meta');
+  meta.name = 'theme-color';
+  meta.content = color;
+  document.head.appendChild(meta);
+};
+
 const aplicarTemaRol = (rol) => {
   const t = ROLE_THEME[rol] || ROLE_THEME.staff;
   const root = document.documentElement;
@@ -88,6 +105,7 @@ const aplicarTemaRol = (rol) => {
   root.style.setProperty('--primary', t.color);
   root.style.setProperty('--primary-dark', t.colorDark);
   root.style.setProperty('--primary-color', t.color);
+  setThemeColor(t.dark);
 };
 
 const limpiarTemaRol = () => {
@@ -99,6 +117,7 @@ const limpiarTemaRol = () => {
     '--primary', '--primary-dark', '--primary-hover', '--primary-light', '--primary-color'
   ];
   props.forEach(p => root.style.removeProperty(p));
+  setThemeColor('#0F4D2E');
 };
 
 export const AuthProvider = ({ children }) => {
@@ -129,6 +148,7 @@ export const AuthProvider = ({ children }) => {
             const parsed = JSON.parse(stored);
             setEmpleado(parsed);
             aplicarTemaRol(parsed.rol);
+            warmFirestore(); // conexión Firestore en background
           } catch (e) {
             await firebaseSignOut(auth);
             sessionStorage.clear();
@@ -171,7 +191,31 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'El empleado no tiene email configurado' };
       }
 
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Auto-registro (biblia §2.2): si el empleado se creó pero nunca activó su
+      // cuenta en Firebase Auth (pendienteAuth) y la contraseña coincide con la
+      // temporal, se crea la cuenta al vuelo y se le exige cambiar la contraseña.
+      let userCredential;
+      try {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        const puedeAutoRegistrar =
+          empleadoData.pendienteAuth === true &&
+          empleadoData.passwordTemp &&
+          String(empleadoData.passwordTemp) === String(password) &&
+          ['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(err.code);
+        if (!puedeAutoRegistrar) throw err;
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Migrar el doc: quitar pendiente/temporal y exigir cambio de contraseña.
+        try {
+          await updateDoc(doc(db, 'empleados', empleadoDoc.id), {
+            pendienteAuth: false,
+            passwordTemp: '',
+            requiereCambioPassword: true,
+            uid: userCredential.user.uid,
+          });
+        } catch { /* no bloquear el login si falla la migración del doc */ }
+        empleadoData.requiereCambioPassword = true;
+      }
       const user = userCredential.user;
 
       // 3. Construir objeto empleado completo
@@ -185,6 +229,8 @@ export const AuthProvider = ({ children }) => {
         email: user.email,
         tiendaId: empleadoData.tiendaId || null,
         tiendasAsignadas: empleadoData.tiendasAsignadas || [],
+        empresaId: empleadoData.empresaId || 'default-pv',
+        empresasAsignadas: empleadoData.empresasAsignadas || [],
         requiereCambioPassword: empleadoData.requiereCambioPassword || false,
         activo: empleadoData.activo !== false,
         fotoUrl: empleadoData.fotoUrl || null
@@ -211,10 +257,12 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Error en signIn:', error);
       let mensaje = 'Error al iniciar sesión';
-      if (error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
         mensaje = 'Número de empleado o contraseña incorrectos';
       } else if (error.code === 'auth/user-disabled') {
         mensaje = 'Tu cuenta está desactivada';
+      } else if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        mensaje = 'Error de configuración del servidor. Contacta al administrador.';
       }
       return { success: false, error: mensaje };
     } finally {
@@ -249,6 +297,13 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem('desktop_empleado', JSON.stringify(updated));
   };
 
+  const clearRequiereCambioPassword = () => {
+    if (!empleado) return;
+    const updated = { ...empleado, requiereCambioPassword: false };
+    setEmpleado(updated);
+    sessionStorage.setItem('desktop_empleado', JSON.stringify(updated));
+  };
+
   const roleTheme = ROLE_THEME[empleado?.rol] || ROLE_THEME.staff;
 
   const value = {
@@ -259,6 +314,7 @@ export const AuthProvider = ({ children }) => {
     signOut,
     hasPermission,
     updateEmpleadoFoto,
+    clearRequiereCambioPassword,
     permisos: PERMISOS,
     roleTheme
   };
@@ -271,4 +327,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export default AuthContext;
-export { ROLE_THEME, PERMISOS };
+export { ROLE_THEME, PERMISOS, aplicarTemaRol };

@@ -66,7 +66,7 @@ const Navbar = () => {
         <small className="nav-section-label">Finanzas</small>
       </div>
 
-      {navItem('/dashboard', <FiBarChart2 size={18} />, 'Dashboard')}
+      {navItem('/dashboard', <FiBarChart2 size={18} />, 'Inicio')}
       {navItem('/caja', <FiDollarSign size={18} />, 'Caja')}
 
       <div className="mb-3 mt-4">

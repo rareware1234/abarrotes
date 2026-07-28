@@ -154,12 +154,11 @@
 }
 
 /* ============================================
-   DESKTOP: tiendas-header sticky global
-   Aplica a todas las páginas que usen content-area
-   como contenedor de scroll.
+   DESKTOP: layout de páginas con scroll-area propio
+   Solo aplica a páginas NO convertidas a inicio-page.
    ============================================ */
 @media (min-width: 1024px) {
-  /* Header estático en todas las páginas */
+  /* Header estático en páginas con tiendas-header legacy */
   .tiendas-header {
     position: sticky;
     top: 0;
@@ -179,66 +178,29 @@
     margin-bottom: 0;
   }
 
-  /* ── Tiendas, Products y Tareas: usan flex + scroll-area
-        → header, search y filtros son flex-shrink:0 ── */
-
-  /* El content-area no hace scroll en estas páginas */
-  .content-area:has(.tiendas-page),
-  .content-area:has(.products-container),
+  /* Tareas (aún no convertida a inicio-page): flex-column con scroll propio */
   .content-area:has(.tareas-reminders) {
     overflow: hidden;
     display: flex;
     flex-direction: column;
   }
-
-  /* Containers ocupan el alto disponible */
-  .tiendas-page,
-  .products-container,
   .tareas-reminders {
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
   }
-
-  /* Header, search y filtros: nunca se mueven (override de sticky global) */
-  .tiendas-page .tiendas-header,
-  .products-container .tiendas-header,
   .tareas-reminders .tiendas-header {
     position: static;
     flex-shrink: 0;
     padding-bottom: 0;
     margin-bottom: 16px;
   }
-
-  .tiendas-page .tiendas-search,
-  .tiendas-page .tiendas-filters {
-    position: static;
-    flex-shrink: 0;
-  }
-
-  .products-container .tiendas-search,
-  .products-container .filter-chips-wrapper,
-  .products-container .filter-chips-bar,
   .tareas-reminders .reminders-filters,
   .tareas-reminders .filter-chips-bar {
     position: static;
     flex-shrink: 0;
   }
-
-  /* mobile-sticky-header en desktop: no sticky, sin margen negativo */
-  .mobile-sticky-header {
-    position: static;
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    flex-shrink: 0;
-    z-index: unset;
-  }
-
-  /* Zona scrollable */
-  .tiendas-scroll-area,
-  .products-scroll-area,
   .tareas-scroll-area {
     flex: 1;
     min-height: 0;
@@ -247,45 +209,24 @@
     overscroll-behavior: contain;
     padding-bottom: 24px;
   }
+
+  /* mobile-sticky-header en desktop: no sticky */
+  .mobile-sticky-header {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    flex-shrink: 0;
+    z-index: unset;
+  }
 }
 
 /* ============================================
-   MOBILE — Flex column (igual que desktop)
-   El scroll ocurre en scroll-area, no en content-area
+   MOBILE — Búsqueda y filtros en Products
+   (la estructura de scroll la maneja inicio-inner)
    ============================================ */
 @media (max-width: 1023px) {
-
-  /* content-area deja de hacer scroll en estas páginas */
-  .content-area:has(.tiendas-page),
-  .content-area:has(.products-container) {
-    overflow: hidden !important;
-    display: flex;
-    flex-direction: column;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-bottom: 0 !important;
-  }
-
-  /* Containers: flex column, llenan el espacio */
-  .tiendas-page,
-  .products-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  /* Header título */
-  .tiendas-page .tiendas-header,
-  .products-container .tiendas-header {
-    flex-shrink: 0;
-    padding: 12px 16px 8px;
-    margin-bottom: 0;
-  }
-
-  /* mobile-sticky-header ya no necesita ser sticky: está fuera del scroll */
-  .tiendas-page .mobile-sticky-header,
+  /* mobile-sticky-header en Products: estático, no sticky */
   .products-container .mobile-sticky-header {
     position: static !important;
     margin: 0 !important;
@@ -294,8 +235,7 @@
     flex-shrink: 0;
   }
 
-  /* Search bar: edge-to-edge con padding propio */
-  .tiendas-page .mobile-sticky-header .tiendas-search,
+  /* Search bar dentro del sticky header */
   .products-container .mobile-sticky-header .tiendas-search {
     position: static !important;
     margin: 0 !important;
@@ -309,40 +249,20 @@
     background: #F4F5F7;
   }
 
-  /* Filtros: edge-to-edge con padding propio */
-  .tiendas-page .mobile-sticky-header .tiendas-filters,
-  .tiendas-page .mobile-sticky-header .filter-chips-bar,
+  /* Filtros */
   .products-container .mobile-sticky-header .filter-chips-bar {
     margin: 0 !important;
     padding: 8px 16px 10px;
     border-bottom: 1px solid rgba(0,0,0,0.06);
     background: #F4F5F7;
   }
-
-  /* Zona de scroll: ocupa todo lo que queda */
-  .tiendas-scroll-area,
-  .products-scroll-area {
-    flex: 1 !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 12px 16px 16px;
-    overscroll-behavior: contain;
-  }
 }
 
-/* Grid */
+/* Grid — replica .adaptive(minimum:220, maximum:280) de SwiftUI */
 .tiendas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 280px));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
   gap: 16px;
-}
-
-@media (max-width: 1023px) {
-  .tiendas-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ============================================
@@ -1042,3 +962,192 @@
   margin-left: auto;
   margin-right: auto;
 }
+
+/* ============================================
+   SUCURSALES sobre gradiente (browse estilo macOS)
+   ============================================ */
+
+.content-area:has(.tiendas-page) {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* Título blanco igual que Inicio/Productos. */
+.tiendas-page .inicio-header h1 {
+  color: #fff;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Modo detalle: sin padding-top ni gap en inicio-inner (el hero ocupa todo) */
+.tiendas-has-detail .inicio-inner {
+  padding-top: 0;
+  gap: 0;
+}
+
+/* Botón "+" Liquid Glass (igual que Productos). */
+.tiendas-page .tiendas-add-btn {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.tiendas-page .tiendas-add-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.tiendas-page .tiendas-add-btn:active { transform: scale(0.94); }
+
+/* Empty + spinner en blanco. */
+.tiendas-page .tiendas-empty { color: rgba(255, 255, 255, 0.88); }
+.tiendas-page .spinner-border { color: #fff; }
+
+/* ---- Secciones del browse ---- */
+.tb-section-desc { font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, 0.58); margin-top: 3px; }
+.tb-count { margin-left: auto; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.1); border-radius: 999px; padding: 2px 10px; flex-shrink: 0; }
+
+/* ── Marca con paleta (Kaal): fondo Crema claro → tinta de marca en títulos ──
+   El resto de .tiendas-page asume fondo oscuro (texto blanco). Con paleta el
+   fondo es Crema, así que los títulos usan las vars de tinta inyectadas inline. */
+.tiendas-page.tb-brand-light .inicio-header h1,
+.tiendas-page.tb-brand-light .inicio-section-head h2 { color: var(--tb-ink, #1b1b1b); }
+.tiendas-page.tb-brand-light .tb-section-desc { color: var(--tb-ink-muted, rgba(27,27,27,0.62)); }
+.tiendas-page.tb-brand-light .tb-count { color: var(--tb-ink-muted, rgba(27,27,27,0.62)); background: var(--tb-ink-faint, rgba(27,27,27,0.08)); }
+.tiendas-page.tb-brand-light .tiendas-empty { color: var(--tb-ink-muted, rgba(27,27,27,0.7)); }
+.tiendas-page.tb-brand-light .tiendas-add-btn { color: var(--tb-accent, #c6a052); border-color: var(--tb-accent, #c6a052); }
+.tiendas-page.tb-brand-light .spinner-border { color: var(--tb-accent, #c6a052); }
+
+/* Padding explícito — garantiza 20px de alineación independientemente del orden del CSS */
+.tiendas-page .inicio-section-head { padding-left: 20px; }
+.tiendas-page .inicio-carousel     { padding-left: 20px; }
+@media (max-width: 1023px) {
+  .tiendas-page .inicio-section-head { padding-left: 32px; }
+  .tiendas-page .inicio-carousel     { padding-left: 32px; }
+}
+@media (min-width: 1024px) {
+  .app.is-fullscreen .tiendas-page .inicio-section-head { padding-left: 32px; }
+  .app.is-fullscreen .tiendas-page .inicio-carousel     { padding-left: 32px; }
+}
+
+
+/* ── Formato card (mismo ancho que wide store card: 300px) ── */
+.tb-formato-card {
+  flex: 0 0 auto; width: 300px; height: 300px;
+  border-radius: 20px; padding: 18px 18px 30px; cursor: pointer;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end; text-align: left;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.tb-formato-card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(0,0,0,0.4); }
+/* Tomate watermark: retiene proporción original 200×292, se recorta con overflow:hidden del card */
+.tb-formato-watermark { position: absolute; top: -18px; right: -16px; width: auto; height: 92%; object-fit: contain; opacity: 0.9; pointer-events: none; }
+.tb-formato-lockup { display: flex; align-items: center; gap: 8px; position: relative; margin-bottom: 5px; }
+.tb-formato-logo { height: 20px; width: auto; object-fit: contain; flex-shrink: 0; }
+.tb-formato-name { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; line-height: 1; }
+.tb-formato-tag { font-size: 11.5px; font-weight: 500; position: relative; line-height: 1.3; }
+
+/* "Nuevo formato" card */
+.tb-nuevo-formato {
+  background: rgba(255,255,255,0.08) !important;
+  border: 2px dashed rgba(255,255,255,0.28) !important;
+  box-shadow: none !important;
+}
+.tb-nuevo-formato:hover { background: rgba(255,255,255,0.12) !important; transform: translateY(-4px); }
+.tb-nuevo-plus {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(255,255,255,0.14); border: 2px solid rgba(255,255,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px; position: relative;
+}
+
+/* ── Store card (macOS: wide 300×195) ── */
+.tb-store-card {
+  flex: 0 0 auto; width: 250px; height: 210px;
+  border-radius: 20px; padding: 14px 18px; cursor: pointer;
+  position: relative; overflow: hidden; display: flex; flex-direction: column;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.tb-store-card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(0,0,0,0.38); }
+.tb-store-card.wide { width: 300px; height: 195px; }
+.tb-store-name { font-size: 19px; font-weight: 800; line-height: 1.15; }
+.tb-store-estado { font-size: 13px; font-weight: 500; margin-top: 2px; }
+.tb-store-spacer { flex: 1; }
+.tb-store-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.tb-store-metrics { display: flex; gap: 14px; }
+.tb-metric-val { font-size: 15px; font-weight: 900; line-height: 1; white-space: nowrap; }
+.tb-metric-lbl { font-size: 7.5px; font-weight: 800; letter-spacing: 0.9px; margin-top: 3px; white-space: nowrap; text-transform: uppercase; }
+.tb-store-badge { height: 34px; object-fit: contain; flex-shrink: 0; align-self: flex-end; }
+
+/* Status badge (pill at top of store card) */
+.tb-status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(0,0,0,0.32); border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1px;
+  flex-shrink: 0; max-width: 70%;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.tb-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* Grid de la vista filtrada por formato. */
+.tb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 14px; }
+.tb-grid .tb-store-card { width: auto; }
+
+/* Botón volver + título de sección. */
+.tb-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255, 255, 255, 0.16); color: #fff; border: none;
+  border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: 14px;
+  cursor: pointer; margin-bottom: 16px; transition: background 0.15s ease;
+}
+.tb-back:hover { background: rgba(255, 255, 255, 0.26); }
+.tb-section-title { font-size: 20px; font-weight: 700; color: #fff; margin: 6px 0 14px; }
+
+/* ── Hero de formato filtrado ── */
+.tb-header-hidden { display: none !important; }
+
+.tb-formato-hero-header {
+  position: relative; overflow: hidden;
+  margin: -16px -20px 28px;
+  padding: 48px 24px 32px;
+  display: flex; flex-direction: column;
+  min-height: 200px;
+}
+@media (max-width: 1023px) {
+  .tb-formato-hero-header { margin: -12px -16px 24px; padding: 24px 20px 28px; }
+}
+
+.tb-formato-hero-watermark {
+  position: absolute; top: -30px; right: -30px;
+  width: auto; height: 110%; max-height: 320px;
+  object-fit: contain; opacity: 0.18; pointer-events: none;
+}
+
+.tb-hero-back {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.18); border: none; border-radius: 50%;
+  width: 34px; height: 34px; padding: 0;
+  cursor: pointer; margin-bottom: auto; flex-shrink: 0;
+  transition: background 0.15s;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.tb-hero-back:hover { background: rgba(255,255,255,0.28); }
+
+.tb-hero-action {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.18); border: none; border-radius: 50%;
+  width: 34px; height: 34px; padding: 0;
+  cursor: pointer; flex-shrink: 0;
+  transition: background 0.15s;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.tb-hero-action:hover { background: rgba(255,255,255,0.28); }
+
+.tb-formato-hero-content { margin-top: 24px; position: relative; }
+.tb-formato-hero-logo { height: 42px; width: auto; object-fit: contain; display: block; margin-bottom: 8px; }
+.tb-formato-hero-tagline { font-size: 16px; font-weight: 500; }

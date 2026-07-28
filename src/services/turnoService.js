@@ -131,6 +131,131 @@ export const fetchPorEmpleado = async (empleadoId) => {
   }
 };
 
+export const copiarSemanaAnterior = async (weekStart) => {
+  try {
+    const prevStart = new Date(weekStart);
+    prevStart.setDate(prevStart.getDate() - 7);
+    const prevRes = await fetchSemana(prevStart);
+    if (!prevRes.success || prevRes.data.length === 0) return { success: true, count: 0 };
+
+    const currentStart = new Date(weekStart);
+    const results = await Promise.all(
+      prevRes.data.map(t => {
+        const prevDate = new Date(t.fecha + 'T00:00:00');
+        const diffDays = Math.round((prevDate - prevStart) / (1000 * 60 * 60 * 24));
+        const newDate = new Date(currentStart);
+        newDate.setDate(currentStart.getDate() + diffDays);
+        const newFecha = newDate.toISOString().split('T')[0];
+        const { id, createdAt, updatedAt, ...rest } = t;
+        return crear({ ...rest, fecha: newFecha });
+      })
+    );
+    return { success: true, count: results.filter(r => r.success).length };
+  } catch (error) {
+    console.error('Error copying week:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const limpiarSemana = async (weekStart) => {
+  try {
+    const res = await fetchSemana(weekStart);
+    if (!res.success) return { success: false };
+    await Promise.all(res.data.map(t => remove(t.id)));
+    return { success: true, count: res.data.length };
+  } catch (error) {
+    console.error('Error clearing week:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Plantilla estándar: Lun-Vie completo, Sáb medio, Dom descanso.
+// Solo crea turnos donde el empleado no tiene ninguno ese día.
+export const aplicarPlantillaSemanal = async (weekStart, empleados) => {
+  try {
+    const res = await fetchSemana(weekStart);
+    if (!res.success) return { success: false };
+    const existentes = res.data;
+    const start = new Date(weekStart + 'T00:00:00');
+    const tiposPorDia = ['completo','completo','completo','completo','completo','medio','descanso'];
+    let count = 0;
+    await Promise.all(
+      empleados.flatMap(emp => {
+        const empId = emp.uid || emp.id || '';
+        return tiposPorDia.map((tipo, idx) => {
+          const d = new Date(start);
+          d.setDate(start.getDate() + idx);
+          const fecha = d.toISOString().split('T')[0];
+          const yaExiste = existentes.some(t => t.empleadoId === empId && t.fecha === fecha);
+          if (yaExiste) return Promise.resolve();
+          const tipoInfo = TIPOS_TURNO[tipo];
+          count++;
+          return crear({
+            empleadoId: empId,
+            empleadoNombre: emp.nombre || '',
+            empleadoRol: emp.rol || '',
+            fecha,
+            tipo,
+            inicio: tipoInfo.inicio || null,
+            fin: tipoInfo.fin || null,
+            horas: tipoInfo.horas,
+            notas: 'Plantilla estándar',
+            activo: true,
+          });
+        });
+      })
+    );
+    return { success: true, count };
+  } catch (error) {
+    console.error('Error applying weekly template:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Asigna descanso el sábado y/o domingo a empleados con menos de 2 descansos esta semana.
+export const autoAsignarDescansos = async (weekStart, empleados) => {
+  try {
+    const res = await fetchSemana(weekStart);
+    if (!res.success) return { success: false };
+    const existentes = res.data;
+    const start = new Date(weekStart + 'T00:00:00');
+    const sabado = new Date(start); sabado.setDate(start.getDate() + 5);
+    const domingo = new Date(start); domingo.setDate(start.getDate() + 6);
+    const sabFecha = sabado.toISOString().split('T')[0];
+    const domFecha = domingo.toISOString().split('T')[0];
+    let count = 0;
+    await Promise.all(
+      empleados.flatMap(emp => {
+        const empId = emp.uid || emp.id || '';
+        const turnosEmp = existentes.filter(t => t.empleadoId === empId);
+        const numDescansos = turnosEmp.filter(t => t.tipo === 'descanso').length;
+        if (numDescansos >= 2) return [];
+        return [sabFecha, domFecha].map(fecha => {
+          const yaExiste = turnosEmp.some(t => t.fecha === fecha);
+          if (yaExiste) return Promise.resolve();
+          count++;
+          return crear({
+            empleadoId: empId,
+            empleadoNombre: emp.nombre || '',
+            empleadoRol: emp.rol || '',
+            fecha,
+            tipo: 'descanso',
+            inicio: null,
+            fin: null,
+            horas: 0,
+            notas: 'Descanso auto-asignado',
+            activo: true,
+          });
+        });
+      })
+    );
+    return { success: true, count };
+  } catch (error) {
+    console.error('Error auto-assigning breaks:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   getTipoTurno,
   fetchSemana,
@@ -139,5 +264,9 @@ export default {
   update,
   remove,
   fetchPorEmpleado,
+  copiarSemanaAnterior,
+  limpiarSemana,
+  aplicarPlantillaSemanal,
+  autoAsignarDescansos,
   TIPOS_TURNO
 };

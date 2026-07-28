@@ -1,0 +1,298 @@
+/* ============================================
+   CONFIGURACIÓN — port de SettingsWindowView.swift
+   Panel lateral de secciones + área de contenido
+   con grupos de ajustes al estilo macOS.
+   ============================================ */
+
+/* Shell: sidebar + main en desktop */
+.cfg-shell {
+  display: flex;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Layout single-column (como Inicio): secciones apiladas, padding de contenido
+   20, separadas 32, centradas con un ancho de lectura cómodo. */
+.cfg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 4px 20px 40px;
+  width: 100%;
+}
+/* Contenido de cada sección: ancho de lectura cómodo, alineado a la izquierda
+   con el título (borde a 20). */
+.config-page .cfg-content { max-width: 680px; }
+.config-page .cfg-section-header h2 { font-size: 20px; }  /* igual que Inicio */
+
+/* ── Sidebar ──────────────────────────────────── */
+.cfg-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 12px 20px;
+  width: 200px;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.cfg-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.cfg-nav-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cfg-nav-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.cfg-nav-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cfg-nav-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cfg-nav-btn.active .cfg-nav-label {
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ── Área principal ─────────────────────────── */
+.cfg-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0 20px 40px;
+}
+
+.cfg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 600px;
+}
+
+/* Título de sección */
+.cfg-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+.cfg-section-header i { font-size: 22px; }
+
+.cfg-section-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+/* ── Grupos ─────────────────────────────────── */
+.cfg-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cfg-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 4px;
+}
+
+.cfg-group-card {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── Filas ──────────────────────────────────── */
+.cfg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  min-height: 44px;
+}
+
+.cfg-row-label {
+  font-size: 13.5px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.cfg-row-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.cfg-chevron {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.5;
+  margin-left: 2px;
+}
+
+/* Toggle fila */
+.cfg-toggle-row { align-items: center; gap: 12px; }
+
+.cfg-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.cfg-row-subtitle {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Toggle switch */
+.cfg-toggle {
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.cfg-toggle.on { background: var(--role-primary, #1A7A48); }
+
+.cfg-toggle-thumb {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.cfg-toggle.on .cfg-toggle-thumb { left: 20px; }
+
+/* Divider */
+.cfg-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 16px;
+}
+
+/* Botón de enlace */
+.cfg-link-btn {
+  background: none;
+  border: none;
+  color: #60D4A0;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cfg-link-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Tarjeta "Acerca de" ────────────────────── */
+.cfg-about-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.cfg-about-logo { height: 36px; object-fit: contain; }
+
+.cfg-about-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin: 4px 0 0;
+}
+
+.cfg-about-version {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.cfg-about-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  line-height: 1.55;
+  margin: 4px 0 0;
+}
+
+/* ── Mobile ─────────────────────────────────── */
+@media (max-width: 1023px) {
+  .cfg-shell {
+    flex-direction: column;
+  }
+
+  .cfg-sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    gap: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .cfg-nav-btn {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    gap: 7px;
+  }
+
+  .cfg-nav-icon { width: 24px; height: 24px; font-size: 12px; }
+  .cfg-nav-label { font-size: 12px; }
+
+  .cfg-main { padding: 16px; }
+
+  .cfg-content { max-width: 100%; }
+}

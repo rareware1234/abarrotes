@@ -1,4 +1,5 @@
 import { db } from '../firebase.js';
+import { getActivaId, filterByActiveEmpresa } from '../lib/empresaActiva';
 import {
   collection,
   doc,
@@ -29,6 +30,13 @@ export const fetchTodas = async () => {
   }
 };
 
+/** Tiendas de la empresa activa (réplica de TiendaService.fetchAllForActiveEmpresa Swift). */
+export const fetchAllForActiveEmpresa = async () => {
+  const res = await fetchTodas();
+  if (!res.success) return res;
+  return { success: true, data: filterByActiveEmpresa(res.data) };
+};
+
 export const getById = async (id) => {
   try {
     const tiendaRef = doc(db, 'tiendas', id);
@@ -49,6 +57,7 @@ export const create = async (tienda) => {
   try {
     const tiendaRef = doc(collection(db, 'tiendas'));
     await setDoc(tiendaRef, {
+      empresaId: getActivaId(),
       ...tienda,
       activa: true,
       createdAt: serverTimestamp()
@@ -107,11 +116,29 @@ export const remove = async (id) => {
   }
 };
 
+export const createCotizacion = async (data) => {
+  try {
+    const tiendaRef = doc(collection(db, 'tiendas'));
+    await setDoc(tiendaRef, {
+      empresaId: getActivaId(),
+      ...data,
+      fechaCreacion: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    });
+    return { success: true, id: tiendaRef.id };
+  } catch (error) {
+    console.error('Error creating cotizacion:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   fetchTodas,
+  fetchAllForActiveEmpresa,
   getById,
   create,
   update,
   toggleActiva,
-  remove
+  remove,
+  createCotizacion,
 };
