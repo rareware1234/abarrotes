@@ -1,143 +1,180 @@
 rules_version = '2';
+
+// ############################################################################
+// FUENTE ÚNICA / CANÓNICA. Sincronizado 1:1 con
+// `Punto.Verde-swift/Punto.Verde/firestore.rules` (ver docs/SECURITY.md).
+// Reemplaza la versión permisiva anterior de este repo (`empleados: read if
+// true`) que exponía PII (CURP/RFC/NSS/CLABE) y no aislaba por empresa.
+// ⚠️ `deploy.sh` de este repo es `--only hosting` (NO despliega reglas). Si vas
+//    a desplegar reglas, hazlo con `firebase deploy --only firestore:rules`
+//    y PRUEBA EN EMULADOR/STAGING primero (login, POS, productos, caja).
+// Al final del archivo hay validadores de forma PROPUESTOS (comentados).
+// ############################################################################
+
+// ============================================================================
+// Reglas de seguridad de Firestore — Punto Verde
+// ----------------------------------------------------------------------------
+// Objetivo: cerrar el acceso PÚBLICO (antes `empleados` era read: if true →
+// CURP/RFC/NSS/CLABE de todos, expuestos) y aislar por empresa, SIN romper la
+// app. El login ya NO lee `empleados` directamente: usa la Cloud Function
+// `lookupEmpleadoEmail` (solo devuelve el email).
+//
+// ⚠️ PROBAR EN STAGING antes de producción. Empezar con App Check en modo
+//    "unenforced" en la consola; cuando esté validado, descomentar `appCheck()`
+//    en `permitido()` para exigir que las peticiones vengan de la app oficial.
+// ============================================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
+    // ---- Helpers -----------------------------------------------------------
     function isAuth() {
       return request.auth != null;
     }
+    // App Check: descomentar cuando esté registrado y probado en la consola.
+    // function appCheck() { return request.app != null; }
+    function appCheck() { return true; } // TODO: cambiar a `request.app != null`
 
-    // Data shape validators — previenen escrituras malformadas desde el cliente.
-    // No reemplazan validación en backend pero sí rechazan datos inválidos.
-
-    function validOrden() {
-      let d = request.resource.data;
-      return d.keys().hasAll(['empleadoId', 'productos', 'subtotal', 'iva', 'total', 'metodoPago', 'estado'])
-          && d.total is number && d.total > 0
-          && d.subtotal is number && d.iva is number
-          && d.empleadoId is string && d.empleadoId.size() > 0
-          && d.productos is list && d.productos.size() > 0
-          && d.estado in ['completada', 'pendiente', 'cancelada'];
+    function permitido() {
+      return isAuth() && appCheck();
     }
 
-    function validCredito() {
-      let d = request.resource.data;
-      return d.keys().hasAll(['clienteId', 'montoAprobado', 'estado'])
-          && d.montoAprobado is number
-          && d.montoAprobado > 0
-          && d.montoAprobado <= 50000   // techo máximo de crédito por política
-          && d.clienteId is string && d.clienteId.size() > 0
-          && d.estado in ['activo', 'pagado', 'vencido', 'suspendido', 'rechazado'];
+    // Doc del empleado que hace la petición (para rol y empresa).
+    function yo() {
+      return get(/databases/$(database)/documents/empleados/$(request.auth.uid)).data;
+    }
+    function esAdmin() {
+      return yo().rol in ['ADMIN', 'DIRECTOR', 'ADMINISTRADOR'];
+    }
+    function miEmpresa() {
+      return yo().empresaId;
+    }
+    // Un doc pertenece a mi empresa (o soy admin, o el doc no tiene empresaId
+    // → legacy: se permite temporalmente para no romper datos viejos).
+    function mismaEmpresa(data) {
+      return esAdmin()
+        || !('empresaId' in data)
+        || data.empresaId == miEmpresa();
     }
 
-    function validProducto() {
-      let d = request.resource.data;
-      return d.nombre is string && d.nombre.size() > 0
-          && d.precio is number && d.precio >= 0;
+    // ---- Empleados (PII) — GLOBALES por persona, separados por empresa -----
+    // Sin lectura pública. El login usa la Function `lookupEmpleadoEmail`.
+    // Una persona (doc por uid) puede pertenecer a varias empresas
+    // (`empresas`); un manager/admin solo lee/escribe a quienes COMPARTEN al
+    // menos una empresa con él → nada se mezcla entre empresas.
+    function empresasDe(data) {
+      return data.empresas is list ? data.empresas
+        : (data.empresasAsignadas is list ? data.empresasAsignadas
+           : [data.get('empresaId', 'default-pv')]);
+    }
+    function comparteEmpresa(data) {
+      return empresasDe(yo()).hasAny(empresasDe(data));
+    }
+    match /empleados/{uid} {
+      allow read: if permitido() && (
+        uid == request.auth.uid                 // mi propio doc
+        || esAdmin()                            // admin ve todos
+        || (yo().rol in ['MANAGER', 'LIDER'] && comparteEmpresa(resource.data))
+      );
+      allow create, update: if permitido() && (
+        esAdmin()
+        || (yo().rol in ['MANAGER', 'LIDER'] && comparteEmpresa(request.resource.data))
+      );
+      allow delete: if false;                   // solo soft-delete
+      // Subcolecciones (documentos, etc.): mismo dueño o admin/manager.
+      match /{sub=**} {
+        allow read, write: if permitido() && (
+          uid == request.auth.uid || esAdmin()
+          || (yo().rol in ['MANAGER', 'LIDER'])
+        );
+      }
     }
 
-    // ── Órdenes ──────────────────────────────────────────────────────────────
-    // Solo crear (ventas). No modificar ni borrar desde el cliente.
-    match /ordenes/{ordenId} {
-      allow read:   if isAuth();
-      allow create: if isAuth() && validOrden();
-      allow update, delete: if false;
+    // ---- Empresas (marca/config) ------------------------------------------
+    // Cualquier usuario autenticado puede LEER (necesario para el selector de
+    // empresa y el branding). Escribir/borrar: solo admin.
+    match /empresas/{id} {
+      allow read: if permitido();
+      allow write: if permitido() && esAdmin();
     }
 
-    // ── Productos ─────────────────────────────────────────────────────────────
-    match /productos/{productoId} {
-      allow read:   if isAuth();
-      allow create, update: if isAuth() && validProducto();
-      allow delete: if isAuth();   // idealmente admin — sin custom claims no podemos filtrar aquí
+    // ---- Colecciones operativas (scope por empresa) ------------------------
+    match /productos/{id} {
+      allow read: if permitido() && mismaEmpresa(resource.data);
+      allow create: if permitido() && mismaEmpresa(request.resource.data);
+      allow update, delete: if permitido() && mismaEmpresa(resource.data);
+    }
+    match /tiendas/{id} {
+      allow read: if permitido() && mismaEmpresa(resource.data);
+      allow write: if permitido() && esAdmin(); // crear/editar tiendas = admin/manager (afinar)
+    }
+    match /ordenes/{id} {
+      // Ventas: leer de mi empresa; crear autenticado (el server valida stock).
+      allow read: if permitido() && mismaEmpresa(resource.data);
+      allow create: if permitido();
+      allow update, delete: if permitido() && esAdmin();
+    }
+    match /cajas/{id} {
+      allow read, write: if permitido() && mismaEmpresa(resource.data);
+    }
+    match /creditos/{id} {
+      allow read: if permitido();
+      allow write: if permitido() && (yo().rol in ['MANAGER', 'LIDER'] || esAdmin());
+    }
+    match /clientes/{id} {
+      allow read, write: if permitido();
+    }
+    match /turnos/{id}              { allow read, write: if permitido(); }
+    match /tareas/{id}             { allow read, write: if permitido(); }
+    match /plantillas_tareas/{id}  { allow read, write: if permitido(); }
+    match /promociones/{id}        { allow read: if permitido(); allow write: if permitido() && (yo().rol in ['MANAGER','LIDER'] || esAdmin()); }
+    match /banners/{id}            { allow read: if permitido(); allow write: if permitido() && esAdmin(); }
+    match /formatos_custom/{id}    { allow read: if permitido(); allow write: if permitido() && esAdmin(); }
+    match /registros_actividad/{id} { allow read: if permitido(); allow create: if permitido(); allow update, delete: if false; }
+    match /faltas/{id}             { allow read, write: if permitido(); }
+    match /vacaciones/{id}         { allow read, write: if permitido(); }
+    match /marcaCustomizaciones/{id} { allow read: if permitido(); allow write: if permitido() && (yo().rol in ['MANAGER','LIDER'] || esAdmin()); }
+    // Contador de números de empleado — solo vía Function (transacción admin).
+    match /config/{id}             { allow read: if permitido(); allow write: if permitido() && esAdmin(); }
+    // Avatares GLOBALES por uid — la foto de una persona se comparte entre
+    // empresas. No es PII sensible (solo una URL de imagen). Lectura para
+    // cualquier autenticado; escritura del propio uid o admin.
+    match /avatares/{uid} {
+      allow read:  if permitido();
+      allow write: if permitido() && (uid == request.auth.uid || esAdmin());
     }
 
-    // ── Créditos ──────────────────────────────────────────────────────────────
-    // Creación validada. Actualización no puede aumentar montoAprobado.
-    match /creditos/{creditoId} {
-      allow read:   if isAuth();
-      allow create: if isAuth() && validCredito();
-      allow update: if isAuth()
-          && (
-            !('montoAprobado' in request.resource.data.diff(resource.data).affectedKeys())
-            || request.resource.data.montoAprobado <= resource.data.montoAprobado
-          );
-      allow delete: if false;   // créditos nunca se borran, solo se marcan pagado/rechazado
-    }
+    // ---- PROPUESTO: validadores de forma (defensa en profundidad) ----------
+    // Venían de la versión web anterior. Rechazan escrituras malformadas
+    // ADEMÁS del scope por empresa. NO activados: primero verificar en el
+    // emulador que la forma real de las escrituras (web + Swift) los cumple,
+    // para no romper ventas/crédito. Para activar: mover a funciones y añadir
+    // `&& validOrden()` / `&& validCredito()` / `&& validProducto()` en los
+    // `create` de sus matches respectivos.
+    //
+    // function validOrden() {
+    //   let d = request.resource.data;
+    //   return d.keys().hasAll(['empleadoId','productos','subtotal','iva','total','metodoPago','estado'])
+    //       && d.total is number && d.total > 0
+    //       && d.subtotal is number && d.iva is number
+    //       && d.empleadoId is string && d.empleadoId.size() > 0
+    //       && d.productos is list && d.productos.size() > 0
+    //       && d.estado in ['completada','pendiente','cancelada'];
+    // }
+    // function validCredito() {
+    //   let d = request.resource.data;
+    //   return d.keys().hasAll(['clienteId','montoAprobado','estado'])
+    //       && d.montoAprobado is number && d.montoAprobado > 0 && d.montoAprobado <= 50000
+    //       && d.clienteId is string && d.clienteId.size() > 0
+    //       && d.estado in ['activo','pagado','vencido','suspendido','rechazado'];
+    // }
+    // function validProducto() {
+    //   let d = request.resource.data;
+    //   return d.nombre is string && d.nombre.size() > 0
+    //       && d.precio is number && d.precio >= 0;
+    // }
 
-    // ── Cajas ─────────────────────────────────────────────────────────────────
-    match /cajas/{cajaId} {
-      allow read:          if isAuth();
-      allow create, update: if isAuth();
-      allow delete:        if false;
-    }
-
-    // ── Empleados ─────────────────────────────────────────────────────────────
-    // Lectura pública: necesario para el lookup por numEmpleado durante el login
-    // (el cliente busca el email real antes de autenticarse con Firebase Auth).
-    // Escritura solo para autenticados; borrar nunca desde cliente.
-    match /empleados/{empleadoId} {
-      allow read:           if true;
-      allow create, update: if isAuth();
-      allow delete:         if false;
-    }
-
-    // ── Tiendas ───────────────────────────────────────────────────────────────
-    match /tiendas/{tiendaId} {
-      allow read:          if isAuth();
-      allow create, update: if isAuth();
-      allow delete:        if false;
-    }
-
-    // ── Turnos ────────────────────────────────────────────────────────────────
-    match /turnos/{turnoId} {
-      allow read, write: if isAuth();
-    }
-
-    // ── Tareas ────────────────────────────────────────────────────────────────
-    match /tareas/{tareaId} {
-      allow read, write: if isAuth();
-    }
-
-    // ── Plantillas de tareas ──────────────────────────────────────────────────
-    match /plantillas_tareas/{plantillaId} {
-      allow read, write: if isAuth();
-    }
-
-    // ── Promociones ───────────────────────────────────────────────────────────
-    match /promociones/{promoId} {
-      allow read:   if isAuth();
-      allow create, update, delete: if isAuth();
-    }
-
-    // ── Faltas ────────────────────────────────────────────────────────────────
-    match /faltas/{faltaId} {
-      allow read:          if isAuth();
-      allow create, update: if isAuth();
-      allow delete:        if false;
-    }
-
-    // ── Registros de actividad ────────────────────────────────────────────────
-    // Append-only: solo crear, nunca modificar ni borrar.
-    match /registros_actividad/{registroId} {
-      allow read:   if isAuth();
-      allow create: if isAuth();
-      allow update, delete: if false;
-    }
-
-    // ── Marca customizaciones ─────────────────────────────────────────────────
-    // Lectura pública: Venta.jsx las carga sin auth para aplicar colores de marca.
-    match /marcaCustomizaciones/{marcaId} {
-      allow read:  if true;
-      allow write: if isAuth();
-    }
-
-    // ── Pantalla cliente (sincronización local) ───────────────────────────────
-    match /pantalla_cliente/{docId} {
-      allow read, write: if isAuth();
-    }
-
-    // ── Deny everything else ──────────────────────────────────────────────────
+    // ---- Default: DENEGAR todo lo no declarado -----------------------------
     match /{document=**} {
       allow read, write: if false;
     }
