@@ -64,4 +64,47 @@ export const SPRINGS = {
   general: { response: 0.35, damping: 0.85 },
 };
 
-export default { SPACING, RADIUS, COLORS, TYPO, LAYOUT, glass, SPRINGS };
+/**
+ * Puente ÚNICO tokens.js → CSS: escribe los tokens como variables CSS
+ * (`--pv-*`) en `:root`. Se llama UNA vez al arranque (main.jsx) ANTES del
+ * render, así TODO el CSS consume `var(--pv-*)` en vez de hardcodear valores.
+ * Mantiene una sola fuente de verdad (este archivo, ya alineado 1:1 con el
+ * Swift `AppTheme`) — sin un segundo archivo que derive y pueda desincronizarse.
+ */
+export function applyDesignTokens(root = document.documentElement) {
+  const set = (name, value) => root.style.setProperty(name, value);
+
+  for (const [k, v] of Object.entries(SPACING)) set(`--pv-space-${k}`, `${v}px`);
+  for (const [k, v] of Object.entries(RADIUS)) set(`--pv-radius-${k}`, `${v}px`);
+
+  const colorVars = {
+    primary: COLORS.primary,
+    'primary-dark': COLORS.primaryDark,
+    'primary-hover': COLORS.primaryHover,
+    lima: COLORS.verdeLima,
+    success: COLORS.success,
+    tomate: COLORS.tomate,
+    danger: COLORS.danger,
+    ambar: COLORS.ambar,
+    warning: COLORS.warning,
+    'text-dark': COLORS.textDark,
+    'text-muted': COLORS.textMuted,
+    bg: COLORS.background,
+    surface: COLORS.surface,
+    border: COLORS.border,
+  };
+  for (const [k, v] of Object.entries(colorVars)) set(`--pv-color-${k}`, v);
+
+  set('--pv-content-px', `${LAYOUT.contentPaddingX}px`);
+  set('--pv-section-gap', `${LAYOUT.sectionGap}px`);
+  set('--pv-section-inner-gap', `${LAYOUT.sectionInnerGap}px`);
+  set('--pv-header-px', `${LAYOUT.headerPaddingX}px`);
+  set('--pv-header-py', `${LAYOUT.headerPaddingY}px`);
+
+  set('--pv-title-size', `${TYPO.pageTitle.size}px`);
+  set('--pv-title-weight', `${TYPO.pageTitle.weight}`);
+  set('--pv-section-title-size', `${TYPO.sectionHeader.size}px`);
+  set('--pv-section-title-weight', `${TYPO.sectionHeader.weight}`);
+}
+
+export default { SPACING, RADIUS, COLORS, TYPO, LAYOUT, glass, SPRINGS, applyDesignTokens };
