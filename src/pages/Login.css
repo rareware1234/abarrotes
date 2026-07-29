@@ -3,7 +3,7 @@
   display: flex;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #0F4D2E 0%, var(--role-primary) 100%);
+  background: linear-gradient(135deg, var(--pv-color-primary-dark) 0%, var(--role-primary) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -263,7 +263,7 @@
   width: 100%;
   padding: 1rem 3rem 1rem 3rem;
   border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: var(--pv-radius-lg);
   font-size: 1rem;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.06);
@@ -319,10 +319,10 @@
   gap: 0.75rem;
   width: 100%;
   padding: 1rem;
-  background: linear-gradient(135deg, var(--role-primary) 0%, #0F4D2E 100%);
+  background: linear-gradient(135deg, var(--role-primary) 0%, var(--pv-color-primary-dark) 100%);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--pv-radius-lg);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -356,6 +356,43 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Aviso informativo (recuperación de contraseña enviada) — verde éxito. */
+.login-notice-alert {
+  background: rgba(74, 222, 128, 0.16);
+  color: #bbf7d0;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  border: 1px solid rgba(74, 222, 128, 0.32);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Link "¿Olvidaste tu contraseña?" — botón texto discreto, tappable. */
+.login-forgot {
+  align-self: center;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--pv-radius-sm);
+  transition: color 0.2s ease;
+}
+.login-forgot:hover:not(:disabled) { color: #fff; text-decoration: underline; }
+.login-forgot:focus-visible { outline: 2px solid var(--role-accent, var(--pv-color-lima)); outline-offset: 2px; }
+.login-forgot:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Estado de éxito del botón submit — verde éxito plano. */
+.login-submit-btn.is-success {
+  background: var(--pv-color-success);
+  box-shadow: 0 4px 20px rgba(74, 222, 128, 0.4);
 }
 
 .login-security {

@@ -1,20 +1,21 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import {
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import {
   collection,
   getDocs,
   getDoc,
   doc,
-  updateDoc,
   query,
-  where
+  where,
+  limit
 } from 'firebase/firestore';
-import { db, auth } from '../firebase.js';
+import { httpsCallable } from 'firebase/functions';
+import { db, auth, functions } from '../firebase.js';
 
 // Abre la conexión WebSocket de Firestore en background para que las
 // primeras queries de otras páginas no tengan el cold-start delay.
@@ -149,7 +150,7 @@ export const AuthProvider = ({ children }) => {
             setEmpleado(parsed);
             aplicarTemaRol(parsed.rol);
             warmFirestore(); // conexión Firestore en background
-          } catch (e) {
+          } catch {
             await firebaseSignOut(auth);
             sessionStorage.clear();
             setEmpleado(null);
@@ -170,55 +171,57 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (numEmpleado, password) => {
     try {
-      setIsLoading(true);
+      // NO togglear el `isLoading` GLOBAL aquí. Es exclusivo del bootstrap
+      // inicial de auth (onAuthStateChanged). Durante un login interactivo,
+      // `PublicRoute` reaccionaría a isLoading=true mostrando el splash
+      // AuthLoading, lo que DESMONTA <Login/> y borra su estado local `error`
+      // → el mensaje de error nunca se ve (fallo silencioso). El spinner del
+      // botón usa el `loading` LOCAL de Login. `signingInRef` ya coordina el
+      // listener onAuthStateChanged.
       signingInRef.current = true;
 
-      // 1. Buscar empleado en Firestore PRIMERO para obtener el email real
-      const empleadosRef = collection(db, 'empleados');
-      const q = query(empleadosRef, where('numEmpleado', '==', numEmpleado));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) {
-        return { success: false, error: 'Empleado no encontrado en el sistema' };
+      // 1. Resolver el email vía Cloud Function `lookupEmpleadoEmail` (segura:
+      //    devuelve SOLO el email, sin PII). NO se lee `empleados` directo: las
+      //    reglas de Firestore lo bloquean SIN sesión A PROPÓSITO (antes exponía
+      //    CURP/RFC/NSS/CLABE con `allow read: if true`). La app Swift usa esta
+      //    misma función; el web había quedado leyendo `empleados` directo →
+      //    permission-denied → login roto. El doc COMPLETO se lee tras autenticar.
+      let email;
+      try {
+        const lookup = httpsCallable(functions, 'lookupEmpleadoEmail');
+        const res = await lookup({ numEmpleado });
+        email = res?.data?.email;
+      } catch (err) {
+        if (err?.code === 'functions/not-found') {
+          return { success: false, error: 'Empleado no encontrado en el sistema' };
+        }
+        throw err; // otros errores → catch general (feedback claro al usuario)
       }
-
-      const empleadoDoc = snapshot.docs[0];
-      const empleadoData = empleadoDoc.data();
-
-      // 2. Usar el email REAL del empleado para autenticar en Firebase
-      const email = empleadoData.email;
       if (!email) {
         return { success: false, error: 'El empleado no tiene email configurado' };
       }
 
-      // Auto-registro (biblia §2.2): si el empleado se creó pero nunca activó su
-      // cuenta en Firebase Auth (pendienteAuth) y la contraseña coincide con la
-      // temporal, se crea la cuenta al vuelo y se le exige cambiar la contraseña.
-      let userCredential;
-      try {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        const puedeAutoRegistrar =
-          empleadoData.pendienteAuth === true &&
-          empleadoData.passwordTemp &&
-          String(empleadoData.passwordTemp) === String(password) &&
-          ['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(err.code);
-        if (!puedeAutoRegistrar) throw err;
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // Migrar el doc: quitar pendiente/temporal y exigir cambio de contraseña.
-        try {
-          await updateDoc(doc(db, 'empleados', empleadoDoc.id), {
-            pendienteAuth: false,
-            passwordTemp: '',
-            requiereCambioPassword: true,
-            uid: userCredential.user.uid,
-          });
-        } catch { /* no bloquear el login si falla la migración del doc */ }
-        empleadoData.requiereCambioPassword = true;
-      }
+      // 2. Autenticar en Firebase Auth con el email real.
+      //    NOTA: el auto-registro en cliente (pendienteAuth/passwordTemp, biblia
+      //    §2.2) se removió: requería leer el doc del empleado SIN sesión, algo
+      //    que las reglas ahora bloquean con razón. La activación de cuentas
+      //    nuevas se hace por la app nativa/admin o debe migrarse a una Cloud
+      //    Function server-side (pendiente).
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 3. Construir objeto empleado completo
+      // 3. Ya autenticados → leer el doc del empleado (permitido por reglas: es
+      //    mi propio doc). De aquí salen rol, tienda, empresa, etc.
+      const empSnap = await getDocs(
+        query(collection(db, 'empleados'), where('numEmpleado', '==', numEmpleado), limit(1))
+      );
+      if (empSnap.empty) {
+        await firebaseSignOut(auth);
+        return { success: false, error: 'No se encontró el perfil del empleado' };
+      }
+      const empleadoData = empSnap.docs[0].data();
+
+      // 4. Construir objeto empleado completo
       const rol = ROL_MAP[empleadoData.rol?.toUpperCase()] || 'staff';
 
       const empleadoCompleto = {
@@ -255,7 +258,8 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
-      console.error('Error en signIn:', error);
+      // Solo el código, nunca el objeto completo (puede traer email/PII).
+      console.error('signIn error:', error?.code || 'unknown');
       let mensaje = 'Error al iniciar sesión';
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
         mensaje = 'Número de empleado o contraseña incorrectos';
@@ -267,7 +271,32 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: mensaje };
     } finally {
       signingInRef.current = false;
-      setIsLoading(false);
+    }
+  };
+
+  // Recuperación de contraseña. Reusa el MISMO lookup seguro que el login
+  // (Cloud Function que devuelve solo el email, sin abrir `empleados`) y
+  // dispara el correo nativo de Firebase Auth. No duplica lógica de resolución.
+  const resetPassword = async (numEmpleado) => {
+    const num = (numEmpleado || '').trim();
+    if (!num) {
+      return { success: false, error: 'Ingresa tu número de empleado primero' };
+    }
+    try {
+      const lookup = httpsCallable(functions, 'lookupEmpleadoEmail');
+      const res = await lookup({ numEmpleado: num });
+      const email = res?.data?.email;
+      if (!email) {
+        return { success: false, error: 'No se encontró una cuenta para ese número de empleado' };
+      }
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error) {
+      console.error('resetPassword error:', error?.code || 'unknown');
+      if (error?.code === 'functions/not-found') {
+        return { success: false, error: 'Empleado no encontrado' };
+      }
+      return { success: false, error: 'No se pudo enviar el correo de recuperación. Intenta más tarde.' };
     }
   };
 
@@ -312,6 +341,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     signIn,
     signOut,
+    resetPassword,
     hasPermission,
     updateEmpleadoFoto,
     clearRequiereCambioPassword,
